@@ -1,3 +1,4 @@
+from platform import node
 from xml.parsers.expat import model
 import numpy as np
 import pdb
@@ -35,14 +36,14 @@ def plot_train_loss_vs_epoch(config, expt, train_loss):
 
 def accuracy_vs_epoch(config, expts):
     for i in range(len(expts)):
-        accuracies, loss_test, loss_train = train_mnist(config, expts[i])
+        accuracies, loss_test, loss_train, _ = train_mnist(config, expts[i])
         plot_test_accuracy_vs_epoch(config, expts[i], accuracies)
         # plot_train_loss_vs_epoch(config, expts[i], loss_train)
     plt.legend()
     plt.show()
 
 def acc_and_loss_vs_steps(config, expts):
-    fig, axes = plt.subplots(1, 2, figsize=(6,3))
+    fig, axes = plt.subplots(1, 2, figsize=(10,5))
     axes[0].set_xlabel('Steps')
     axes[0].set_ylabel('Test Accuracy')
     axes[1].set_xlabel('Steps')
@@ -50,7 +51,7 @@ def acc_and_loss_vs_steps(config, expts):
 
     for i in range(len(expts)):
         new_config = {**config, **expts[i]} 
-        accuracies, loss_test, _ = train_mnist(new_config, expts[i])
+        accuracies, loss_test, _, _ = train_mnist(new_config, expts[i])
         steps = np.arange(1, len(accuracies)+1)*config['steps_eval']
         axes[0].plot(steps, accuracies, label=expts[i]['label'])
         axes[1].plot(steps, loss_test, label=expts[i]['label'])
@@ -61,7 +62,7 @@ def acc_and_loss_vs_steps(config, expts):
 def node_disagreement(config, expts):
     for i in range(len(expts)):
         new_config = {**config, **expts[i]} 
-        accuracies, loss_test, node_disagreement = train_mnist(new_config, expts[i])
+        accuracies, loss_test, _, node_disagreement = train_mnist(new_config, expts[i])
         steps = np.arange(len(node_disagreement))
         plt.plot(steps, node_disagreement, label=expts[i]['label'])
     plt.xlabel('Iterations')
@@ -69,36 +70,79 @@ def node_disagreement(config, expts):
     plt.legend()
     plt.show()
 
+def plot_all(config, expts):
+    accuracies = []
+    test_losses = []
+    steps = []
+    consensus = []
+    for i in range(len(expts)):
+        new_config = {**config, **expts[i]} 
+        acc, loss, _, node_disagreement = train_mnist(new_config, expts[i])
+        s = np.arange(1, len(acc)+1)*config['steps_eval']
+        accuracies.append(acc)
+        test_losses.append(loss)
+        steps.append(s)
+        consensus.append(node_disagreement)
+    
+    fig, axes = plt.subplots(1, 2, figsize=(10,5))
+    axes[0].set_xlabel('Steps')
+    axes[0].set_ylabel('Test Accuracy')
+    axes[1].set_xlabel('Steps')
+    axes[1].set_ylabel('Test Loss')
+
+    for i in range(len(expts)):
+        axes[0].plot(steps[i], accuracies[i], label=expts[i]['label'])
+        axes[1].plot(steps[i], test_losses[i], label=expts[i]['label'])
+    
+    plt.legend()
+    plt.show()
+
+    for i in range(len(expts)):
+        plt.plot(np.arange(len(consensus[i])), consensus[i], label=expts[i]['label'])
+    plt.xlabel('Iterations')
+    plt.ylabel('Consensus')
+    plt.legend()
+    plt.show()
 
 config = {
     'n_nodes': 15,      # at 15 nodes and batch_size 20, epochs are 200 steps
     'batch_size': 20,
     'lr': 0.1,
-    'steps': 100,
-    'steps_eval': 100,  
+    'steps': 2500,
+    'steps_eval': 100, #50,  
     'data_split': 'yes',     # NOTE 'no' will sample with replacement from the FULL dataset, which will be truly IID
     'same_init': True,
     'small_test_set': True,
+    'net': 'mlp',
+    # 'net': 'convnet',
 }
 
 expts = [
-    # {'topology': 'centralized', 'label': 'Fully connected', 'local_steps': 0},
+    {'topology': 'centralized', 'label': 'Fully connected', 'local_steps': 0},
+    {'topology': 'centralized', 'label': 'Fully connected, sample with replacement', 'local_steps': 0},
     # {'topology': 'solo', 'label': 'solo', 'local_steps': 0},
     # {'topology': 'fully_connected', 'label': 'Fully connected', 'local_steps': 0},
-    {'topology': 'fully_connected', 'label': 'FC, 20 local steps', 'local_steps': 20},
-    # {'topology': 'fully_connected', 'label': 'FC, 50 local steps', 'local_steps': 50},
-    # {'topology': 'fully_connected', 'label': 'FC, 50 local steps, IID', 'local_steps': 50, 'data_split': 'no'},
-    # {'topology': 'fully_connected', 'label': 'Fully connected, 580 local steps', 'local_steps': 580},
-    # {'topology': 'fully_connected', 'label': 'Fully connected, 580 local steps', 'local_steps': 580, 'data_split': 'no'},
-    # {'topology': 'exponential_graph', 'label': 'Exponential graph', 'local_steps': 0},
+    # {'topology': 'fully_connected', 'label': 'FC, 20 local steps', 'local_steps': 20},
+    {'topology': 'fully_connected', 'label': 'FC, 50 local steps', 'local_steps': 50},
+    # {'topology': 'fully_connected', 'label': 'FC, 500 local steps', 'local_steps': 500},
+    # {'topology': 'fully_connected', 'label': 'FC, 50 local steps, IID no split', 'local_steps': 50, 'data_split': 'no'},
+    # {'topology': 'fully_connected', 'label': 'FC, 500 local steps', 'local_steps': 500},
+    # {'topology': 'fully_connected', 'label': 'FC, 500 local steps, IID no split', 'local_steps': 500, 'data_split': 'no'},
+    # {'topology': 'fully_connected', 'label': 'FC, 200 local steps', 'local_steps': 200},
+    # {'topology': 'fully_connected', 'label': 'FC, 200 local steps, IID no split', 'local_steps': 200, 'data_split': 'no'},
+    # {'topology': 'fully_connected', 'label': 'FC, 600 local steps', 'local_steps': 600},
+    # {'topology': 'fully_connected', 'label': 'FC, 600 local steps, IID no split', 'local_steps': 600, 'data_split': 'no'},
+    {'topology': 'exponential_graph', 'label': 'Exponential graph', 'local_steps': 0},
+    # {'topology': 'exponential_graph', 'label': 'Exponential graph, IID (no split)', 'local_steps': 0, 'data_split': 'no'},
     # {'topology': 'EG_time_varying', 'label': 'EG time-varying', 'local_steps': 0},
     # {'topology': 'EG_time_varying_random', 'label': 'EG time-varying random', 'local_steps': 0},
     # {'topology': 'EG_multi_step', 'label': 'EG multi-step', 'local_steps': 0},
     # {'topology': 'exponential_graph', 'label': 'Exponential graph, 58 local steps', 'local_steps': 58},
+    # {'topology': 'random', 'degree': 4, 'label': 'random (degree: 4)', 'local_steps': 0},
     # {'topology': 'random', 'degree': 5, 'label': 'random (degree: 5)', 'local_steps': 0},
     # {'topology': 'random', 'degree': 7, 'label': 'random (degree: 7)', 'local_steps': 0},
-    # {'topology': 'ring', 'label': 'ring', 'local_steps': 0},
-
+    {'topology': 'ring', 'label': 'ring', 'local_steps': 0},
+    # {'topology': 'ring', 'label': 'ring, IID (no split)', 'local_steps': 0, 'data_split': 'no'},
 ]
 
 
@@ -106,5 +150,6 @@ expts = [
 if __name__ == '__main__':
     ts = time.time()
     # acc_and_loss_vs_steps(config, expts)
-    node_disagreement(config, expts)
+    # node_disagreement(config, expts)
+    plot_all(config, expts)
     print('** TOTAL TIME: %.2f min **' % ((time.time()-ts)/60))

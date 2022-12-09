@@ -1,38 +1,16 @@
 import numpy as np
 import pdb
-import matplotlib.pyplot as plt
-from sklearn import model_selection
-from data_helpers import get_mnist
+from data_helpers import get_mnist, get_heterogeneous_mnist
 from topology import get_diff_matrix, diffuse
 # from plot_helpers import plot_calibration_histogram, plot_heatmaps, plot_node_disagreement
 import time 
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
 import torch.optim as optim
-from torchvision import datasets, transforms
 from torchsummary import summary
-
-class Net(nn.Module):
-    def __init__(self):
-        super(Net, self).__init__()
-        self.conv1 = nn.Conv2d(1, 32, kernel_size=3, stride=1, padding=0)
-        self.pool1 = nn.MaxPool2d(kernel_size=2)
-        self.conv2 = nn.Conv2d(32, 64, kernel_size=3, stride=1, padding=0)
-        self.pool2 = nn.MaxPool2d(kernel_size=2)
-        self.fc1 = nn.Linear(1600, 10)
-
-    def forward(self, x):
-        x = self.conv1(x)
-        x = F.relu(x)
-        x = self.pool1(x)
-        x = self.conv2(x)
-        x = F.relu(x)
-        x = self.pool1(x)
-        x = torch.flatten(x, 1)
-        x = self.fc1(x)
-        output = F.log_softmax(x, dim=1)
-        return output
+from models import get_model
+import torch.nn.functional as F
+from utils import save_experiment
 
 def evaluate_model(model, data_loader, device):
     """Compute loss and accuracy of a single model on a data_loader."""
@@ -64,9 +42,11 @@ def worker_local_step(model, opt, train_loader_iter, device):
     loss.backward()
     opt.step()
 
+    return loss.item()
 
-def compute_node_disagreement(models, n_nodes):
-    avg_model = Net()
+
+def compute_node_disagreement(config, models, n_nodes):
+    avg_model = get_model(config, 'cpu')
     state_dict_avg = avg_model.state_dict()
     models_sd = [models[i].state_dict() for i in range(n_nodes)]
     L2_diff = 0
@@ -88,7 +68,8 @@ def train_mnist(config, expt):
     if not decentralized:
         n_nodes = 1
         batch_size = config['batch_size'] * config['n_nodes']
-        config['data_split'] = 'no'
+        if 'data_split' not in config.keys():
+            config['data_split'] = 'yes'   # 'yes' will train epoch by epoch. 'no' will sample WITH REPLACEMENT
     
     # decentralized
     else:
@@ -104,8 +85,9 @@ def train_mnist(config, expt):
         train_loader_iter = [iter(t) for t in train_loader]
 
     # init
+    torch.manual_seed(0)    
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
-    models = [Net().to(device) for _ in range(n_nodes)]
+    models = [get_model(config, device) for _ in range(n_nodes)]
     opts = [optim.SGD(model.parameters(), lr=config['lr']) for model in models]
     if config['same_init']:
         for i in range(1, len(models)):
@@ -116,6 +98,7 @@ def train_mnist(config, expt):
 
     accuracies = []
     test_losses = []
+    train_losses = []
     node_disagreement = []
 
     ts_total = time.time()
@@ -128,17 +111,22 @@ def train_mnist(config, expt):
                     train_loader_iter[i] = iter(train_loader[i])
 
         # local update
+        train_loss = 0
         for i in range(len(models)):
             if config['data_split'] == 'yes':
-                worker_local_step(models[i], opts[i], train_loader_iter[i], device)
+                train_loss += worker_local_step(models[i], opts[i], train_loader_iter[i], device)
             elif config['data_split'] == 'no':
-                worker_local_step(models[i], opts[i], iter(train_loader), device)
+                train_loss += worker_local_step(models[i], opts[i], iter(train_loader), device)
+        train_losses.append(train_loss/n_nodes)
+        
+        if 'train_loss_th' in config.keys() and train_losses[-1] < config['train_loss_th']:
+            return accuracies, test_losses, train_losses, None
 
         # gossip
         diffuse(comm_matrix, models, step, expt)
 
         if decentralized:
-            L2_diff = compute_node_disagreement(models, n_nodes)
+            L2_diff = compute_node_disagreement(config, models, n_nodes)
             node_disagreement.append(L2_diff)
 
 
@@ -150,35 +138,37 @@ def train_mnist(config, expt):
             for model in models:
                 test_loss, acc = evaluate_model(model, test_loader, device)
                 acc_workers.append(acc)
-                loss_workers.append(test_loader)
-            accuracies.append(float(np.mean(acc)*100))
-            test_losses.append(np.mean(test_loss))
-            print('Step % d -- Test accuracy: %.2f -- Test loss: %.3f -- Time (total/last/eval): %.2f / %.2f / %.2f s' % (step, accuracies[-1], test_losses[-1], time.time() - ts_total, time.time() - ts, time.time() - ts_eval))     
+                loss_workers.append(test_loss)
+            accuracies.append(float(np.array(acc_workers).mean()*100))
+            test_losses.append(np.array(loss_workers).mean())
+            print('Step % d -- Test accuracy: %.2f -- Test loss: %.3f -- Train loss: %.3f -- Time (total/last/eval): %.2f / %.2f / %.2f s' % (step, accuracies[-1], test_losses[-1], train_losses[-1], time.time() - ts_total, time.time() - ts, time.time() - ts_eval))     
             ts = time.time()
             # print('time evaluating: %.2f' % (time.time() - ts_eval))
             
             # stop if threhsold reached
             if 'acc_th' in config.keys() and config['acc_th'] < acc:
-                return accuracies, test_loss, None
+                return accuracies, test_losses, train_losses, None
             if 'loss_th' in config.keys() and test_loss < config['loss_th']:
-                return accuracies, test_loss, None
+                return accuracies, test_losses, train_losses, None
 
-    return accuracies, test_losses, node_disagreement
+    return accuracies, test_losses, train_losses, node_disagreement
 
 config = {
-    'n_nodes': 4,
-    'batch_size': 16,
-    'lr': 0.1,
-    'steps': 1000,
+    'n_nodes': 15,
+    'batch_size': 20,
+    'lr': 1,
+    'steps': 100,
     'steps_eval': 50,
     'data_split': 'yes',     # NOTE 'no' will sample with replacement from the FULL dataset, which will be truly IID
     'same_init': True,
     'small_test_set': True,
+    'net': 'mlp', # 'convnet'
+    # 'net': 'convnet',
 }
 
 expt = {'topology': 'centralized', 'label': 'Fully connected', 'local_steps': 0}
 # expt = {'topology': 'solo', 'local_steps': 0}
-expt = {'topology': 'fully_connected', 'local_steps': 0}
+# expt = {'topology': 'fully_connected', 'local_steps': 0}
 # expt = {'topology': 'fully_connected', 'local_steps': 58}
 # expt = {'topology': 'random', 'degree': 7, 'label': 'Fully connected', 'local_steps': 0}
 # expt = {'topology': 'exponential_graph', 'local_steps': 0}
@@ -186,6 +176,9 @@ expt = {'topology': 'fully_connected', 'local_steps': 0}
 
 if __name__ == '__main__':
     # train_mnist_centralized(config)
-    train_mnist(config, expt)
-    # model = Net2()
+    acc, test_loss, train_loss, consensus = train_mnist(config, expt)
+    save_experiment({**config, **expt}, acc, test_loss, train_loss, consensus, filename='experiments_mnist/results/test')
+    # model = MLP()
+    # model = ConvNet()
     # summary(model, (1, 28, 28))
+    # get_heterogeneous_mnist(10, 20)
