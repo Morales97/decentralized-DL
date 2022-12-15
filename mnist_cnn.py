@@ -1,3 +1,4 @@
+from turtle import st
 import numpy as np
 import pdb
 from data_helpers import get_mnist, get_heterogeneous_mnist
@@ -11,6 +12,8 @@ from torchsummary import summary
 from models import get_model
 import torch.nn.functional as F
 from utils import save_experiment
+from helpers.gradient_var import *
+from helpers.consensus import *
 
 def evaluate_model(model, data_loader, device):
     """Compute loss and accuracy of a single model on a data_loader."""
@@ -45,41 +48,31 @@ def worker_local_step(model, opt, train_loader_iter, device):
     return loss.item()
 
 
-def compute_node_disagreement(config, models, n_nodes):
-    avg_model = get_model(config, 'cpu')
-    state_dict_avg = avg_model.state_dict()
-    models_sd = [models[i].state_dict() for i in range(n_nodes)]
-    L2_diff = 0
-    for key in state_dict_avg.keys():
-        state_dict_avg[key] = torch.stack(
-                                        [models_sd[i][key] for i in range(n_nodes)], dim=0
-                                        ).sum(0) / n_nodes
-        L2_diff += torch.stack(
-                            [(state_dict_avg[key] - models_sd[i][key])**2 for i in range(n_nodes)], dim=0
-                            ).sum() / n_nodes
-    
-    return L2_diff
+
+########################################################################################
+
 
 def train_mnist(config, expt):
 
     decentralized = (expt['topology'] != 'centralized') 
+    if config['p_label_skew'] > 0:
+        assert config['data_split'] == 'yes', 'Sampling with replacement only available if split are not heterogeneous'
+    if 'freeze_step' not in config.keys():
+        config['freeze_step'] = -1
 
     # central training
     if not decentralized:
         n_nodes = 1
-        batch_size = config['batch_size'] * config['n_nodes']
-        if 'data_split' not in config.keys():
-            config['data_split'] = 'yes'   # 'yes' will train epoch by epoch. 'no' will sample WITH REPLACEMENT
-    
+        batch_size = config['batch_size'] * config['n_nodes']    
     # decentralized
     else:
         n_nodes = config['n_nodes']
         batch_size = config['batch_size']
-        if 'data_split' not in config.keys():
-            config['data_split'] = 'yes'   # default: split dataset between workers
 
     # data
-    train_loader, test_loader = get_mnist(config, batch_size)
+    if 'data_split' not in config.keys():
+        config['data_split'] = 'yes'   # default: split dataset between workers
+    train_loader, test_loader = get_mnist(config, n_nodes, batch_size)
     if config['data_split'] == 'yes':
         train_loader_lengths = [len(t) for t in train_loader]
         train_loader_iter = [iter(t) for t in train_loader]
@@ -94,12 +87,14 @@ def train_mnist(config, expt):
             models[i].load_state_dict(models[0].state_dict())
 
     comm_matrix = get_diff_matrix(expt, n_nodes)
-    
+    # print(comm_matrix)
 
     accuracies = []
     test_losses = []
     train_losses = []
     node_disagreement = []
+    gradient_var = []
+    gradient_coh = []
 
     ts_total = time.time()
     ts = time.time()
@@ -109,6 +104,14 @@ def train_mnist(config, expt):
             for i, l in enumerate(train_loader_lengths):
                 if step%l == 0:
                     train_loader_iter[i] = iter(train_loader[i])
+
+        if step == config['freeze_step']:
+            assert config['net'] == 'convnet'
+            for model in models:
+                model.conv1.weight.requires_grad = False
+                model.conv1.bias.requires_grad = False
+                model.conv2.weight.requires_grad = False
+                model.conv2.bias.requires_grad = False
 
         # local update
         train_loss = 0
@@ -127,8 +130,29 @@ def train_mnist(config, expt):
 
         if decentralized:
             L2_diff = compute_node_disagreement(config, models, n_nodes)
+            # L2_diff = compute_node_disagreement_per_layer(config, models, n_nodes)
+            # L2_diff = compute_normalized_node_disagreement_per_layer(config, models, n_nodes)
             node_disagreement.append(L2_diff)
+            # pass
 
+        if 'steps_grad_var' in config.keys() and (step+1) % config['steps_grad_var'] == 0:
+            # VARIANCE
+            # grad_var = compute_gradient_variance_ratio(config, models, opts, train_loader_iter, train_loader, test_loader, device)
+            # print(grad_var)
+            # gradient_var.append(grad_var)
+            
+            # COHERENCE
+            # if config['data_split'] == 'yes':
+            #     grad_coh = compute_gradient_coherence_ratio(config, models, opts, train_loader_iter, train_loader, test_loader, device)
+            # elif config['data_split'] == 'no':
+            #     grad_coh = compute_gradient_coherence_ratio_iid(config, models, opts, train_loader, device)
+            # print(grad_coh)
+            # gradient_var.append(grad_coh)
+            # pdb.set_trace()
+
+            grad_var, grad_coh = compute_var_and_coh(config, models, opts, train_loader_iter, train_loader, test_loader, device)
+            gradient_var.append(grad_var)
+            gradient_coh.append(grad_coh)
 
         # evaluate
         if (step+1) % config['steps_eval'] == 0:
@@ -151,34 +175,31 @@ def train_mnist(config, expt):
             if 'loss_th' in config.keys() and test_loss < config['loss_th']:
                 return accuracies, test_losses, train_losses, None
 
-    return accuracies, test_losses, train_losses, node_disagreement
+    return accuracies, test_losses, train_losses, node_disagreement, gradient_var
+
 
 config = {
     'n_nodes': 15,
     'batch_size': 20,
-    'lr': 1,
-    'steps': 100,
-    'steps_eval': 50,
+    'lr': 0.1,
+    'steps': 1000,
+    'steps_eval': 100,
+    'steps_grad_var': 1,
     'data_split': 'yes',     # NOTE 'no' will sample with replacement from the FULL dataset, which will be truly IID
     'same_init': True,
     'small_test_set': True,
-    'net': 'mlp', # 'convnet'
-    # 'net': 'convnet',
+    'p_label_skew': 0,
+    # 'net': 'mlp', # 'convnet'
+    'net': 'convnet',
 }
 
-expt = {'topology': 'centralized', 'label': 'Fully connected', 'local_steps': 0}
+# expt = {'topology': 'centralized', 'label': 'Fully connected', 'local_steps': 0}
 # expt = {'topology': 'solo', 'local_steps': 0}
 # expt = {'topology': 'fully_connected', 'local_steps': 0}
-# expt = {'topology': 'fully_connected', 'local_steps': 58}
-# expt = {'topology': 'random', 'degree': 7, 'label': 'Fully connected', 'local_steps': 0}
+# expt = {'topology': 'fully_connected', 'local_steps': 50}
+# expt = {'topology': 'random', 'degree': 4, 'local_steps': 0}
 # expt = {'topology': 'exponential_graph', 'local_steps': 0}
-
+expt = {'topology': 'ring', 'local_steps': 0}
 
 if __name__ == '__main__':
-    # train_mnist_centralized(config)
     acc, test_loss, train_loss, consensus = train_mnist(config, expt)
-    save_experiment({**config, **expt}, acc, test_loss, train_loss, consensus, filename='experiments_mnist/results/test')
-    # model = MLP()
-    # model = ConvNet()
-    # summary(model, (1, 28, 28))
-    # get_heterogeneous_mnist(10, 20)

@@ -2,6 +2,7 @@ from cmath import exp
 import numpy as np
 import pdb
 import torch
+import copy 
 
 def get_diff_matrix(expt, num_clients):
     topology = expt['topology']
@@ -18,7 +19,7 @@ def get_diff_matrix(expt, num_clients):
     elif topology in ['fully_connected', 'FC_randomized_local_steps']:
         W = np.ones((num_clients, num_clients)) / num_clients
 
-    elif topology == 'FC_alpha':    #
+    elif topology == 'FC_alpha':    
         alpha = expt['local_steps'] / (1+expt['local_steps'])
         W = alpha * np.eye(num_clients) + (1-alpha) * np.ones((num_clients,num_clients)) / num_clients
     
@@ -80,7 +81,7 @@ def diffuse(W, models, step, expt):
 
 def diffuse_params(W, models):
     """Diffuse the models with their neighbors."""
-    models_sd = [model.state_dict() for model in models]
+    models_sd = [copy.deepcopy(model.state_dict()) for model in models]
     keys = models_sd[0].keys()
     for model, weights in zip(models, W):
         neighbors = np.nonzero(weights)[0]
