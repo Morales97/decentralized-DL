@@ -129,11 +129,11 @@ def train_mnist(config, expt):
         diffuse(comm_matrix, models, step, expt)
 
         if decentralized:
-            L2_diff = compute_node_disagreement(config, models, n_nodes)
+            # L2_diff = compute_node_disagreement(config, models, n_nodes)
             # L2_diff = compute_node_disagreement_per_layer(config, models, n_nodes)
             # L2_diff = compute_normalized_node_disagreement_per_layer(config, models, n_nodes)
-            node_disagreement.append(L2_diff)
-            # pass
+            # node_disagreement.append(L2_diff)
+            pass
 
         if 'steps_grad_var' in config.keys() and (step+1) % config['steps_grad_var'] == 0:
             # VARIANCE
@@ -150,7 +150,10 @@ def train_mnist(config, expt):
             # gradient_var.append(grad_coh)
             # pdb.set_trace()
 
-            grad_var, grad_coh = compute_var_and_coh(config, models, opts, train_loader_iter, train_loader, test_loader, device)
+            if config['data_split'] == 'yes':
+                grad_var, grad_coh = compute_var_and_coh(config, models, opts, train_loader_iter, train_loader, test_loader, device)
+            elif config['data_split'] == 'no':
+                grad_var, grad_coh = compute_var_and_coh_iid(config, models, opts, train_loader, device)
             gradient_var.append(grad_var)
             gradient_coh.append(grad_coh)
 

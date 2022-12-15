@@ -247,6 +247,43 @@ def stochastic_var_and_coh(config, model, opt, train_loader_iter, device):
     return variance, coherence
 
 
+def stochastic_var_and_coh_iid(config, model, opt, train_loader, device):
+    ''' Compute Stochastic gradient variance and coherence '''
+    gradients = []
+    for step in range(50):
+        input, target = next(iter(train_loader))
+        input = input.to(device)
+        target = target.to(device)
+
+        model.train()
+        output = model(input)
+        opt.zero_grad()
+        loss = F.nll_loss(output, target)
+        loss.backward()
+        # opt.step() NOTE we don't optimize the model!
+
+        grad = []
+        for param in model.parameters():
+            # grad.append(param.grad.numpy())
+            grad.append(param.grad.numpy().flatten())
+        gradients.append(np.concatenate([*grad]))
+    gradients = np.array(gradients)
+
+    # variance
+    variances = gradients.var(axis=0)
+    variance = np.mean(variances)
+
+    #coherence
+    mean_grad = gradients.mean(axis=0)
+    coherences = []
+    for i in range(gradients.shape[0]):
+        num = mean_grad @ gradients[i]
+        coherences.append(num / (gradients[i]@ gradients[i]))
+    coherence = np.mean(coherences)
+
+    return variance, coherence
+
+
 def node_var_and_coh(config, models, opts, loader_iter, device):
     ''' Compute Node gradient variance and coherence '''
     gradients = []
@@ -294,6 +331,112 @@ def compute_var_and_coh(config, models, opts, train_loader_iter, train_loader, t
     node_var = []
     node_coh = []
     for i in range(50):
+        # loader_iter = iter(train_loader[0])
+        loader_iter = iter(test_loader)
+        var, coh = node_var_and_coh(config, models, opts, loader_iter, device)  # NOTE using only one train loader!
+        node_var.append(var)
+        node_coh.append(coh)
+
+    mean_stoch_var = np.mean(stochastic_var)
+    mean_node_var = np.mean(node_var)
+    ratio_var = mean_stoch_var / mean_node_var
+    print('Variance Stoch/Node: %.3f\tStochastic: %.6f\tNode:%.6f' % (ratio_var, mean_stoch_var, mean_node_var))
+    # print(np.var(stochastic_var))
+    # print(np.var(node_var))
+    mean_stoch_coh = np.mean(stochastic_coh)
+    mean_node_coh = np.mean(node_coh)
+    ratio_coh = mean_stoch_coh / mean_node_coh
+    print('Coherence Stoch/Node: %.3f\tStochastic: %.6f\tNode:%.6f' % (ratio_coh, mean_stoch_coh, mean_node_coh))
+    
+    return np.array([ratio_var, mean_stoch_var, mean_node_var]), np.array([ratio_coh, mean_stoch_coh, mean_node_coh])
+
+def compute_var_and_coh_iid(config, models, opts, train_loader, device):
+
+    stochastic_var = []
+    stochastic_coh = []
+    for i in range(len(models)):
+        var, coh = stochastic_var_and_coh_iid(config, models[i], opts[i], train_loader, device)
+        stochastic_var.append(var)
+        stochastic_coh.append(coh)
+    
+    node_var = []
+    node_coh = []
+    for i in range(50):
+        loader_iter = iter(train_loader)
+        var, coh = node_var_and_coh(config, models, opts, loader_iter, device)  # NOTE using only one train loader!
+        node_var.append(var)
+        node_coh.append(coh)
+
+    mean_stoch_var = np.mean(stochastic_var)
+    mean_node_var = np.mean(node_var)
+    ratio_var = mean_stoch_var / mean_node_var
+    print('Variance Stoch/Node: %.3f\tStochastic: %.6f\tNode:%.6f' % (ratio_var, mean_stoch_var, mean_node_var))
+    # print(np.var(stochastic_var))
+    # print(np.var(node_var))
+    mean_stoch_coh = np.mean(stochastic_coh)
+    mean_node_coh = np.mean(node_coh)
+    ratio_coh = mean_stoch_coh / mean_node_coh
+    print('Coherence Stoch/Node: %.3f\tStochastic: %.6f\tNode:%.6f' % (ratio_coh, mean_stoch_coh, mean_node_coh))
+    
+    return np.array([ratio_var, mean_stoch_var, mean_node_var]), np.array([ratio_coh, mean_stoch_coh, mean_node_coh])
+
+
+
+def new_stochastic_var_and_coh(config, models, opts, loader_iter, device):
+    ''' NOTE this compute stochastic variance with SAME MINI-BATCHES FOR EACH NODE. Actually, this is wrong, as it does not 
+    correspond to the training case, where the distribution for each node might change. '''
+    gradients = []
+    for step in range(15):
+        input, target = next(loader_iter)
+        input = input.to(device)
+        target = target.to(device)
+
+        gradients_models = []
+        for model, opt in zip(models, opts):
+            model.train()
+            output = model(input)
+            opt.zero_grad()
+            loss = F.nll_loss(output, target)
+            loss.backward()
+            # opt.step() NOTE we don't optimize the model!
+
+            grad = []
+            for param in model.parameters():
+                # grad.append(param.grad.numpy())
+                grad.append(param.grad.numpy().flatten())
+            gradients_models.append(np.concatenate([*grad]))
+        
+        if step == 0:
+            gradients = np.array(gradients_models)[np.newaxis, :,:]
+        else:
+            gradients = np.concatenate((gradients, np.array(gradients_models)[np.newaxis, :,:]))
+    
+    # NOTE gradients is (N, M, D) where N is 50 mini-batches, M is models and D is parameters
+
+    # variance
+    variances = gradients.var(axis=0)   # (M, D), variance per parameter and model, across 50 mini-batches 
+    # variances_models = np.mean(variances, axis=1) # mean parameter variance per model
+    variance = np.mean(variances)       # (1), mean variance per parameter and model
+
+    #coherence
+    mean_grad = gradients.mean(axis=0)
+    coherences = []
+    for j in range(gradients.shape[1]): # for each model
+        for i in range(gradients.shape[0]): # for each mini-batch
+            num = mean_grad[j] @ gradients[i, j]
+            coherences.append(num / (gradients[i, j]@ gradients[i, j]))
+    coherence = np.mean(coherences)
+
+    return variance, coherence
+
+def new_compute_var_and_coh(config, models, opts, train_loader_iter, train_loader, test_loader, device):
+
+    loader_iter = iter(test_loader)
+    stochastic_var, stochastic_coh = new_stochastic_var_and_coh(config, models, opts, loader_iter, device)
+    
+    node_var = []
+    node_coh = []
+    for i in range(15):
         # loader_iter = iter(train_loader[0])
         loader_iter = iter(test_loader)
         var, coh = node_var_and_coh(config, models, opts, loader_iter, device)  # NOTE using only one train loader!

@@ -145,6 +145,7 @@ def gradient_variance(config, expts):
 def gradient_variance2(config, expts):
     fig, axes = plt.subplots(1, 3, figsize=(17,5))
     for i in range(len(expts)):
+        print('***** %s *****' % expts[i]['label'])
         new_config = {**config, **expts[i]} 
         accuracies, loss_test, _, node_disagreement, gradient_variance = train_mnist(new_config, expts[i])
         gradient_variance = np.array(gradient_variance)
@@ -168,7 +169,7 @@ config = {
     'n_nodes': 15,      # at 15 nodes and batch_size 20, epochs are 200 steps
     'batch_size': 20,
     'lr': 0.1,
-    'steps': 300,
+    'steps': 900,
     'steps_eval': 300, #50,  
     'steps_grad_var': 25,
     'data_split': 'yes',     # NOTE 'no' will sample with replacement from the FULL dataset, which will be truly IID
@@ -205,9 +206,14 @@ expts = [
     # {'topology': 'random', 'degree': 4, 'label': 'random (degree: 4)', 'local_steps': 0},
     # {'topology': 'random', 'degree': 5, 'label': 'random (degree: 5)', 'local_steps': 0},
     # {'topology': 'random', 'degree': 7, 'label': 'random (degree: 7)', 'local_steps': 0},
+    # {'topology': 'ring', 'label': 'ring, batch: 4', 'local_steps': 0, 'batch_size': 4},
+    # {'topology': 'ring', 'label': 'ring, batch: 16', 'local_steps': 0, 'batch_size': 16},
+    # {'topology': 'ring', 'label': 'ring, batch: 32', 'local_steps': 0, 'bathc_size': 32},
     {'topology': 'ring', 'label': 'ring, lr: 0.1', 'local_steps': 0},
-    {'topology': 'ring', 'label': 'ring, lr: 0.07', 'local_steps': 0, 'lr': 0.07},
-    {'topology': 'ring', 'label': 'ring, lr: 0.04', 'local_steps': 0, 'lr': 0.04},
+    {'topology': 'ring', 'label': 'ring, lr: 0.1, p=0.5', 'local_steps': 0, 'p_label_skew': 0.5},
+    {'topology': 'ring', 'label': 'ring, lr: 0.1, p=1', 'local_steps': 0, 'p_label_skew': 1},
+    # {'topology': 'ring', 'label': 'ring, lr: 0.07', 'local_steps': 0, 'lr': 0.07},
+    # {'topology': 'ring', 'label': 'ring, lr: 0.04', 'local_steps': 0, 'lr': 0.04},
     # {'topology': 'ring', 'label': 'ring, lr: 0.8', 'local_steps': 0, 'lr': 0.8},
     # {'topology': 'ring', 'label': 'ring, lr: 0.01', 'local_steps': 0, 'lr': 0.01},
     # {'topology': 'ring', 'label': 'ring, lr: 0.5', 'local_steps': 0, 'lr': 0.5},
@@ -222,5 +228,6 @@ if __name__ == '__main__':
     # acc_and_loss_vs_steps(config, expts)
     # node_disagreement_per_layer(config, expts)
     # plot_all(config, expts)
-    gradient_variance(config, expts)
+    # gradient_variance(config, expts)
+    gradient_variance2(config, expts)
     print('** TOTAL TIME: %.2f min **' % ((time.time()-ts)/60))
