@@ -9,14 +9,17 @@ from mnist_cnn import train_mnist
 from utils import save_experiment, load_results, save_sweep, load_sweep_results, get_sweep_filename, get_folder_name
 
 
-def sweep_step_sizes(config, expt, early_stop=False, save_expts=False, do_save_sweep=True, root=None):
+def sweep_batch_sizes(config, expt, early_stop=False, save_expts=False, do_save_sweep=True, root=None):
     arr_steps = []
     arr_accuracy = []
     arr_test_loss = []
     arr_train_loss = []
-    for lr in config['lrs']:
-        config['lr'] = lr
-        print('*** %s, lr: %.3f ***' % (expt['label'], lr))
+    config['BS'] = [int(x) for x in config['BS']]
+    for bs in config['BS']:
+        config['batch_size'] = bs
+        config['steps'] = int(config['steps_base'] // bs)
+        config['steps_eval'] = config['steps']
+        print('*** %s, bs: %d ***' % (expt['label'], bs))
         accuracies, test_losses, train_losses, _, _ = train_mnist(config, expt)
         if save_expts:
             save_experiment(config, accuracies, test_losses, train_losses)
@@ -32,35 +35,35 @@ def sweep_step_sizes(config, expt, early_stop=False, save_expts=False, do_save_s
 
     if do_save_sweep:
         if root is None:
-            save_sweep(config, arr_steps, arr_accuracy, arr_test_loss, arr_train_loss)
+            save_sweep(config, arr_steps, arr_accuracy, arr_test_loss, arr_train_loss, sweep_of='BS')
         else:
-            save_sweep(config, arr_steps, arr_accuracy, arr_test_loss, arr_train_loss, root=root)
+            save_sweep(config, arr_steps, arr_accuracy, arr_test_loss, arr_train_loss, root=root, sweep_of='BS')
     return arr_steps, arr_accuracy, arr_test_loss, arr_train_loss
 
-def plot_convergence_vs_lr(ax, steps, lrs, label=None):
+def plot_convergence_vs_bs(ax, steps, lrs, label=None):
     x = lrs[:len(steps)]
     ax.plot(x, steps, label=label)
-    ax.set_xlabel('Learning rate')
+    ax.set_xlabel('Batch size')
     ax.set_ylabel('Steps until conv')
 
-def plot_train_loss_vs_lr(ax, arr_train_loss, lrs, label=None):
+def plot_train_loss_vs_bs(ax, arr_train_loss, lrs, label=None):
     x = lrs[:len(arr_train_loss)]
     ax.plot(x, arr_train_loss, label=label)
-    ax.set_xlabel('Learning rate')
+    ax.set_xlabel('Batch size')
     ax.set_ylabel('Train loss')
     ax.set_ylim(0, 0.5)
 
-def plot_test_loss_vs_lr(ax, arr_test_loss, lrs, label=None):
+def plot_test_loss_vs_bs(ax, arr_test_loss, lrs, label=None):
     x = lrs[:len(arr_test_loss)]
     ax.plot(x, arr_test_loss, label=label)
-    ax.set_xlabel('Learning rate')
+    ax.set_xlabel('Batch size')
     ax.set_ylabel('Test loss')
     ax.set_ylim(0, 0.5)
 
-def plot_accuracy_vs_lr(ax, arr_accuracy, lrs, label=None):
+def plot_accuracy_vs_bs(ax, arr_accuracy, lrs, label=None):
     x = lrs[:len(arr_accuracy)]
     ax.plot(x, arr_accuracy, label=label)
-    ax.set_xlabel('Learning rate')
+    ax.set_xlabel('Batch size')
     ax.set_ylabel('Accuracy')
     ax.set_ylim(50, 100)
 
@@ -70,10 +73,10 @@ def plot_all():
     fig, ax = plt.subplots(1,3, figsize=(16,5))
     for i in range(len(expts)):
         new_config = {**config, **expts[i]} 
-        arr_steps, arr_accuracy, arr_test_loss, _ = sweep_step_sizes(new_config, expts[i], early_stop=True)
-        plot_convergence_vs_lr(ax[0], arr_steps, config['lrs'], expts[i]['label'])
-        plot_accuracy_vs_lr(ax[1], arr_accuracy, config['lrs'], expts[i]['label'])
-        plot_test_loss_vs_lr(ax[2], arr_test_loss, config['lrs'], expts[i]['label'])
+        arr_steps, arr_accuracy, arr_test_loss, _ = sweep_batch_sizes(new_config, expts[i], early_stop=True)
+        plot_convergence_vs_bs(ax[0], arr_steps, config['lrs'], expts[i]['label'])
+        plot_accuracy_vs_bs(ax[1], arr_accuracy, config['lrs'], expts[i]['label'])
+        plot_test_loss_vs_bs(ax[2], arr_test_loss, config['lrs'], expts[i]['label'])
     for i in range(len(ax)):
         ax[i].legend()
     # plt.legend()
@@ -91,16 +94,16 @@ def plot_all_no_threshold(config, expts, load_paths=None, root=None):
             _, arr_accuracy, arr_test_loss, arr_train_loss = load_sweep_results(load_paths[i])
         else:
             new_config = {**config, **expts[i]} 
-            _, arr_accuracy, arr_test_loss, arr_train_loss = sweep_step_sizes(new_config, expts[i], root=root)
+            _, arr_accuracy, arr_test_loss, arr_train_loss = sweep_batch_sizes(new_config, expts[i], root=root)
         accuracies.append(arr_accuracy)
         test_losses.append(arr_test_loss)
         train_losses.append(arr_train_loss)
     
     fig, ax = plt.subplots(1,3, figsize=(16,5))
     for i in range(len(expts)):
-        plot_train_loss_vs_lr(ax[0], train_losses[i], config['lrs'], expts[i]['label'])
-        plot_accuracy_vs_lr(ax[1], accuracies[i], config['lrs'], expts[i]['label'])
-        plot_test_loss_vs_lr(ax[2], test_losses[i], config['lrs'], expts[i]['label'])
+        plot_train_loss_vs_bs(ax[0], train_losses[i], config['BS'], expts[i]['label'])
+        plot_accuracy_vs_bs(ax[1], accuracies[i], config['BS'], expts[i]['label'])
+        plot_test_loss_vs_bs(ax[2], test_losses[i], config['BS'], expts[i]['label'])
     for i in range(len(ax)):
         ax[i].legend()
     # plt.legend()
@@ -111,24 +114,21 @@ def get_sweep_file_paths(config, expts):
     folder = get_folder_name(config)
     for i in range(len(expts)):
         new_config = {**config, **expts[i]}
-        filename = get_sweep_filename(new_config)
+        filename = get_sweep_filename(new_config, sweep_of='BS')
         paths.append(os.path.join(folder, filename))
     return paths
 
 config = {
     'n_nodes': 15,      # at 15 nodes and batch_size 20, epochs are 200 steps
     'batch_size': 40,
-    'steps': 500, 
-    # 'steps': 1000, 
-    # 'steps': 1000, 
-    'steps_eval': 500,  
-    # 'steps_eval': 2000,  
-    # 'steps_eval': 1000,  
+    # 'BS': np.array(2**np.arange(1, 4)).astype(int),
+    'BS': 2**np.arange(1, 8),
+    'steps_base': 10000, 
     'data_split': 'yes',     # NOTE 'no' will sample with replacement from the FULL dataset, which will be truly IID
     'same_init': True,
     'small_test_set': False,
+    'lr': 0.1,
     # 'lrs': list(np.logspace(np.log10(0.04),np.log10(0.8), 7)),
-    'lrs': list(np.logspace(np.log10(0.04),np.log10(2), 7)),
     'p_label_skew': 0,
     # 'acc_th': 0.975,
     # 'train_loss_th': 0.05,
@@ -156,7 +156,7 @@ expts = [
     # {'topology': 'random', 'degree': 4, 'label': 'random (degree: 4)', 'local_steps': 0},
     # {'topology': 'random', 'degree': 4, 'label': 'random (degree: 4), IID', 'local_steps': 0, 'data_split': 'no'},
     # {'topology': 'random', 'degree': 7, 'label': 'random (degree: 7)', 'local_steps': 0},
-    {'topology': 'ring', 'label': 'ring', 'local_steps': 0},
+    # {'topology': 'ring', 'label': 'ring', 'local_steps': 0},
     # {'topology': 'ring', 'label': 'ring, IID', 'local_steps': 0, 'data_split': 'no'},
 
 ]

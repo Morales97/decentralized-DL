@@ -183,11 +183,11 @@ def train_mnist(config, expt):
 
 config = {
     'n_nodes': 15,
-    'batch_size': 20,
+    'batch_size': 2, #20,
     'lr': 0.1,
     'steps': 1000,
     'steps_eval': 100,
-    'steps_grad_var': 1,
+    # 'steps_grad_var': 1,
     'data_split': 'yes',     # NOTE 'no' will sample with replacement from the FULL dataset, which will be truly IID
     'same_init': True,
     'small_test_set': True,

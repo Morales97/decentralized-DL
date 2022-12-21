@@ -20,8 +20,8 @@ def get_folder_name(config, root='experiments_mnist/results/'):
         folder += '_p' + str(config['p_label_skew'])
     return folder
 
-def get_sweep_filename(config):
-    filename = 'LR_SWEEP_'
+def get_sweep_filename(config, sweep_of):
+    filename = sweep_of + '_SWEEP_'
     filename += config['topology'] 
     filename += '_local' + str(config['local_steps'])
     filename += '_steps' + str(config['steps'])
@@ -67,7 +67,7 @@ def save_experiment(config, acc=None, test_loss=None, train_loss=None, consensus
 
     return path
 
-def save_lr_sweep(config, steps=None, acc=None, test_loss=None, train_loss=None, path=None, root='experiments_mnist/results/'):
+def save_sweep(config, steps=None, acc=None, test_loss=None, train_loss=None, path=None, root='experiments_mnist/results/', sweep_of='LR'):
     if path is None:
         # folder
         folder = get_folder_name(config, root)
@@ -76,7 +76,7 @@ def save_lr_sweep(config, steps=None, acc=None, test_loss=None, train_loss=None,
             os.makedirs(folder)
 
         # filename
-        filename = get_sweep_filename(config)
+        filename = get_sweep_filename(config, sweep_of)
 
         path = os.path.join(folder, filename)
         if os.path.exists(path):
