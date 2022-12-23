@@ -202,7 +202,7 @@ def train_mnist(config, expt, wandb):
         if (step+1) % config['steps_weight_distance'] == 0 and config['steps_weight_distance'] > 0:
             model = get_average_model(config, device, models)
             dist = compute_weight_distance(config, model, init_model)
-            logger.log_weight_distance(dist)
+            logger.log_weight_distance(step, dist)
 
 
     return logger.accuracies, logger.test_losses, logger.train_losses, None, None, logger.weight_distance
