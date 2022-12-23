@@ -10,7 +10,7 @@ import torch.nn as nn
 import torch.optim as optim
 from models import get_model
 import torch.nn.functional as F
-from utils import save_experiment
+from utils import save_experiment, get_expt_name
 from helpers.gradient_var import *
 from helpers.consensus import *
 
@@ -241,7 +241,7 @@ expt = {'topology': 'ring', 'local_steps': 0}
 if __name__ == '__main__':
 
     if config['wandb']:
-        name = expt['topology'] + '_n' + str(config['n_nodes']) + '_b' + str(config['batch_size']) + '_lr' + str(config['lr'])
+        name = get_expt_name(config, expt)
         wandb.init(name=name, dir='.', config=config, reinit=True, project='testProject', entity='morales97')
         acc, test_loss, train_loss, _, _, _ = train_mnist(config, expt, wandb)
         wandb.finish()
