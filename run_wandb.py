@@ -227,7 +227,7 @@ config = {
     'net': 'convnet',
     'wandb': True,
     'steps_weight_distance': 25,
-    'eval_on_average_model': True,
+    'eval_on_average_model': False,
 }
 
 # expt = {'topology': 'centralized', 'label': 'Fully connected', 'local_steps': 0}
