@@ -240,10 +240,12 @@ expt = {'topology': 'ring', 'local_steps': 0}
 
 if __name__ == '__main__':
 
-    if config['wandb']:
-        name = get_expt_name(config, expt)
-        wandb.init(name=name, dir='.', config=config, reinit=True, project='testProject', entity='morales97')
-        acc, test_loss, train_loss, _, _, _ = train_mnist(config, expt, wandb)
-        wandb.finish()
-    else:
-        acc, test_loss, train_loss, consensus = train_mnist(config, expt, None)
+    for _ in range(3):
+        if config['wandb']:
+            name = get_expt_name(config, expt)
+            wandb.init(name=name, dir='.', config=config, reinit=True, project='testProject', entity='morales97')
+            acc, test_loss, train_loss, _, _, _ = train_mnist(config, expt, wandb)
+            wandb.finish()
+        else:
+            acc, test_loss, train_loss, consensus = train_mnist(config, expt, None)
+    
