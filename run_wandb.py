@@ -279,7 +279,7 @@ if __name__ == '__main__':
         acc, test_loss, train_loss, _, _, _ = train_mnist(config, expt2, wandb)
         wandb.finish()
 
-        name = get_expt_name(config, expt3)
+        name = get_expt_name(config, expt3, warmup=True)
         wandb.init(name=name, dir='.', config={**config, **expt3}, reinit=True, project='testProject', entity='morales97')
         acc, test_loss, train_loss, _, _, _ = train_mnist(config, expt3, wandb)
         wandb.finish()
@@ -294,7 +294,7 @@ if __name__ == '__main__':
         acc, test_loss, train_loss, _, _, _ = train_mnist(config2, expt2, wandb)
         wandb.finish()
 
-        name = get_expt_name(config2, expt3)
+        name = get_expt_name(config2, expt3, warmup=True)
         wandb.init(name=name, dir='.', config={**config2, **expt3}, reinit=True, project='testProject', entity='morales97')
         acc, test_loss, train_loss, _, _, _ = train_mnist(config2, expt3, wandb)
         wandb.finish()
