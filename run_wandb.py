@@ -265,19 +265,21 @@ expt = {'topology': 'ring', 'local_steps': 0}
 
 if __name__ == '__main__':
 
-    for _ in range(5):
-        if config['wandb']:
-            name = get_expt_name(config, expt)
-            wandb.init(name=name, dir='.', config={**config, **expt}, reinit=True, project='testProject', entity='morales97')
-            acc, test_loss, train_loss, _, _, _ = train_mnist(config, expt, wandb)
-            wandb.finish()
-        else:
-            acc, test_loss, train_loss, consensus = train_mnist(config, expt, None)
+    for i in range(5):
 
-        name = get_expt_name(config, expt2)
-        wandb.init(name=name, dir='.', config={**config, **expt2}, reinit=True, project='testProject', entity='morales97')
-        acc, test_loss, train_loss, _, _, _ = train_mnist(config, expt2, wandb)
-        wandb.finish()
+        if i > 0:
+            if config['wandb']:
+                name = get_expt_name(config, expt)
+                wandb.init(name=name, dir='.', config={**config, **expt}, reinit=True, project='testProject', entity='morales97')
+                acc, test_loss, train_loss, _, _, _ = train_mnist(config, expt, wandb)
+                wandb.finish()
+            else:
+                acc, test_loss, train_loss, consensus = train_mnist(config, expt, None)
+
+            name = get_expt_name(config, expt2)
+            wandb.init(name=name, dir='.', config={**config, **expt2}, reinit=True, project='testProject', entity='morales97')
+            acc, test_loss, train_loss, _, _, _ = train_mnist(config, expt2, wandb)
+            wandb.finish()
 
         name = get_expt_name(config, expt3, warmup=True)
         wandb.init(name=name, dir='.', config={**config, **expt3}, reinit=True, project='testProject', entity='morales97')
