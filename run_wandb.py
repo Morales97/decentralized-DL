@@ -149,7 +149,7 @@ def train_mnist(config, expt, wandb):
     logger = Logger(wandb)
 
     ts_total = time.time()
-    ts_epoch = time.time()
+    ts_steps_eval = time.time()
     for step in range(config['steps']):
         
         if config['data_split'] == 'yes':
