@@ -25,6 +25,15 @@ def compute_node_disagreement(config, models, n_nodes):
     
     return L2_diff
 
+def compute_weight_distance(config, model, init_model):
+    '''weight distance (L2) between current model and origin'''
+    sd = model.state_dict()
+    init_sd = init_model.state_dict()
+    dist = 0
+    for key in sd.keys():
+        dist += torch.sum((sd[key] - init_sd[key])**2)
+    return torch.sqrt(dist).item()
+
 def compute_node_disagreement_per_layer(config, models, n_nodes):
     ''' Does first layer learn generic features that don't disagree as much? '''
     assert config['net'] == 'convnet'

@@ -1,0 +1,48 @@
+apiVersion: run.ai/v1
+kind: RunaiJob
+metadata:
+  name: jobtest
+  labels:
+    priorityClassName: "build" # Interactive Job if present, for Train Job REMOVE this line
+    user: danmoral
+spec:
+  template:
+    metadata:
+      labels:
+        user: danmoral # User e.g. firstname.lastname
+    spec:
+      hostIPC: true
+      schedulerName: runai-scheduler
+      restartPolicy: Never
+      securityContext:
+        runAsUser: 226647 # insert uid found in people.epfl in admistrative data
+        runAsGroup: 11169 # insert gid as found in people.epfl in admistrative data
+        fsGroup: 11169
+      containers:
+      - name: container-name
+        image: ic-registry.epfl.ch/mlo/base:ubuntu20.04-cuda113-cudnn8
+        workingDir : /home/danmoral
+        command: ["/bin/bash"]
+        args:
+        - "-c"
+        - "sleep infinity"
+        resources:
+          limits:
+            nvidia.com/gpu: 1
+        volumeMounts:
+          - mountPath: /mlodata1
+            name: VOLUME_NAME1
+          - mountPath: /mloraw1
+            name: VOLUME_NAME2
+          - mountPath: /scratch
+            name: VOLUME_NAME3
+      volumes:
+        - name: VOLUME_NAME1
+          persistentVolumeClaim:
+            claimName: runai-mlo-danmoral-mlodata1
+        - name: VOLUME_NAME2
+          persistentVolumeClaim:
+            claimName: runai-mlo-danmoral-mloraw1
+        - name: VOLUME_NAME3
+          persistentVolumeClaim:
+            claimName: runai-mlo-danmoral-scratch

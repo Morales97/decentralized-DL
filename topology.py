@@ -3,6 +3,7 @@ import numpy as np
 import pdb
 import torch
 import copy 
+from models import get_model
 
 def get_diff_matrix(expt, num_clients):
     topology = expt['topology']
@@ -94,3 +95,24 @@ def diffuse_params(W, models):
                 for key in keys
             }
         )
+
+def get_average_model(config, device, models):
+    '''Average all models (one all-reduce communication at the end to converte to one only model'''
+    if len(models) == 1:
+        return models[0]
+
+    models_sd = [copy.deepcopy(model.state_dict()) for model in models]
+    model = get_model(config, device)
+    keys = models_sd[0].keys()
+    
+    weights = np.ones(len(models)) / len(models)
+    model.load_state_dict(
+        {
+            key: torch.stack(
+                [weights[j]*models_sd[j][key] for j in range(len(weights))],
+                dim=0,
+            ).sum(0) / weights.sum() 
+            for key in keys
+        }
+    )
+    return model

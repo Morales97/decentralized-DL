@@ -21,6 +21,13 @@ def plot_test_accuracy_vs_epoch(config, expt, accuracies):
     plt.xlabel('Epoch')
     plt.ylabel('Test Accuracy')
 
+def plot_distance_vs_steps(config, expt, distances):
+    steps = np.arange(len(distances))
+    
+    plt.plot(steps, distances, label=expt['label'])
+    plt.xlabel('Steps')
+    plt.ylabel('Weight distance to init')
+
 def plot_train_loss_vs_epoch(config, expt, train_loss):
     epochs = np.arange(config['epochs'])
     # steps = np.arange(config['epochs'] * int(60000 // (config['n_nodes']*config['batch_size'])))
@@ -36,8 +43,9 @@ def plot_train_loss_vs_epoch(config, expt, train_loss):
 
 def accuracy_vs_epoch(config, expts):
     for i in range(len(expts)):
-        accuracies, loss_test, loss_train, _, _= train_mnist(config, expts[i])
+        accuracies, loss_test, loss_train, _, _, weight_dist = train_mnist(config, expts[i])
         plot_test_accuracy_vs_epoch(config, expts[i], accuracies)
+        # plot_distance_vs_steps(config, expts[i], weight_dist)
         # plot_train_loss_vs_epoch(config, expts[i], loss_train)
     plt.legend()
     plt.show()
@@ -87,36 +95,41 @@ def node_disagreement_per_layer(config, expts):
 def plot_all(config, expts):
     accuracies = []
     test_losses = []
+    train_losses = []
+    distances = []
     steps = []
     consensus = []
     for i in range(len(expts)):
         new_config = {**config, **expts[i]} 
-        acc, loss, _, node_disagreement, _ = train_mnist(new_config, expts[i])
+        acc, loss, train_loss, node_disagreement, _, weight_dist = train_mnist(new_config, expts[i])
         s = np.arange(1, len(acc)+1)*config['steps_eval']
         accuracies.append(acc)
         test_losses.append(loss)
+        train_losses.append(train_loss)
+        distances.append(weight_dist)
         steps.append(s)
         consensus.append(node_disagreement)
     
-    fig, axes = plt.subplots(1, 2, figsize=(10,5))
-    axes[0].set_xlabel('Steps')
-    axes[0].set_ylabel('Test Accuracy')
-    axes[1].set_xlabel('Steps')
-    axes[1].set_ylabel('Test Loss')
+    fig, axes = plt.subplots(2, 2, figsize=(13,7), dpi=100)
+    axes[0, 0].set_xlabel('Steps')
+    axes[0, 0].set_ylabel('Test Accuracy')
+    axes[0, 1].set_xlabel('Steps')
+    axes[0, 1].set_ylabel('Test Loss')
+    axes[1, 0].set_xlabel('Steps')
+    axes[1, 0].set_ylabel('Train Loss')
+    axes[1, 1].set_xlabel('Steps')
+    axes[1, 1].set_ylabel('Weight distance to init')
 
     for i in range(len(expts)):
-        axes[0].plot(steps[i], accuracies[i], label=expts[i]['label'])
-        axes[1].plot(steps[i], test_losses[i], label=expts[i]['label'])
+        axes[0, 0].plot(steps[i], accuracies[i], label=expts[i]['label'])
+        axes[0, 1].plot(steps[i], test_losses[i], label=expts[i]['label'])
+        train_l = np.array(train_losses[i]).reshape(10, -1).mean(axis=0)
+        axes[1, 0].plot(np.arange(len(train_l))*10, train_l, label=expts[i]['label'])
+        axes[1, 1].plot(np.arange(len(distances[i]))*25, distances[i], label=expts[i]['label'])
     
     plt.legend()
     plt.show()
 
-    for i in range(len(expts)):
-        plt.plot(np.arange(len(consensus[i])), consensus[i], label=expts[i]['label'])
-    plt.xlabel('Iterations')
-    plt.ylabel('Consensus')
-    plt.legend()
-    plt.show()
 
 def gradient_variance(config, expts):
     # fig, axes = plt.subplots(1, 3, figsize=(17,5))
@@ -167,22 +180,23 @@ def gradient_variance2(config, expts):
 
 config = {
     'n_nodes': 15,      # at 15 nodes and batch_size 20, epochs are 200 steps
-    'batch_size': 20,
-    'lr': 0.1,
-    'steps': 900,
-    'steps_eval': 300, #50,  
-    'steps_grad_var': 25,
+    'batch_size': 16,
+    'lr': 0.15,
+    'steps': 2000,
+    'steps_eval': 200, #50,  
+    'steps_weight_distance': 25,
     'data_split': 'yes',     # NOTE 'no' will sample with replacement from the FULL dataset, which will be truly IID
     'same_init': True,
     'small_test_set': True,
     'p_label_skew': 0,
-    # 'net': 'mlp',
     'net': 'convnet',
     # 'freeze_step': 200,
+    'eval_on_average_model': True,
 }
 
 expts = [
-    # {'topology': 'centralized', 'label': 'Fully connected', 'local_steps': 0},
+    {'topology': 'centralized', 'label': 'Centralized, LR warm up (100)', 'local_steps': 0, 'warmup_steps': 100},
+    {'topology': 'centralized', 'label': 'Centralized', 'local_steps': 0},
     # {'topology': 'centralized', 'label': 'Fully connected, sample with replacement', 'local_steps': 0},
     # {'topology': 'solo', 'label': 'solo', 'local_steps': 0},
     # {'topology': 'fully_connected', 'label': 'Fully connected', 'local_steps': 0},
@@ -209,9 +223,9 @@ expts = [
     # {'topology': 'ring', 'label': 'ring, batch: 4', 'local_steps': 0, 'batch_size': 4},
     # {'topology': 'ring', 'label': 'ring, batch: 16', 'local_steps': 0, 'batch_size': 16},
     # {'topology': 'ring', 'label': 'ring, batch: 32', 'local_steps': 0, 'bathc_size': 32},
-    {'topology': 'ring', 'label': 'ring, lr: 0.1', 'local_steps': 0},
-    {'topology': 'ring', 'label': 'ring, lr: 0.1, p=0.5', 'local_steps': 0, 'p_label_skew': 0.5},
-    {'topology': 'ring', 'label': 'ring, lr: 0.1, p=1', 'local_steps': 0, 'p_label_skew': 1},
+    {'topology': 'ring', 'label': 'ring', 'local_steps': 0},
+    # {'topology': 'ring', 'label': 'ring, lr: 0.1, p=0.5', 'local_steps': 0, 'p_label_skew': 0.5},
+    # {'topology': 'ring', 'label': 'ring, lr: 0.1, p=1', 'local_steps': 0, 'p_label_skew': 1},
     # {'topology': 'ring', 'label': 'ring, lr: 0.07', 'local_steps': 0, 'lr': 0.07},
     # {'topology': 'ring', 'label': 'ring, lr: 0.04', 'local_steps': 0, 'lr': 0.04},
     # {'topology': 'ring', 'label': 'ring, lr: 0.8', 'local_steps': 0, 'lr': 0.8},
@@ -227,7 +241,8 @@ if __name__ == '__main__':
     ts = time.time()
     # acc_and_loss_vs_steps(config, expts)
     # node_disagreement_per_layer(config, expts)
-    # plot_all(config, expts)
+    plot_all(config, expts)
     # gradient_variance(config, expts)
-    gradient_variance2(config, expts)
+    # gradient_variance2(config, expts)
+    #accuracy_vs_epoch(config, expts)
     print('** TOTAL TIME: %.2f min **' % ((time.time()-ts)/60))

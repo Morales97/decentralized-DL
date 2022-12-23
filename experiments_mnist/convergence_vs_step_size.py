@@ -17,7 +17,7 @@ def sweep_step_sizes(config, expt, early_stop=False, save_expts=False, do_save_s
     for lr in config['lrs']:
         config['lr'] = lr
         print('*** %s, lr: %.3f ***' % (expt['label'], lr))
-        accuracies, test_losses, train_losses, _, _ = train_mnist(config, expt)
+        accuracies, test_losses, train_losses, _, _, _ = train_mnist(config, expt)
         if save_expts:
             save_experiment(config, accuracies, test_losses, train_losses)
 
@@ -27,7 +27,7 @@ def sweep_step_sizes(config, expt, early_stop=False, save_expts=False, do_save_s
         arr_steps.append(steps)
         arr_accuracy.append(accuracies[-1])
         arr_test_loss.append(test_losses[-1])
-        train_loss = np.array(train_losses[-np.maximum(50, config['steps_eval']):]).mean()
+        train_loss = np.array(train_losses[-25:]).mean()
         arr_train_loss.append(train_loss)
 
     if do_save_sweep:
@@ -117,18 +117,15 @@ def get_sweep_file_paths(config, expts):
 
 config = {
     'n_nodes': 15,      # at 15 nodes and batch_size 20, epochs are 200 steps
-    'batch_size': 40,
-    'steps': 500, 
-    # 'steps': 1000, 
-    # 'steps': 1000, 
-    'steps_eval': 500,  
+    'batch_size': 20,
+    'steps': 1000, 
+    # 'steps': 2000, 
     # 'steps_eval': 2000,  
-    # 'steps_eval': 1000,  
+    'steps_eval': 1000,  
     'data_split': 'yes',     # NOTE 'no' will sample with replacement from the FULL dataset, which will be truly IID
     'same_init': True,
     'small_test_set': False,
-    # 'lrs': list(np.logspace(np.log10(0.04),np.log10(0.8), 7)),
-    'lrs': list(np.logspace(np.log10(0.04),np.log10(2), 7)),
+    'lrs': list(np.logspace(np.log10(0.04),np.log10(0.8), 7)),
     'p_label_skew': 0,
     # 'acc_th': 0.975,
     # 'train_loss_th': 0.05,
@@ -136,6 +133,7 @@ config = {
     # 'net': 'mlp',
     'net': 'convnet',
     # 'net': 'convnet_op',
+    'eval_on_average_model': True,
 }
 
 expts = [
