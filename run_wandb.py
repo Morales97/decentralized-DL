@@ -8,7 +8,6 @@ import time
 import torch
 import torch.nn as nn
 import torch.optim as optim
-from torchsummary import summary
 from models import get_model
 import torch.nn.functional as F
 from utils import save_experiment
@@ -50,7 +49,59 @@ def worker_local_step(model, opt, train_loader_iter, device):
 
     return loss.item()
 
+class Logger:
+    def __init__(self, wandb):
+        self.wandb = wandb
+        self.accuracies = []
+        self.accuracies_per_node = []
+        self.test_losses = []
+        self.test_losses_per_node = []
+        self.train_losses = []
+        self.weight_distance = []
 
+    def log_step(self, step, train_loss, ts_total, ts_step):
+        self.train_losses.append(train_loss)
+        log = {
+            'Train Loss': train_loss,
+            'Iteration': step,
+            'Total time': time.time() - ts_total,
+            'Time/step': time.time() - ts_step,
+            }
+        self.wandb.log(log)
+
+    def log_eval(self, step, acc, test_loss, ts_eval, ts_steps_eval):
+        self.accuracies.append(acc)
+        self.test_losses.append(test_loss)
+        log = {
+            'Iteration': step,
+            'Test Accuracy': acc,
+            'Test Loss': test_loss,
+            'Time/eval': time.time() - ts_eval,
+            'Time since last eval': time.time() - ts_steps_eval
+            }
+        self.wandb.log(log)
+
+    def log_eval_per_node(self, step, acc, test_loss, acc_nodes, loss_nodes, ts_eval, ts_steps_eval):
+        self.accuracies.append(acc)
+        self.test_losses.append(test_loss)
+        log = {
+            'Iteration': step,
+            'Test Accuracy': acc,
+            'Test Loss': test_loss,
+            'Test Accuracy per node': acc_nodes,
+            'Test Loss per node': loss_nodes,
+            'Time/eval': time.time() - ts_eval,
+            'Time since last eval': time.time() - ts_steps_eval
+            }
+        self.wandb.log(log)
+
+    def log_weight_distance(self, step, weight_dist):
+        self.weight_distance.append(weight_dist)
+        log = {
+            'Iteration': step,
+            'Weight distance to init': weight_dist,
+        }
+        self.wandb.log(log)
 
 ########################################################################################
 
@@ -88,19 +139,17 @@ def train_mnist(config, expt, wandb):
     if config['same_init']:
         for i in range(1, len(models)):
             models[i].load_state_dict(models[0].state_dict())
+    if config['steps_weight_distance'] > 0:
+        init_model = get_model(config, device)
+        init_model.load_state_dict(models[0].state_dict())
 
     comm_matrix = get_diff_matrix(expt, n_nodes)
     # print(comm_matrix)
 
-    accuracies = []
-    test_losses = []
-    train_losses = []
-    node_disagreement = []
-    gradient_var = []
-    gradient_coh = []
+    logger = Logger(wandb)
 
     ts_total = time.time()
-    ts = time.time()
+    ts_epoch = time.time()
     for step in range(config['steps']):
         
         if config['data_split'] == 'yes':
@@ -110,34 +159,19 @@ def train_mnist(config, expt, wandb):
 
         # local update
         train_loss = 0
+        ts_step = time.time()
         for i in range(len(models)):
             if config['data_split'] == 'yes':
                 train_loss += worker_local_step(models[i], opts[i], train_loader_iter[i], device)
             elif config['data_split'] == 'no':
                 train_loss += worker_local_step(models[i], opts[i], iter(train_loader), device)
-        train_losses.append(train_loss/n_nodes) 
-        
-        # if 'train_loss_th' in config.keys() and train_losses[-1] < config['train_loss_th']:
-        #     return accuracies, test_losses, train_losses, None
+        train_loss /= n_nodes
+        logger.log_step(step, train_loss, ts_total, ts_step)
 
         # gossip
         diffuse(comm_matrix, models, step, expt)
 
-        if decentralized:
-            # L2_diff = compute_node_disagreement(config, models, n_nodes)
-            # node_disagreement.append(L2_diff)
-            pass
-
-        if 'steps_grad_var' in config.keys() and (step+1) % config['steps_grad_var'] == 0:
-
-            if config['data_split'] == 'yes':
-                grad_var, grad_coh = compute_var_and_coh(config, models, opts, train_loader_iter, train_loader, test_loader, device)
-            elif config['data_split'] == 'no':
-                grad_var, grad_coh = compute_var_and_coh_iid(config, models, opts, train_loader, device)
-            gradient_var.append(grad_var)
-            gradient_coh.append(grad_coh)
-
-        # evaluate
+        # evaluate per node
         if not config['eval_on_average_model'] or not decentralized:
             if (step+1) % config['steps_eval'] == 0:
                 acc_workers = []
@@ -147,25 +181,12 @@ def train_mnist(config, expt, wandb):
                     test_loss, acc = evaluate_model(model, test_loader, device)
                     acc_workers.append(acc)
                     loss_workers.append(test_loss)
-                accuracies.append(float(np.array(acc_workers).mean()*100))
-                test_losses.append(np.array(loss_workers).mean())
-                print('Step % d -- Test accuracy: %.2f -- Test loss: %.3f -- Train loss: %.3f -- Time (total/last/eval): %.2f / %.2f / %.2f s' % (step, accuracies[-1], test_losses[-1], train_losses[-1], time.time() - ts_total, time.time() - ts, time.time() - ts_eval))     
-                ts = time.time()
-                # print('time evaluating: %.2f' % (time.time() - ts_eval))
                 
-                # stop if threhsold reached
-                # if 'acc_th' in config.keys() and config['acc_th'] < acc:
-                #     return accuracies, test_losses, train_losses, None
-                # if 'loss_th' in config.keys() and test_loss < config['loss_th']:
-                #     return accuracies, test_losses, train_losses, None
-
-                if wandb is not None:
-                    log = {
-                        'acc': accuracies[-1],
-                        'test_loss': test_losses[-1], 
-                        'train_loss': train_losses[-1],
-                        }
-                    wandb.log(log)
+                acc = float(np.array(acc_workers).mean()*100)
+                test_loss = np.array(loss_workers).mean()
+                logger.log_eval_per_node(step, acc, test_loss, acc_workers, loss_workers, ts_eval, ts_steps_eval)
+                print('Step % d -- Test accuracy: %.2f -- Test loss: %.3f -- Train loss: %.3f -- Time (total/last/eval): %.2f / %.2f / %.2f s' % (step, acc, test_loss, train_loss, time.time() - ts_total, time.time() - ts_steps_eval, time.time() - ts_eval))     
+                ts_steps_eval = time.time()
 
         # evaluate on averaged model
         else:
@@ -173,12 +194,18 @@ def train_mnist(config, expt, wandb):
                 ts_eval = time.time()
                 model = get_average_model(config, device, models)
                 test_loss, acc = evaluate_model(model, test_loader, device)
-                accuracies.append(float(acc*100))
-                test_losses.append(test_loss)
-                print('Step % d -- Test accuracy: %.2f -- Test loss: %.3f -- Train loss: %.3f -- Time (total/last/eval): %.2f / %.2f / %.2f s' % (step, float(acc*100), test_loss, train_losses[-1], time.time() - ts_total, time.time() - ts, time.time() - ts_eval))     
-                ts = time.time()
+                logger.log_eval(step, float(acc*100), test_loss, ts_eval, ts_steps_eval)
+                print('Step % d -- Test accuracy: %.2f -- Test loss: %.3f -- Train loss: %.3f -- Time (total/last/eval): %.2f / %.2f / %.2f s' % (step, float(acc*100), test_loss, train_loss, time.time() - ts_total, time.time() - ts_steps_eval, time.time() - ts_eval))     
+                ts_steps_eval = time.time()
 
-    return accuracies, test_losses, train_losses, node_disagreement, gradient_var
+        # weight distance to init
+        if (step+1) % config['steps_weight_distance'] == 0 and config['steps_weight_distance'] > 0:
+            model = get_average_model(config, device, models)
+            dist = compute_weight_distance(config, model, init_model)
+            logger.log_weight_distance(dist)
+
+
+    return logger.accuracies, logger.test_losses, logger.train_losses, None, None, logger.weight_distance
 
 
 config = {
@@ -195,6 +222,7 @@ config = {
     # 'net': 'mlp', # 'convnet'
     'net': 'convnet',
     'wandb': True,
+    'steps_weight_distance': 25,
 }
 
 # expt = {'topology': 'centralized', 'label': 'Fully connected', 'local_steps': 0}
@@ -208,8 +236,9 @@ expt = {'topology': 'ring', 'local_steps': 0}
 if __name__ == '__main__':
 
     if config['wandb']:
-        wandb.init(name='test', dir='.', config=config, reinit=True, project='testProject', entity='morales97')
-        acc, test_loss, train_loss, consensus = train_mnist(config, expt, wandb)
+        name = expt['topology'] + '_n' + config['n_nodes'] + '_b' + config['batch_size'] + '_lr' + config['lr']
+        wandb.init(name=name, dir='.', config=config, reinit=True, project='testProject', entity='morales97')
+        acc, test_loss, train_loss, _, _, _ = train_mnist(config, expt, wandb)
         wandb.finish()
     else:
         acc, test_loss, train_loss, consensus = train_mnist(config, expt, None)

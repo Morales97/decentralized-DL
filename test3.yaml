@@ -1,8 +1,7 @@
 apiVersion: run.ai/v1
 kind: RunaiJob
 metadata:
-  #name: jobtest3
-  name: jobtest4
+  name: jobtest5
   labels:
     priorityClassName: "build" # Interactive Job if present, for Train Job REMOVE this line
     user: danmoral
@@ -21,8 +20,8 @@ spec:
         fsGroup: 11169
       containers:
       - name: container-name
-        #image: ic-registry.epfl.ch/mlo/base:ubuntu20.04-cuda113-cudnn8
-        image: ic-registry.epfl.ch/mlo/dani-mlo:v1
+        image: ic-registry.epfl.ch/mlo/base:ubuntu20.04-cuda113-cudnn8
+        #image: ic-registry.epfl.ch/mlo/dani-mlo:v1
         workingDir : /home/danmoral
         command: ["/bin/bash"]
         args:
@@ -33,8 +32,8 @@ spec:
             nvidia.com/gpu: 1
         volumeMounts:
           - mountPath: /mlodata1
-            name: VOLUME_NAME1
+            name: mlodata1
       volumes:
-        - name: VOLUME_NAME1
+        - name: mlodata1
           persistentVolumeClaim:
             claimName: runai-mlo-danmoral-mlodata1

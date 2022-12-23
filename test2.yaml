@@ -20,7 +20,7 @@ spec:
         fsGroup: 11169
       containers:
       - name: container-name
-        image: ic-registry.epfl.ch/mlo/base:ubuntu20.04-cuda113-cudnn8
+        image: ic-registry.epfl.ch/mlo/dani-mlo:v1
         workingDir : /home/danmoral
         command: ["/bin/bash"]
         args:
@@ -31,18 +31,18 @@ spec:
             nvidia.com/gpu: 1
         volumeMounts:
           - mountPath: /mlodata1
-            name: VOLUME_NAME1
+            name: mlodata1
           - mountPath: /mloraw1
-            name: VOLUME_NAME2
+            name: mloraw1
           - mountPath: /scratch
-            name: VOLUME_NAME3
+            name: scratch
       volumes:
-        - name: VOLUME_NAME1
+        - name: mlodata1
           persistentVolumeClaim:
             claimName: runai-mlo-danmoral-mlodata1
-        - name: VOLUME_NAME2
+        - name: mloraw1
           persistentVolumeClaim:
             claimName: runai-mlo-danmoral-mloraw1
-        - name: VOLUME_NAME3
+        - name: scratch
           persistentVolumeClaim:
             claimName: runai-mlo-danmoral-scratch

@@ -195,8 +195,8 @@ config = {
 }
 
 expts = [
-    {'topology': 'centralized', 'label': 'Centralized, LR warm up (100)', 'local_steps': 0, 'warmup_steps': 100},
-    {'topology': 'centralized', 'label': 'Centralized', 'local_steps': 0},
+    #{'topology': 'centralized', 'label': 'Centralized, LR warm up (100)', 'local_steps': 0, 'warmup_steps': 100},
+    #{'topology': 'centralized', 'label': 'Centralized', 'local_steps': 0},
     # {'topology': 'centralized', 'label': 'Fully connected, sample with replacement', 'local_steps': 0},
     # {'topology': 'solo', 'label': 'solo', 'local_steps': 0},
     # {'topology': 'fully_connected', 'label': 'Fully connected', 'local_steps': 0},
