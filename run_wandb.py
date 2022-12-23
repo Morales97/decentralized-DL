@@ -236,7 +236,7 @@ expt = {'topology': 'ring', 'local_steps': 0}
 if __name__ == '__main__':
 
     if config['wandb']:
-        name = expt['topology'] + '_n' + config['n_nodes'] + '_b' + config['batch_size'] + '_lr' + config['lr']
+        name = expt['topology'] + '_n' + str(config['n_nodes']) + '_b' + str(config['batch_size']) + '_lr' + str(config['lr'])
         wandb.init(name=name, dir='.', config=config, reinit=True, project='testProject', entity='morales97')
         acc, test_loss, train_loss, _, _, _ = train_mnist(config, expt, wandb)
         wandb.finish()
