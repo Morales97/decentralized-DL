@@ -59,21 +59,23 @@ class Logger:
         self.train_losses = []
         self.weight_distance = []
 
-    def log_step(self, step, train_loss, ts_total, ts_step):
+    def log_step(self, step, epoch, train_loss, ts_total, ts_step):
         self.train_losses.append(train_loss)
         log = {
             'Train Loss': train_loss,
             'Iteration': step,
+            'Epoch': epoch,
             'Total time': time.time() - ts_total,
             'Time/step': time.time() - ts_step,
             }
         self.wandb.log(log)
 
-    def log_eval(self, step, acc, test_loss, ts_eval, ts_steps_eval):
+    def log_eval(self, step, epoch, acc, test_loss, ts_eval, ts_steps_eval):
         self.accuracies.append(acc)
         self.test_losses.append(test_loss)
         log = {
             'Iteration': step,
+            'Epoch': epoch,
             'Test Accuracy': acc,
             'Test Loss': test_loss,
             'Time/eval': time.time() - ts_eval,
@@ -81,11 +83,12 @@ class Logger:
             }
         self.wandb.log(log)
 
-    def log_eval_per_node(self, step, acc, test_loss, acc_nodes, loss_nodes, acc_avg, loss_avg, ts_eval, ts_steps_eval):
+    def log_eval_per_node(self, step, epoch, acc, test_loss, acc_nodes, loss_nodes, acc_avg, loss_avg, ts_eval, ts_steps_eval):
         self.accuracies.append(acc)
         self.test_losses.append(test_loss)
         log = {
             'Iteration': step,
+            'Epoch': epoch,
             'Test Accuracy': acc,
             'Test Loss': test_loss,
             'Test Accuracy [min]': min(acc_nodes),
@@ -99,10 +102,11 @@ class Logger:
             }
         self.wandb.log(log)
 
-    def log_weight_distance(self, step, weight_dist):
+    def log_weight_distance(self, step, epoch, weight_dist):
         self.weight_distance.append(weight_dist)
         log = {
             'Iteration': step,
+            'Epoch': epoch,
             'Weight distance to init': weight_dist,
         }
         self.wandb.log(log)
@@ -154,6 +158,7 @@ def train_mnist(config, expt, wandb):
 
     ts_total = time.time()
     ts_steps_eval = time.time()
+    epoch = 0
     for step in range(config['steps']):
         
         if config['data_split'] == 'yes':
@@ -169,8 +174,9 @@ def train_mnist(config, expt, wandb):
                 train_loss += worker_local_step(models[i], opts[i], train_loader_iter[i], device)
             elif config['data_split'] == 'no':
                 train_loss += worker_local_step(models[i], opts[i], iter(train_loader), device)
+        epoch += n_nodes*batch_size / 60000
         train_loss /= n_nodes
-        logger.log_step(step, train_loss, ts_total, ts_step)
+        logger.log_step(step, epoch, train_loss, ts_total, ts_step)
 
         # gossip
         diffuse(comm_matrix, models, step, expt)
@@ -190,8 +196,9 @@ def train_mnist(config, expt, wandb):
 
                 model = get_average_model(config, device, models)
                 test_loss_avg, acc_avg = evaluate_model(model, test_loader, device)
-                logger.log_eval_per_node(step, acc, test_loss, acc_workers, loss_workers, acc_avg, test_loss_avg, ts_eval, ts_steps_eval)
-                print('Step % d -- Test accuracy: %.2f -- Test loss: %.3f -- Train loss: %.3f -- Time (total/last/eval): %.2f / %.2f / %.2f s' % (step, acc, test_loss, train_loss, time.time() - ts_total, time.time() - ts_steps_eval, time.time() - ts_eval))     
+                logger.log_eval_per_node(step, epoch, acc, test_loss, acc_workers, loss_workers, acc_avg, test_loss_avg, ts_eval, ts_steps_eval)
+                # print('Step % d -- Test accuracy: %.2f -- Test loss: %.3f -- Train loss: %.3f -- Time (total/last/eval): %.2f / %.2f / %.2f s' % (step, acc, test_loss, train_loss, time.time() - ts_total, time.time() - ts_steps_eval, time.time() - ts_eval))     
+                print('Epoch %.3f -- Test accuracy: %.2f -- Test loss: %.3f -- Train loss: %.3f -- Time (total/last/eval): %.2f / %.2f / %.2f s' % (epoch, acc, test_loss, train_loss, time.time() - ts_total, time.time() - ts_steps_eval, time.time() - ts_eval))     
                 ts_steps_eval = time.time()
 
         # evaluate on averaged model
@@ -200,7 +207,7 @@ def train_mnist(config, expt, wandb):
                 ts_eval = time.time()
                 model = get_average_model(config, device, models)
                 test_loss, acc = evaluate_model(model, test_loader, device)
-                logger.log_eval(step, float(acc*100), test_loss, ts_eval, ts_steps_eval)
+                logger.log_eval(step, epoch, float(acc*100), test_loss, ts_eval, ts_steps_eval)
                 print('Step % d -- Test accuracy: %.2f -- Test loss: %.3f -- Train loss: %.3f -- Time (total/last/eval): %.2f / %.2f / %.2f s' % (step, float(acc*100), test_loss, train_loss, time.time() - ts_total, time.time() - ts_steps_eval, time.time() - ts_eval))     
                 ts_steps_eval = time.time()
 
@@ -208,7 +215,7 @@ def train_mnist(config, expt, wandb):
         if (step+1) % config['steps_weight_distance'] == 0 and config['steps_weight_distance'] > 0:
             model = get_average_model(config, device, models)
             dist = compute_weight_distance(config, model, init_model)
-            logger.log_weight_distance(step, dist)
+            logger.log_weight_distance(step, epoch, dist)
 
 
     return logger.accuracies, logger.test_losses, logger.train_losses, None, None, logger.weight_distance
@@ -216,8 +223,8 @@ def train_mnist(config, expt, wandb):
 
 config = {
     'n_nodes': 15,
-    'batch_size': 20,
-    'lr': 0.1,
+    'batch_size': 32,
+    'lr': 0.3,
     'steps': 1000,
     'steps_eval': 100,
     'data_split': 'yes',     # NOTE 'no' will sample with replacement from the FULL dataset, which will be truly IID
@@ -230,7 +237,25 @@ config = {
     'eval_on_average_model': False,
 }
 
-# expt = {'topology': 'centralized', 'label': 'Fully connected', 'local_steps': 0}
+config2 = {
+    'n_nodes': 15,
+    'batch_size': 64,
+    'lr': 0.6,
+    'steps': 500,
+    'steps_eval': 50,
+    'data_split': 'yes',     # NOTE 'no' will sample with replacement from the FULL dataset, which will be truly IID
+    'same_init': True,
+    'small_test_set': False,
+    'p_label_skew': 0,
+    'net': 'convnet',
+    'wandb': True,
+    'steps_weight_distance': 25,
+    'eval_on_average_model': False,
+}
+
+expt2 = {'topology': 'centralized', 'label': 'Centralized', 'local_steps': 0}
+expt3 = {'topology': 'centralized', 'label': 'Centralized, LR warm up (100)', 'local_steps': 0, 'warmup_steps': 100},
+
 # expt = {'topology': 'solo', 'local_steps': 0}
 # expt = {'topology': 'fully_connected', 'local_steps': 0}
 # expt = {'topology': 'fully_connected', 'local_steps': 50}
@@ -240,12 +265,36 @@ expt = {'topology': 'ring', 'local_steps': 0}
 
 if __name__ == '__main__':
 
-    for _ in range(3):
+    for _ in range(5):
         if config['wandb']:
             name = get_expt_name(config, expt)
-            wandb.init(name=name, dir='.', config=config, reinit=True, project='testProject', entity='morales97')
+            wandb.init(name=name, dir='.', config={**config, **expt}, reinit=True, project='testProject', entity='morales97')
             acc, test_loss, train_loss, _, _, _ = train_mnist(config, expt, wandb)
             wandb.finish()
         else:
             acc, test_loss, train_loss, consensus = train_mnist(config, expt, None)
-    
+
+        name = get_expt_name(config, expt2)
+        wandb.init(name=name, dir='.', config={**config, **expt2}, reinit=True, project='testProject', entity='morales97')
+        acc, test_loss, train_loss, _, _, _ = train_mnist(config, expt2, wandb)
+        wandb.finish()
+
+        name = get_expt_name(config, expt3)
+        wandb.init(name=name, dir='.', config={**config, **expt3}, reinit=True, project='testProject', entity='morales97')
+        acc, test_loss, train_loss, _, _, _ = train_mnist(config, expt3, wandb)
+        wandb.finish()
+
+        name = get_expt_name(config2, expt)
+        wandb.init(name=name, dir='.', config={**config2, **expt}, reinit=True, project='testProject', entity='morales97')
+        acc, test_loss, train_loss, _, _, _ = train_mnist(config2, expt, wandb)
+        wandb.finish()
+
+        name = get_expt_name(config2, expt2)
+        wandb.init(name=name, dir='.', config={**config2, **expt2}, reinit=True, project='testProject', entity='morales97')
+        acc, test_loss, train_loss, _, _, _ = train_mnist(config2, expt2, wandb)
+        wandb.finish()
+
+        name = get_expt_name(config2, expt3)
+        wandb.init(name=name, dir='.', config={**config2, **expt3}, reinit=True, project='testProject', entity='morales97')
+        acc, test_loss, train_loss, _, _, _ = train_mnist(config2, expt3, wandb)
+        wandb.finish()

@@ -5,12 +5,16 @@ import time
 import numpy as np
 import os
 
-def get_expt_name(config, expt):
+def get_expt_name(config, expt, warmup=False):
     if expt['topology'] == 'centralized' or expt['topology'] == 'fully_connected':
         topology = 'FC' 
     else:
         topology = expt['topology']
     name = topology + '_b' + str(config['batch_size']) + '_lr' + str(config['lr'])
+
+    if warmup:
+        name += '_warmup'
+        
     return name
 
 def get_folder_name(config, root='experiments_mnist/results/'):
