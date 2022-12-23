@@ -81,15 +81,19 @@ class Logger:
             }
         self.wandb.log(log)
 
-    def log_eval_per_node(self, step, acc, test_loss, acc_nodes, loss_nodes, ts_eval, ts_steps_eval):
+    def log_eval_per_node(self, step, acc, test_loss, acc_nodes, loss_nodes, acc_avg, loss_avg, ts_eval, ts_steps_eval):
         self.accuracies.append(acc)
         self.test_losses.append(test_loss)
         log = {
             'Iteration': step,
             'Test Accuracy': acc,
             'Test Loss': test_loss,
-            'Test Accuracy per node': acc_nodes,
-            'Test Loss per node': loss_nodes,
+            'Test Accuracy [min]': min(acc_nodes),
+            'Test Accuracy [max]': max(acc_nodes),
+            'Test Loss [min]': min(loss_nodes),
+            'Test Loss [max]': max(loss_nodes),
+            'Test Accuracy [avg model]': acc_avg, 
+            'Test Loss [avg model]': loss_avg,
             'Time/eval': time.time() - ts_eval,
             'Time since last eval': time.time() - ts_steps_eval
             }
@@ -181,10 +185,12 @@ def train_mnist(config, expt, wandb):
                     test_loss, acc = evaluate_model(model, test_loader, device)
                     acc_workers.append(acc)
                     loss_workers.append(test_loss)
-                
                 acc = float(np.array(acc_workers).mean()*100)
                 test_loss = np.array(loss_workers).mean()
-                logger.log_eval_per_node(step, acc, test_loss, acc_workers, loss_workers, ts_eval, ts_steps_eval)
+
+                model = get_average_model(config, device, models)
+                test_loss_avg, acc_avg = evaluate_model(model, test_loader, device)
+                logger.log_eval_per_node(step, acc, test_loss, acc_workers, loss_workers, acc_avg, test_loss_avg, ts_eval, ts_steps_eval)
                 print('Step % d -- Test accuracy: %.2f -- Test loss: %.3f -- Train loss: %.3f -- Time (total/last/eval): %.2f / %.2f / %.2f s' % (step, acc, test_loss, train_loss, time.time() - ts_total, time.time() - ts_steps_eval, time.time() - ts_eval))     
                 ts_steps_eval = time.time()
 
@@ -214,15 +220,14 @@ config = {
     'lr': 0.1,
     'steps': 1000,
     'steps_eval': 100,
-    # 'steps_grad_var': 1,
     'data_split': 'yes',     # NOTE 'no' will sample with replacement from the FULL dataset, which will be truly IID
     'same_init': True,
-    'small_test_set': True,
+    'small_test_set': False,
     'p_label_skew': 0,
-    # 'net': 'mlp', # 'convnet'
     'net': 'convnet',
     'wandb': True,
     'steps_weight_distance': 25,
+    'eval_on_average_model': True,
 }
 
 # expt = {'topology': 'centralized', 'label': 'Fully connected', 'local_steps': 0}
