@@ -253,8 +253,8 @@ config2 = {
     'eval_on_average_model': False,
 }
 
-expt2 = {'topology': 'centralized', 'label': 'Centralized', 'local_steps': 0},
-expt3 = {'topology': 'centralized', 'label': 'Centralized, LR warm up (100)', 'local_steps': 0, 'warmup_steps': 100},
+expt2 = {'topology': 'centralized', 'label': 'Centralized', 'local_steps': 0}
+expt3 = {'topology': 'centralized', 'label': 'Centralized, LR warm up (100)', 'local_steps': 0, 'warmup_steps': 100}
 
 # expt = {'topology': 'solo', 'local_steps': 0}
 # expt = {'topology': 'fully_connected', 'local_steps': 0}
