@@ -10,7 +10,7 @@ PATH_LOCAL = './data'
 PATH_CLUSTER = '/mloraw1/danmoral/data'
 
 
-def get_minst_test(path, batch_size, reduce=False, reduce_factor=4):
+def get_mnist_test(path, batch_size, reduce=False, reduce_factor=4):
 
     testdata = datasets.MNIST(path, train=False, transform=transforms.Compose([transforms.ToTensor(),transforms.Normalize((0.1307,), (0.3081,))]))
     if reduce:  # reduce test dataset to speed up iterative experiments
@@ -34,7 +34,7 @@ def get_mnist_iid(path, batch_size, small_test_set):
     sampler = data.RandomSampler(traindata, replacement=True, num_samples=batch_size)   # NOTE I think num_samples is the total amount of samples to be sampled
     train_loader = data.DataLoader(traindata, sampler=sampler, batch_size=batch_size)
 
-    test_loader = get_minst_test(32, reduce=small_test_set)
+    test_loader = get_mnist_test(path, 32, reduce=small_test_set)
 
     return train_loader, test_loader
 
@@ -49,7 +49,7 @@ def get_mnist_split(path, n_nodes, batch_size, small_test_set):
     traindata_split = data.random_split(traindata, [int(traindata.data.shape[0] / n_nodes) for _ in range(n_nodes)])
     train_loader = [data.DataLoader(x, batch_size=batch_size, shuffle=True) for x in traindata_split]
 
-    test_loader = get_minst_test(32, reduce=small_test_set)
+    test_loader = get_mnist_test(path, 32, reduce=small_test_set)
 
     return train_loader, test_loader
 
@@ -135,6 +135,6 @@ def get_heterogeneous_mnist(path, n_nodes, batch_size, p, small_test_set):
         print('Samples per class (at each node): ' + str(samples_node))
     print('Total samples used per class: ' + str(counts))
 
-    test_loader = get_minst_test(32, reduce=small_test_set)
+    test_loader = get_mnist_test(path, 32, reduce=small_test_set)
 
     return train_loader, test_loader
