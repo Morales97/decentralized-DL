@@ -20,13 +20,11 @@ spec:
       containers:
       - name: container-name
         image: ic-registry.epfl.ch/mlo/dani-mlo:v1
-        workingDir : /mlodata1/danmoral
+        workingDir : /mlodata1/danmoral/decentralized-DL
         command: ["/bin/bash"]
         args:
         - "-c"
-        - "cd decentralized-DL"
-        - "git pull"
-        - "run_wandb.py"
+        - "echo Hello World && pip install torchsummary && pip install wandb && python run_wandb.py"
         resources:
           limits:
             nvidia.com/gpu: 1

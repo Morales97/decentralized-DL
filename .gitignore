@@ -1,2 +1,3 @@
 /data/*
 experiments_mnist/results/*
+train_job.yaml
