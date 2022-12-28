@@ -223,9 +223,9 @@ def train_mnist(config, expt, wandb):
 
 config = {
     'n_nodes': 15,
-    'batch_size': 32,
-    'lr': 0.3,
-    'steps': 5000,
+    'batch_size': 16,
+    'lr': 0.15,
+    'steps': 2000,
     'steps_eval': 100,
     'data_split': 'yes',     # NOTE 'no' will sample with replacement from the FULL dataset, which will be truly IID
     'same_init': True,
@@ -250,9 +250,19 @@ expt = {'topology': 'ring', 'local_steps': 0}
 
 if __name__ == '__main__':
 
-    #for i in range(5):
+    for i in range(5):
 
-    name = get_expt_name(config, expt2)
-    wandb.init(name=name, dir='.', config={**config, **expt2}, reinit=True, project='MLO-MNIST', entity='morales97')
-    acc, test_loss, train_loss, _, _, _ = train_mnist(config, expt2, wandb)
-    wandb.finish()
+        name = get_expt_name(config, expt)
+        wandb.init(name=name, dir='.', config={**config, **expt}, reinit=True, project='MLO-MNIST', entity='morales97')
+        acc, test_loss, train_loss, _, _, _ = train_mnist(config, expt, wandb)
+        wandb.finish()
+
+        name = get_expt_name(config, expt2)
+        wandb.init(name=name, dir='.', config={**config, **expt2}, reinit=True, project='MLO-MNIST', entity='morales97')
+        acc, test_loss, train_loss, _, _, _ = train_mnist(config, expt2, wandb)
+        wandb.finish()
+
+        name = get_expt_name(config, expt3)
+        wandb.init(name=name, dir='.', config={**config, **expt3}, reinit=True, project='MLO-MNIST', entity='morales97')
+        acc, test_loss, train_loss, _, _, _ = train_mnist(config, expt3, wandb)
+        wandb.finish()
