@@ -239,10 +239,10 @@ config = {
 
 config2 = {
     'n_nodes': 15,
-    'batch_size': 64,
-    'lr': 0.6,
-    'steps': 500,
-    'steps_eval': 50,
+    'batch_size': 15,
+    'lr': 0.15,
+    'steps': 2000,
+    'steps_eval': 200,
     'data_split': 'yes',     # NOTE 'no' will sample with replacement from the FULL dataset, which will be truly IID
     'same_init': True,
     'small_test_set': False,
@@ -267,36 +267,17 @@ if __name__ == '__main__':
 
     for i in range(5):
 
-        if i > 0:
-            if config['wandb']:
-                name = get_expt_name(config, expt)
-                wandb.init(name=name, dir='.', config={**config, **expt}, reinit=True, project='testProject', entity='morales97')
-                acc, test_loss, train_loss, _, _, _ = train_mnist(config, expt, wandb)
-                wandb.finish()
-            else:
-                acc, test_loss, train_loss, consensus = train_mnist(config, expt, None)
-
-            name = get_expt_name(config, expt2)
-            wandb.init(name=name, dir='.', config={**config, **expt2}, reinit=True, project='testProject', entity='morales97')
-            acc, test_loss, train_loss, _, _, _ = train_mnist(config, expt2, wandb)
-            wandb.finish()
-
-        name = get_expt_name(config, expt3, warmup=True)
-        wandb.init(name=name, dir='.', config={**config, **expt3}, reinit=True, project='testProject', entity='morales97')
-        acc, test_loss, train_loss, _, _, _ = train_mnist(config, expt3, wandb)
-        wandb.finish()
-
         name = get_expt_name(config2, expt)
-        wandb.init(name=name, dir='.', config={**config2, **expt}, reinit=True, project='testProject', entity='morales97')
+        wandb.init(name=name, dir='.', config={**config2, **expt}, reinit=True, project='MLO-MNIST', entity='morales97')
         acc, test_loss, train_loss, _, _, _ = train_mnist(config2, expt, wandb)
         wandb.finish()
 
         name = get_expt_name(config2, expt2)
-        wandb.init(name=name, dir='.', config={**config2, **expt2}, reinit=True, project='testProject', entity='morales97')
+        wandb.init(name=name, dir='.', config={**config2, **expt2}, reinit=True, project='MLO-MNIST', entity='morales97')
         acc, test_loss, train_loss, _, _, _ = train_mnist(config2, expt2, wandb)
         wandb.finish()
 
         name = get_expt_name(config2, expt3, warmup=True)
-        wandb.init(name=name, dir='.', config={**config2, **expt3}, reinit=True, project='testProject', entity='morales97')
+        wandb.init(name=name, dir='.', config={**config2, **expt3}, reinit=True, project='MLO-MNIST', entity='morales97')
         acc, test_loss, train_loss, _, _, _ = train_mnist(config2, expt3, wandb)
         wandb.finish()

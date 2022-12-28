@@ -1,7 +1,7 @@
 apiVersion: run.ai/v1
 kind: RunaiJob
 metadata:
-  name: jobtest 
+  name: my-job
   labels:
     priorityClassName: "build" # Interactive Job if present, for Train Job REMOVE this line
     user: danmoral
@@ -25,21 +25,24 @@ spec:
         command: ["/bin/bash"]
         args:
         - "-c"
-        - "sleep 600"
-
+        - "sleep infinity"
         resources:
           limits:
             nvidia.com/gpu: 1
         volumeMounts:
           - mountPath: /mlodata1
             name: mlodata1
-        #  - mountPath: /MOUNTPATH2
-        #    name: VOLUME_NAME2
+          - mountPath: /mloraw1
+            name: mloraw1
+          - mountPath: /scratch
+            name: scratch
       volumes:
         - name: mlodata1
           persistentVolumeClaim:
-            claimName: runai-pv-mlodata1
-        # - name: VOLUME_NAME2
-        #   persistentVolumeClaim:
-        #     claimName: runai-pv-VOLUME2
-
+            claimName: runai-mlo-danmoral-mlodata1
+        - name: mloraw1
+          persistentVolumeClaim:
+            claimName: runai-mlo-danmoral-mloraw1
+        - name: scratch
+          persistentVolumeClaim:
+            claimName: runai-mlo-danmoral-scratch
