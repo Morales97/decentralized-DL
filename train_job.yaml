@@ -24,7 +24,7 @@ spec:
         command: ["/bin/bash"]
         args:
         - "-c"
-        - "echo Hello World && pip install torchsummary && pip install wandb && python run_wandb.py"
+        - "echo Hello World && pip install torchsummary && pip install wandb && WANDB_API_KEY=aef1470e97e4b8d6642a27a12f1df072c3a4402e && python run_wandb.py"
         resources:
           limits:
             nvidia.com/gpu: 1
