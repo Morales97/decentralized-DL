@@ -1,16 +1,18 @@
 
 import os
 import numpy as np
-from numpy import linalg as LA
 import pdb
 from torchvision import datasets, transforms
 import torch
 import torch.utils.data as data
 
+PATH_LOCAL = './data'
+PATH_CLUSTER = '/mloraw1/danmoral/data'
 
-def get_minst_test(batch_size, reduce=False, reduce_factor=4):
 
-    testdata = datasets.MNIST('./data', train=False, transform=transforms.Compose([transforms.ToTensor(),transforms.Normalize((0.1307,), (0.3081,))]))
+def get_minst_test(path, batch_size, reduce=False, reduce_factor=4):
+
+    testdata = datasets.MNIST(path, train=False, transform=transforms.Compose([transforms.ToTensor(),transforms.Normalize((0.1307,), (0.3081,))]))
     if reduce:  # reduce test dataset to speed up iterative experiments
         # testdata_split = data.random_split(testdata, [int(testdata.data.shape[0]/reduce_factor) for _ in range(reduce_factor)])
         testdata_subset = data.Subset(testdata, np.arange(len(testdata.data)//reduce_factor))
@@ -22,11 +24,11 @@ def get_minst_test(batch_size, reduce=False, reduce_factor=4):
 
     return test_loader
 
-def get_mnist_iid(batch_size, small_test_set):
+def get_mnist_iid(path, batch_size, small_test_set):
     '''
     Return the full dataset, random sampling with replacement
     '''
-    traindata = datasets.MNIST('./data', train=True, download=True,
+    traindata = datasets.MNIST(path, train=True, download=True,
                        transform=transforms.Compose([transforms.ToTensor(),transforms.Normalize((0.1307,), (0.3081,))])
                        )
     sampler = data.RandomSampler(traindata, replacement=True, num_samples=batch_size)   # NOTE I think num_samples is the total amount of samples to be sampled
@@ -36,11 +38,11 @@ def get_mnist_iid(batch_size, small_test_set):
 
     return train_loader, test_loader
 
-def get_mnist_split(n_nodes, batch_size, small_test_set):
+def get_mnist_split(path, n_nodes, batch_size, small_test_set):
     '''
     Split dataset randomly between workers -> breaks IID
     '''
-    traindata = datasets.MNIST('./data', train=True, download=True,
+    traindata = datasets.MNIST(path, train=True, download=True,
                        transform=transforms.Compose([transforms.ToTensor(),transforms.Normalize((0.1307,), (0.3081,))])
                        )
     
@@ -51,13 +53,19 @@ def get_mnist_split(n_nodes, batch_size, small_test_set):
 
     return train_loader, test_loader
 
-def get_mnist(config, n_nodes, batch_size):
+def get_mnist(config, n_nodes, batch_size, local_exec=False):
+
+    if local_exec:
+        path = PATH_LOCAL
+    else:
+        path = PATH_CLUSTER
+
     if config['p_label_skew'] > 0:
-        return get_heterogeneous_mnist(n_nodes, batch_size, config['p_label_skew'], config['small_test_set'])
+        return get_heterogeneous_mnist(path, n_nodes, batch_size, config['p_label_skew'], config['small_test_set'])
     if config['data_split'] == 'yes':
-        return get_mnist_split(n_nodes, batch_size, config['small_test_set'])
+        return get_mnist_split(path, n_nodes, batch_size, config['small_test_set'])
     elif config['data_split'] == 'no':
-        return get_mnist_iid(batch_size, config['small_test_set'])
+        return get_mnist_iid(path, batch_size, config['small_test_set'])
     else:
         raise Exception('data split modality not supported')
 
@@ -75,12 +83,12 @@ def get_next_batch(config, train_loader, i):
     return input, target
 
 
-def get_heterogeneous_mnist(n_nodes, batch_size, p, small_test_set):
+def get_heterogeneous_mnist(path, n_nodes, batch_size, p, small_test_set):
 
     num_nonidd_samples = int(60000 * p)
     num_iid_samples = 60000 - num_nonidd_samples
 
-    traindata = datasets.MNIST('./data', train=True, download=True,
+    traindata = datasets.MNIST(path, train=True, download=True,
                        transform=transforms.Compose([transforms.ToTensor(),transforms.Normalize((0.1307,), (0.3081,))])
                        )
 
