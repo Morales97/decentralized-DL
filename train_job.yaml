@@ -1,9 +1,8 @@
 apiVersion: run.ai/v1
 kind: RunaiJob
 metadata:
-  name: danmoral-interactive
+  name: danmoral-train
   labels:
-    priorityClassName: "build" # Interactive Job if present, for Train Job REMOVE this line
     user: danmoral
 spec:
   template:
@@ -21,11 +20,13 @@ spec:
       containers:
       - name: container-name
         image: ic-registry.epfl.ch/mlo/dani-mlo:v1
-        workingDir : /home/danmoral
+        workingDir : /mlodata1/danmoral
         command: ["/bin/bash"]
         args:
         - "-c"
-        - "sleep infinity"
+        - "cd decentralized-DL"
+        - "git pull"
+        - "run_wandb.py"
         resources:
           limits:
             nvidia.com/gpu: 1
