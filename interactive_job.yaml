@@ -20,7 +20,7 @@ spec:
         fsGroup: 11169
       containers:
       - name: container-name
-        image: ic-registry.epfl.ch/mlo/dani-mlo:v1
+        image: ic-registry.epfl.ch/mlo/dani-mlo:v2
         workingDir : /home/danmoral
         command: ["/bin/bash"]
         args:
