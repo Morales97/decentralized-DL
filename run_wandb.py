@@ -253,7 +253,7 @@ if __name__ == '__main__':
 
     for lr in [0.05, 0.1, 0.15, 0.3, 0.6, 0.9]:
         # for bs in [16, 32, 64, 128, 256, 512]:
-        for bs in [64, 128]:
+        for bs in [256, 512]:
             steps = int(25 * 60000 // (bs*15))
             config['steps'] = steps
             config['lr'] = lr
