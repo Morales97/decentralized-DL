@@ -255,7 +255,9 @@ if __name__ == '__main__':
         # for bs in [16, 32, 64, 128, 256, 512]:
         for bs in [256, 512]:
             steps = int(25 * 60000 // (bs*15))
+            steps_eval = min(100, (steps // 10))
             config['steps'] = steps
+            config['steps_eval'] = steps_eval
             config['lr'] = lr
             config['batch_size'] = bs
 
