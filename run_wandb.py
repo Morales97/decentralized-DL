@@ -224,7 +224,7 @@ def train_mnist(config, expt, wandb):
 config = {
     'n_nodes': 15,
     'batch_size': 32,
-    'lr': 0.15,
+    'lr': 0.3,
     'steps': 1000,
     'steps_eval': 100,
     'data_split': 'yes',     # NOTE 'no' will sample with replacement from the FULL dataset, which will be truly IID
