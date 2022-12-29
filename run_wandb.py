@@ -183,7 +183,7 @@ def train_mnist(config, expt, wandb):
 
         # evaluate per node
         if not config['eval_on_average_model'] or not decentralized:
-            if (step+1) % config['steps_eval'] == 0:
+            if (step+1) % config['steps_eval'] == 0 or (step-1) == config['steps']:
                 acc_workers = []
                 loss_workers = []
                 ts_eval = time.time()
@@ -203,7 +203,7 @@ def train_mnist(config, expt, wandb):
 
         # evaluate on averaged model
         else:
-            if (step+1) % config['steps_eval'] == 0:
+            if (step+1) % config['steps_eval'] == 0 or (step-1) == config['steps']:
                 ts_eval = time.time()
                 model = get_average_model(config, device, models)
                 test_loss, acc = evaluate_model(model, test_loader, device)
