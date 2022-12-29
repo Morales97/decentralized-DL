@@ -83,6 +83,17 @@ class Logger:
             }
         self.wandb.log(log)
 
+    def log_eval_random_node(self, step, epoch, acc, test_loss):
+        self.accuracies.append(acc)
+        self.test_losses.append(test_loss)
+        log = {
+            'Iteration': step,
+            'Epoch': epoch,
+            'Test Accuracy [random node]': acc,
+            'Test Loss [random node]': test_loss,
+            }
+        self.wandb.log(log)
+
     def log_eval_per_node(self, step, epoch, acc, test_loss, acc_nodes, loss_nodes, acc_avg, loss_avg, ts_eval, ts_steps_eval):
         self.accuracies.append(acc)
         self.test_losses.append(test_loss)
@@ -183,7 +194,7 @@ def train_mnist(config, expt, wandb):
 
         # evaluate per node
         if not config['eval_on_average_model'] or not decentralized:
-            if (step+1) % config['steps_eval'] == 0 or (step-1) == config['steps']:
+            if (step+1) % config['steps_eval'] == 0 or (step+1) == config['steps']:
                 acc_workers = []
                 loss_workers = []
                 ts_eval = time.time()
@@ -203,12 +214,18 @@ def train_mnist(config, expt, wandb):
 
         # evaluate on averaged model
         else:
-            if (step+1) % config['steps_eval'] == 0 or (step-1) == config['steps']:
+            if (step+1) % config['steps_eval'] == 0 or (step+1) == config['steps']:
                 ts_eval = time.time()
                 model = get_average_model(config, device, models)
                 test_loss, acc = evaluate_model(model, test_loader, device)
                 logger.log_eval(step, epoch, float(acc*100), test_loss, ts_eval, ts_steps_eval)
                 print('Step % d -- Test accuracy: %.2f -- Test loss: %.3f -- Train loss: %.3f -- Time (total/last/eval): %.2f / %.2f / %.2f s' % (step, float(acc*100), test_loss, train_loss, time.time() - ts_total, time.time() - ts_steps_eval, time.time() - ts_eval))     
+                
+                if not decentralized:   
+                    # evaluate also on a random worker
+                    test_loss, acc = evaluate_model(model[0], test_loader, device)
+                    logger.log_eval_random_node(step, epoch, float(acc*100), test_loss)
+                
                 ts_steps_eval = time.time()
 
         # weight distance to init
@@ -248,7 +265,7 @@ expt = {'topology': 'centralized', 'label': 'Centralized', 'local_steps': 0}
 # expt = {'topology': 'random', 'degree': 4, 'local_steps': 0}
 # expt = {'topology': 'exponential_graph', 'local_steps': 0}
 # expt = {'topology': 'ring', 'local_steps': 0}
-# expt = {'topology': 'ring', 'local_steps': 0, 'data_split': 'no'}
+# expt = {'topology': 'ring', 'local_steps': 0, 'data_split': 'no', 'eval_on_average_model': True}
 
 if __name__ == '__main__':
 
