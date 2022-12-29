@@ -259,19 +259,19 @@ expt2 = {'topology': 'centralized', 'label': 'Centralized', 'local_steps': 0}
 expt3 = {'topology': 'centralized', 'label': 'Centralized, LR warm up (100)', 'local_steps': 0, 'warmup_steps': 100}
 
 #expt = {'topology': 'solo', 'local_steps': 0}
-# expt = {'topology': 'centralized', 'label': 'Centralized', 'local_steps': 0}
+expt = {'topology': 'centralized', 'label': 'Centralized', 'local_steps': 0}
 # expt = {'topology': 'fully_connected', 'local_steps': 0}
 # expt = {'topology': 'fully_connected', 'local_steps': 50}
 # expt = {'topology': 'random', 'degree': 4, 'local_steps': 0}
 # expt = {'topology': 'exponential_graph', 'local_steps': 0}
 # expt = {'topology': 'ring', 'local_steps': 0}
-expt = {'topology': 'ring', 'local_steps': 0, 'data_split': 'no', 'eval_on_average_model': True}
+# expt = {'topology': 'ring', 'local_steps': 0, 'data_split': 'no', 'eval_on_average_model': True}
 
 if __name__ == '__main__':
 
     for lr in [0.05, 0.1, 0.15, 0.3, 0.6, 0.9]:
-        for bs in [16, 32, 64, 128, 256, 512]:
-        # for bs in [64, 128, 256, 512]:
+        # for bs in [16, 32, 64, 128, 256, 512]:
+        for bs in [64, 128, 256, 512]:
             # if lr == 0.05 and bs == 256:
             #     pass
             # else:

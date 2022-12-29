@@ -15,7 +15,7 @@ def get_expt_name(config, expt, warmup=False):
     if warmup:
         name += '_warmup'
     
-    if config['data_split'] == 'no' or expt['data_split'] == 'no':
+    if config['data_split'] == 'no':
         name += '_iid'
 
     return name
