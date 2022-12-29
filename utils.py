@@ -14,7 +14,10 @@ def get_expt_name(config, expt, warmup=False):
 
     if warmup:
         name += '_warmup'
-        
+    
+    if config['data_split'] == 'no':
+        name += '_iid'
+
     return name
 
 def get_folder_name(config, root='experiments_mnist/results/'):
