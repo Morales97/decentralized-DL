@@ -241,7 +241,8 @@ config = {
 expt2 = {'topology': 'centralized', 'label': 'Centralized', 'local_steps': 0}
 expt3 = {'topology': 'centralized', 'label': 'Centralized, LR warm up (100)', 'local_steps': 0, 'warmup_steps': 100}
 
-expt = {'topology': 'solo', 'local_steps': 0}
+#expt = {'topology': 'solo', 'local_steps': 0}
+expt = {'topology': 'centralized', 'label': 'Centralized', 'local_steps': 0}
 # expt = {'topology': 'fully_connected', 'local_steps': 0}
 # expt = {'topology': 'fully_connected', 'local_steps': 50}
 # expt = {'topology': 'random', 'degree': 4, 'local_steps': 0}
@@ -250,12 +251,28 @@ expt = {'topology': 'solo', 'local_steps': 0}
 
 if __name__ == '__main__':
 
-    for i in range(5):
+    for lr in [0.05, 0.1, 0.15, 0.3, 0.6, 0.9]:
+        # for bs in [16, 32, 64, 128, 256, 512]:
+        for bs in [16, 32]:
+            steps = int(25 * 60000 // (bs*15))
+            config['steps'] = steps
+            config['lr'] = lr
+            config['batch_size'] = bs
 
-        name = get_expt_name(config, expt)
-        wandb.init(name=name, dir='.', config={**config, **expt}, reinit=True, project='MLO-MNIST', entity='morales97')
-        acc, test_loss, train_loss, _, _, _ = train_mnist(config, expt, wandb)
-        wandb.finish()
+            for i in range(5):
+                name = get_expt_name(config, expt)
+                wandb.init(name=name, dir='.', config={**config, **expt}, reinit=True, project='MLO-MNIST-BSvsLR', entity='morales97')
+                acc, test_loss, train_loss, _, _, _ = train_mnist(config, expt, wandb)
+                wandb.finish()
+
+
+
+    # for i in range(5):
+
+    #     name = get_expt_name(config, expt)
+    #     wandb.init(name=name, dir='.', config={**config, **expt}, reinit=True, project='MLO-MNIST', entity='morales97')
+    #     acc, test_loss, train_loss, _, _, _ = train_mnist(config, expt, wandb)
+    #     wandb.finish()
 
         # name = get_expt_name(config, expt2)
         # wandb.init(name=name, dir='.', config={**config, **expt2}, reinit=True, project='MLO-MNIST', entity='morales97')
