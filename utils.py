@@ -15,6 +15,9 @@ def get_expt_name(config, expt, warmup=False):
     if warmup:
         name += '_warmup'
     
+    if expt['local_steps'] > 0:
+        name += '_local' + str(expt['local_steps'])
+
     if config['data_split'] == 'no':
         name += '_iid'
 
