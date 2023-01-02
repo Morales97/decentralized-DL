@@ -185,7 +185,8 @@ def train_mnist(config, expt, wandb):
                 train_loss += worker_local_step(models[i], opts[i], train_loader_iter[i], device)
             elif config['data_split'] == 'no':
                 train_loss += worker_local_step(models[i], opts[i], iter(train_loader), device)
-        epoch += n_nodes*batch_size / 60000
+        # epoch += n_nodes*batch_size / 60000
+        epoch += batch_size / 60000
         train_loss /= n_nodes
         logger.log_step(step, epoch, train_loss, ts_total, ts_step)
 
@@ -255,12 +256,12 @@ config = {
 }
 
 config2 = {
-    'n_nodes': 1,
+    'n_nodes': 15,
     'batch_size': 32,
     'lr': 0.3,
     'steps': 1000*15,
-    'steps_eval': 200,
-    'data_split': 'no',     # NOTE 'no' will sample with replacement from the FULL dataset, which will be truly IID
+    'steps_eval': 500,
+    'data_split': 'yes',     # NOTE 'no' will sample with replacement from the FULL dataset, which will be truly IID
     'same_init': True,
     'small_test_set': False,
     'p_label_skew': 0,
