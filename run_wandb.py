@@ -313,7 +313,7 @@ if __name__ == '__main__':
             for i in range(5):
                 name = get_expt_name(config, expt, warmup=False)
                 wandb.init(name=name, dir='.', config={**config, **expt}, reinit=True, project='MLO-MNIST-BSvsLR', entity='morales97')
-                acc, test_loss, train_loss, _, _, _ = train_mnist(config, expt, wandb)
+                acc, test_loss, train_loss, _, _, _ = train_mnist({**config, **expt}, expt, wandb)
                 wandb.finish()
 
 
