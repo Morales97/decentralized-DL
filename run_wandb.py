@@ -227,10 +227,10 @@ def train_mnist(config, expt, wandb):
                 logger.log_eval(step, epoch, float(acc*100), test_loss, ts_eval, ts_steps_eval)
                 print('Step % d -- Test accuracy: %.2f -- Test loss: %.3f -- Train loss: %.3f -- Time (total/last/eval): %.2f / %.2f / %.2f s' % (step, float(acc*100), test_loss, train_loss, time.time() - ts_total, time.time() - ts_steps_eval, time.time() - ts_eval))     
                 
-                if decentralized:   
-                    # evaluate also on a random worker
-                    test_loss, acc = evaluate_model(model[0], test_loader, device)
-                    logger.log_eval_random_node(step, epoch, float(acc*100), test_loss)
+                # if decentralized:   
+                #     # evaluate also on a random worker
+                #     test_loss, acc = evaluate_model(models[0], test_loader, device)
+                #     logger.log_eval_random_node(step, epoch, float(acc*100), test_loss)
                 
                 ts_steps_eval = time.time()
 
