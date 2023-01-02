@@ -303,7 +303,7 @@ if __name__ == '__main__':
             # else:
             steps = int(25 * 60000 // (bs*15))
             steps_eval = min(100, (steps // 10))
-            warmup = 0
+            warmup = 500
             config['steps'] = steps
             config['steps_eval'] = steps_eval
             config['warmup_steps'] = min(warmup, (steps // 10))
