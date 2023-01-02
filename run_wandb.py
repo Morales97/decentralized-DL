@@ -199,7 +199,7 @@ def train_mnist(config, expt, wandb):
         diffuse(comm_matrix, models, step, expt)
 
         # evaluate per node
-        if not config['eval_on_average_model'] and decentralized:
+        if (not config['eval_on_average_model']) and decentralized:
             if (step+1) % config['steps_eval'] == 0 or (step+1) == config['steps']:
                 acc_workers = []
                 loss_workers = []
@@ -282,9 +282,9 @@ config2 = {
 # expt3 = {'topology': 'centralized', 'label': 'Centralized, LR warm up (100)', 'local_steps': 0, 'warmup_steps': 100}
 
 # expt = {'topology': 'solo', 'local_steps': 0}
-expt = {'topology': 'centralized', 'label': 'Centralized', 'local_steps': 0}
+# expt = {'topology': 'centralized', 'label': 'Centralized', 'local_steps': 0}
 # expt = {'topology': 'fully_connected', 'local_steps': 0}
-# expt = {'topology': 'fully_connected', 'local_steps': 5, 'eval_on_average_model': True}
+expt = {'topology': 'fully_connected', 'local_steps': 5, 'eval_on_average_model': True}
 # expt2 = {'topology': 'fully_connected', 'local_steps': 10}
 # expt = {'topology': 'fully_connected', 'local_steps': 50}
 # expt = {'topology': 'random', 'degree': 4, 'local_steps': 0}
@@ -303,7 +303,7 @@ if __name__ == '__main__':
             # else:
             steps = int(25 * 60000 // (bs*15))
             steps_eval = min(100, (steps // 10))
-            warmup = 500
+            warmup = 0
             config['steps'] = steps
             config['steps_eval'] = steps_eval
             config['warmup_steps'] = min(warmup, (steps // 10))
@@ -311,7 +311,7 @@ if __name__ == '__main__':
             config['batch_size'] = bs
 
             for i in range(5):
-                name = get_expt_name(config, expt, warmup=True)
+                name = get_expt_name(config, expt, warmup=False)
                 wandb.init(name=name, dir='.', config={**config, **expt}, reinit=True, project='MLO-MNIST-BSvsLR', entity='morales97')
                 acc, test_loss, train_loss, _, _, _ = train_mnist(config, expt, wandb)
                 wandb.finish()
