@@ -26,8 +26,7 @@ def evaluate_model(model, data_loader, device):
             output = model(data)
             # output = model(data[None, ...])
             # sum up batch loss
-            loss += F.nll_loss(output, target, reduction='sum').item()
-            # get the index of the max log-probability
+            loss += F.cross_entropy(output, target, reduction='sum').item()
             pred = output.argmax(dim=1, keepdim=True)
             correct += pred.eq(target.view_as(pred)).sum().item()
 
@@ -45,7 +44,7 @@ def worker_local_step(model, opt, train_loader_iter, device):
     model.train()
     output = model(input)
     opt.zero_grad()
-    loss = F.nll_loss(output, target)
+    loss = F.cross_entropy(output, target)
     loss.backward()
     opt.step()
 
