@@ -190,7 +190,7 @@ config = {
     'data_split': 'yes', # NOTE 'no' will sample with replacement from the FULL dataset, which will be truly IID
     'same_init': True,
     'p_label_skew': 0,
-    'net': 'resnet18',
+    'net': 'convnet',
     'wandb': True,
     'eval_on_average_model': False,
     'dataset': 'mnist',
