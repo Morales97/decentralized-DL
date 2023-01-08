@@ -23,14 +23,14 @@ def get_cifar_test(config, root):
 
     transform = transforms.Compose([transforms.ToTensor(), normalize])
     
-    dataset_loader(
+    dataset = dataset_loader(
         root=root,
         train=False,
         transform=transform,
         download=True,
     )
 
-    return data.DataLoader(dataset_loader, batch_size=100, shuffle=False)
+    return data.DataLoader(dataset, batch_size=100, shuffle=False)
 
 def get_cifar_split(config, root, n_nodes, batch_size):
 

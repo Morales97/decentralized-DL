@@ -81,8 +81,6 @@ def train_cifar(config, expt, wandb):
         train_loader_lengths = [len(t) for t in train_loader]
         train_loader_iter = [iter(t) for t in train_loader]
 
-    pdb.set_trace()
-
     # init
     torch.manual_seed(0)
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
