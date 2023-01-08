@@ -24,6 +24,7 @@ def evaluate_model(model, data_loader, device):
             data = data.to(device)
             output = model(data[None, ...])
             # sum up batch loss
+            pdb.set_trace()
             loss += F.nll_loss(output, target, reduction='sum').item()
             # get the index of the max log-probability
             pred = output.argmax(dim=1, keepdim=True)
