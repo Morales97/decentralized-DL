@@ -212,13 +212,13 @@ config2 = {
 }
 
 
-# expt2 = {'topology': 'centralized', 'label': 'Centralized', 'local_steps': 0}
+expt = {'topology': 'centralized', 'label': 'Centralized', 'local_steps': 0}
 # expt3 = {'topology': 'centralized', 'label': 'Centralized, LR warm up (100)', 'local_steps': 0, 'warmup_steps': 100}
 
 # expt = {'topology': 'solo', 'local_steps': 0}
 # expt = {'topology': 'centralized', 'label': 'Centralized', 'local_steps': 0}
 # expt = {'topology': 'fully_connected', 'local_steps': 0}
-expt = {'topology': 'fully_connected', 'local_steps': 5, 'eval_on_average_model': True}
+# expt = {'topology': 'fully_connected', 'local_steps': 5, 'eval_on_average_model': True}
 # expt2 = {'topology': 'fully_connected', 'local_steps': 10}
 # expt = {'topology': 'fully_connected', 'local_steps': 50}
 # expt = {'topology': 'random', 'degree': 4, 'local_steps': 0}

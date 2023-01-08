@@ -27,7 +27,7 @@ def _get_cifar(config, root, n_nodes, batch_size):
     if config['p_label_skew'] > 0:
         raise Exception('Heterogeneous CIFAR not supported yet')
     elif config['data_split'] == 'yes':
-        return get_cifar_split(root, n_nodes, batch_size)
+        return get_cifar_split(config, root, n_nodes, batch_size)
     elif config['data_split'] == 'no':
         raise Exception('IID CIFAR not supported yet')
 
