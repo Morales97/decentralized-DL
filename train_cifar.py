@@ -26,7 +26,6 @@ def evaluate_model(model, data_loader, device):
             output = model(data)
             # output = model(data[None, ...])
             # sum up batch loss
-            pdb.set_trace()
             loss += F.nll_loss(output, target, reduction='sum').item()
             # get the index of the max log-probability
             pred = output.argmax(dim=1, keepdim=True)
@@ -116,6 +115,7 @@ def train_cifar(config, expt, wandb):
             for opt in opts:
                 for g in opt.param_groups:
                     g['lr'] = g['lr']/10
+            print('lr decayed to %.4f' % g['lr'])
 
         # local update
         train_loss = 0
@@ -184,7 +184,7 @@ config = {
     'batch_size': 256,
     'lr': 0.2,
     'steps': 500,
-    'steps_eval': 50,
+    'steps_eval': 100,
     'data_split': 'yes', # NOTE 'no' will sample with replacement from the FULL dataset, which will be truly IID
     'same_init': True,
     'p_label_skew': 0,
