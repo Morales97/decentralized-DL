@@ -104,11 +104,11 @@ def train_cifar(config, expt, wandb):
                 if step % l == 0:
                     train_loader_iter[i] = iter(train_loader[i])
 
-        # if step < config['warmup_steps']:
-        #     lr = config['lr'] * (step+1) / config['warmup_steps']
-        #     for opt in opts:
-        #         for g in opt.param_groups:
-        #             g['lr'] = lr
+        if step < config['warmup_steps']:
+            lr = config['lr'] * (step+1) / config['warmup_steps']
+            for opt in opts:
+                for g in opt.param_groups:
+                    g['lr'] = lr
 
         # decay lr at 50% and 75%
         if step == config['steps']//2 or step == config['steps']//4*3:
@@ -181,9 +181,10 @@ def train_cifar(config, expt, wandb):
 
 config = {
     'n_nodes': 1,
-    'batch_size': 128,
-    'lr': 0.2,
-    'steps': 50000//128*300,
+    'batch_size': 128*16,
+    'lr': 0.2*16,
+    'steps': 50000//(128*16)*300,
+    'warmup_steps': 50000//(128*16)*5,
     'steps_eval': 50000//128,
     'data_split': 'yes', # NOTE 'no' will sample with replacement from the FULL dataset, which will be truly IID
     'same_init': True,
