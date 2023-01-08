@@ -182,9 +182,9 @@ def train_cifar(config, expt, wandb):
 config = {
     'n_nodes': 1,
     'batch_size': 128,
-    'lr': 0.02,
-    'steps': 500,
-    'steps_eval': 100,
+    'lr': 0.2,
+    'steps': 50000//128*300,
+    'steps_eval': 50000//128,
     'data_split': 'yes', # NOTE 'no' will sample with replacement from the FULL dataset, which will be truly IID
     'same_init': True,
     'p_label_skew': 0,
