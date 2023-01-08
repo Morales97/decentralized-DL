@@ -5,7 +5,7 @@ from topology import get_diff_matrix, diffuse, get_average_model
 import time
 import torch
 import torch.optim as optim
-from model.convnet import get_model
+from model.model import get_model
 import torch.nn.functional as F
 from helpers.utils import save_experiment, get_expt_name
 from helpers.gradient_var import *
