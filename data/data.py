@@ -4,8 +4,8 @@ import pdb
 from torchvision import datasets, transforms
 import torch
 import torch.utils.data as data
-from mnist import get_heterogeneous_mnist, get_mnist_split, get_mnist_iid
-from cifar import get_cifar_split
+from data.mnist import get_heterogeneous_mnist, get_mnist_split, get_mnist_iid
+from data.cifar import get_cifar_split
 
 ROOT_LOCAL = '.'
 ROOT_CLUSTER = '/mloraw1/danmoral/data'
