@@ -195,6 +195,22 @@ config = {
 }
 
 
+config2 = {
+    'n_nodes': 1,
+    'batch_size': 256,
+    'lr': 0.2,
+    'steps': 500,
+    'steps_eval': 50,
+    'data_split': 'yes', # NOTE 'no' will sample with replacement from the FULL dataset, which will be truly IID
+    'same_init': True,
+    'p_label_skew': 0,
+    'net': 'resnet18',
+    'wandb': True,
+    # 'steps_weight_distance': 25,
+    'eval_on_average_model': False,
+    'dataset': 'cifar10',
+}
+
 
 # expt2 = {'topology': 'centralized', 'label': 'Centralized', 'local_steps': 0}
 # expt3 = {'topology': 'centralized', 'label': 'Centralized, LR warm up (100)', 'local_steps': 0, 'warmup_steps': 100}
@@ -213,33 +229,33 @@ expt = {'topology': 'fully_connected', 'local_steps': 5, 'eval_on_average_model'
 if __name__ == '__main__':
 
     # for lr in [0.05, 0.1, 0.15, 0.3, 0.6, 0.9]:
-    for lr in [0.3, 0.6, 0.9]:
-        for bs in [16, 32, 64, 128, 256, 512]:
-            # for bs in [64, 128, 256, 512]:
-            # if lr == 0.05 and bs == 256:
-            #     pass
-            # else:
-            steps = int(25 * 60000 // (bs*15))
-            steps_eval = min(100, (steps // 10))
-            warmup = 0
-            config['steps'] = steps
-            config['steps_eval'] = steps_eval
-            config['warmup_steps'] = min(warmup, (steps // 10))
-            config['lr'] = lr
-            config['batch_size'] = bs
+    # for lr in [0.3, 0.6, 0.9]:
+    #     for bs in [16, 32, 64, 128, 256, 512]:
+    #         # for bs in [64, 128, 256, 512]:
+    #         # if lr == 0.05 and bs == 256:
+    #         #     pass
+    #         # else:
+    #         steps = int(25 * 60000 // (bs*15))
+    #         steps_eval = min(100, (steps // 10))
+    #         warmup = 0
+    #         config['steps'] = steps
+    #         config['steps_eval'] = steps_eval
+    #         config['warmup_steps'] = min(warmup, (steps // 10))
+    #         config['lr'] = lr
+    #         config['batch_size'] = bs
 
-            for i in range(5):
-                name = get_expt_name(config, expt, warmup=False)
-                wandb.init(name=name, dir='.', config={**config, **expt}, reinit=True, project='MLO-MNIST-BSvsLR', entity='morales97')
-                acc, test_loss, train_loss, _, _, _ = train_mnist({**config, **expt}, expt, wandb)
-                wandb.finish()
+    #         for i in range(5):
+    #             name = get_expt_name(config, expt, warmup=False)
+    #             wandb.init(name=name, dir='.', config={**config, **expt}, reinit=True, project='MLO-MNIST-BSvsLR', entity='morales97')
+    #             acc, test_loss, train_loss, _, _, _ = train_mnist({**config, **expt}, expt, wandb)
+    #             wandb.finish()
 
     # for i in range(5):
 
-    #     name = get_expt_name(config2, expt)
-    #     wandb.init(name=name, dir='.', config={**config2, **expt}, reinit=True, project='MLO-MNIST', entity='morales97')
-    #     acc, test_loss, train_loss, _, _, _ = train_mnist(config2, expt, wandb)
-    #     wandb.finish()
+    name = get_expt_name(config2, expt)
+    wandb.init(name=name, dir='.', config={**config2, **expt}, reinit=True, project='MLO-CIFAR10', entity='morales97')
+    acc, test_loss, train_loss, _, _, _ = train_mnist(config2, expt, wandb)
+    wandb.finish()
 
         # name = get_expt_name(config, expt2)
         # wandb.init(name=name, dir='.', config={**config, **expt2}, reinit=True, project='MLO-MNIST', entity='morales97')
