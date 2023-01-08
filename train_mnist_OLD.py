@@ -9,7 +9,7 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 from torchsummary import summary
-from model.convnet import get_model
+from model.model import get_model
 import torch.nn.functional as F
 from helpers.utils import save_experiment
 from helpers.gradient_var import *
