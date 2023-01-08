@@ -84,7 +84,8 @@ def train_cifar(config, expt, wandb):
     torch.manual_seed(0)
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
     models = [get_model(config, device) for _ in range(n_nodes)]
-    opts = [optim.SGD(model.parameters(), lr=config['lr'], momentum=0.9, nesterov=True, weight_decay=1e-4) for model in models]
+    # opts = [optim.SGD(model.parameters(), lr=config['lr'], momentum=0.9, nesterov=True, weight_decay=1e-4) for model in models]
+    opts = [optim.SGD(model.parameters(), lr=config['lr'], weight_decay=1e-4) for model in models]
     if config['same_init']:
         for i in range(1, len(models)):
             models[i].load_state_dict(models[0].state_dict())
