@@ -193,7 +193,7 @@ config = {
     'net': 'resnet18',
     'wandb': True,
     'eval_on_average_model': False,
-    'dataset': 'cifar10',
+    'dataset': 'mnist',
 }
 
 
