@@ -30,7 +30,7 @@ def get_cifar_test(config, root):
         download=True,
     )
 
-    return data.DataLoader(dataset=dataset_loader)
+    return data.DataLoader(dataset=dataset_loader, batch_size=10)
 
 def get_cifar_split(config, root, n_nodes, batch_size):
 
