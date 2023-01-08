@@ -168,10 +168,10 @@ def train_cifar(config, expt, wandb):
                 print('Step % d -- Test accuracy: %.2f -- Test loss: %.3f -- Train loss: %.3f -- Time (total/last/eval): %.2f / %.2f / %.2f s' %
                       (step, float(acc*100), test_loss, train_loss, time.time() - ts_total, time.time() - ts_steps_eval, time.time() - ts_eval))
 
-                # if decentralized:
-                #     # evaluate also on a random worker
-                #     test_loss, acc = evaluate_model(models[0], test_loader, device)
-                #     logger.log_eval_random_node(step, epoch, float(acc*100), test_loss)
+                if decentralized:
+                    # evaluate also on a random worker
+                    test_loss, acc = evaluate_model(models[0], test_loader, device)
+                    logger.log_eval_random_node(step, epoch, float(acc*100), test_loss)
 
                 ts_steps_eval = time.time()
 
@@ -184,7 +184,7 @@ config = {
     'batch_size': 128,
     'lr': 0.2*16,
     'steps': 50000//(128*16)*300,
-    'warmup_steps': 50000//(128*16)*5,
+    'warmup_steps': 0, #50000//(128*16)*5,
     'steps_eval': 50000//(128*16),
     'data_split': 'yes', # NOTE 'no' will sample with replacement from the FULL dataset, which will be truly IID
     'same_init': True,
