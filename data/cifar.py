@@ -28,6 +28,7 @@ def get_cifar_test(config, root):
         train=False,
         transform=transform,
         download=True,
+        batch_size=10,
     )
 
 def get_cifar_split(config, root, n_nodes, batch_size):
