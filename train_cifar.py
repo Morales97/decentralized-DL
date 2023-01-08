@@ -86,9 +86,6 @@ def train_cifar(config, expt, wandb):
     if config['same_init']:
         for i in range(1, len(models)):
             models[i].load_state_dict(models[0].state_dict())
-    if config['steps_weight_distance'] > 0:
-        init_model = get_model(config, device)
-        init_model.load_state_dict(models[0].state_dict())
 
     comm_matrix = get_diff_matrix(expt, n_nodes)
     # print(comm_matrix)
@@ -175,11 +172,6 @@ def train_cifar(config, expt, wandb):
 
                 ts_steps_eval = time.time()
 
-        # weight distance to init
-        # if (step+1) % config['steps_weight_distance'] == 0 and config['steps_weight_distance'] > 0:
-        #     model = get_average_model(config, device, models)
-        #     dist = compute_weight_distance(config, model, init_model)
-        #     logger.log_weight_distance(step, epoch, dist)
 
     return logger.accuracies, logger.test_losses, logger.train_losses, None, None, logger.weight_distance
 
