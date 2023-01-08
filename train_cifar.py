@@ -21,8 +21,7 @@ def evaluate_model(model, data_loader, device):
     correct = 0
     with torch.no_grad():
         for data, target in data_loader:
-            pdb.set_trace()
-            data, target = data.to(device), target.to(device)
+            data = data.to(device)
             output = model(data)
             # sum up batch loss
             loss += F.nll_loss(output, target, reduction='sum').item()
