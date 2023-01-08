@@ -266,3 +266,4 @@ if __name__ == '__main__':
         # wandb.init(name=name, dir='.', config={**config, **expt3}, reinit=True, project='MLO-MNIST', entity='morales97')
         # acc, test_loss, train_loss, _, _, _ = train_mnist(config, expt3, wandb)
         # wandb.finish()
+
