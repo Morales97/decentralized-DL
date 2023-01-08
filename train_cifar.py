@@ -102,11 +102,11 @@ def train_cifar(config, expt, wandb):
                 if step % l == 0:
                     train_loader_iter[i] = iter(train_loader[i])
 
-        if step < config['warmup_steps']:
-            lr = config['lr'] * (step+1) / config['warmup_steps']
-            for opt in opts:
-                for g in opt.param_groups:
-                    g['lr'] = lr
+        # if step < config['warmup_steps']:
+        #     lr = config['lr'] * (step+1) / config['warmup_steps']
+        #     for opt in opts:
+        #         for g in opt.param_groups:
+        #             g['lr'] = lr
 
         # decay lr at 50% and 75%
         if step == config['steps']//2 or step == config['steps']//4*3:
