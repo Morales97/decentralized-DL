@@ -3,7 +3,7 @@ import numpy as np
 import pdb
 import torch
 import copy 
-from models import get_model
+from model.convnet import get_model
 
 def get_diff_matrix(expt, num_clients):
     topology = expt['topology']

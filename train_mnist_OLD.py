@@ -1,7 +1,7 @@
 from turtle import st
 import numpy as np
 import pdb
-from data_helpers import get_mnist, get_heterogeneous_mnist
+from data.data import get_data
 from topology import get_diff_matrix, diffuse, get_average_model
 # from plot_helpers import plot_calibration_histogram, plot_heatmaps, plot_node_disagreement
 import time 
@@ -9,9 +9,9 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 from torchsummary import summary
-from models import get_model
+from model.convnet import get_model
 import torch.nn.functional as F
-from utils import save_experiment
+from helpers.utils import save_experiment
 from helpers.gradient_var import *
 from helpers.consensus import *
 
@@ -76,7 +76,7 @@ def train_mnist(config, expt):
     # data
     if 'data_split' not in config.keys():
         config['data_split'] = 'yes'   # default: split dataset between workers
-    train_loader, test_loader = get_mnist(config, n_nodes, batch_size)
+    train_loader, test_loader = get_data(config, n_nodes, batch_size)
     if config['data_split'] == 'yes':
         train_loader_lengths = [len(t) for t in train_loader]
         train_loader_iter = [iter(t) for t in train_loader]
@@ -204,7 +204,6 @@ config = {
     # 'steps_grad_var': 1,
     'data_split': 'yes',     # NOTE 'no' will sample with replacement from the FULL dataset, which will be truly IID
     'same_init': True,
-    'small_test_set': True,
     'p_label_skew': 0,
     # 'net': 'mlp', # 'convnet'
     'net': 'convnet',

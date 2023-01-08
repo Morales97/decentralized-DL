@@ -8,7 +8,7 @@ import sys
 import os
 
 sys.path.insert(0, os.path.join(sys.path[0], '..'))
-from models import get_model
+from model.convnet import get_model
 
 def compute_node_disagreement(config, models, n_nodes):
     avg_model = get_model(config, 'cpu')

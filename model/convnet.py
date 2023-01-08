@@ -6,7 +6,6 @@ from torchsummary import summary
 import torch.nn.functional as F
 
 
-
 class ConvNet(nn.Module):
     def __init__(self):
         super(ConvNet, self).__init__()
@@ -27,6 +26,7 @@ class ConvNet(nn.Module):
         x = self.fc1(x)
         output = F.log_softmax(x, dim=1)
         return output
+
 
 class ConvNet_OP(nn.Module):
     def __init__(self):
@@ -55,6 +55,7 @@ class ConvNet_OP(nn.Module):
         output = F.log_softmax(x, dim=1)
         return output
 
+
 class MLP(nn.Module):
     def __init__(self):
         super(MLP, self).__init__()
@@ -69,17 +70,7 @@ class MLP(nn.Module):
         output = F.log_softmax(x, dim=1)
         return output
 
-def get_model(config, device):
-    if config['net'] == 'convnet':
-        model = ConvNet()
-    elif config['net'] == 'convnet_op':
-        model = ConvNet_OP()
-    elif config['net'] == 'mlp':
-        model = MLP()
-    else:
-        raise Exception('model not supported')
-    
-    return model.to(device)
+
 
 
 if __name__ == '__main__':
@@ -88,4 +79,3 @@ if __name__ == '__main__':
     # model = ConvNet_OP()
     summary(model, (1, 28, 28))
     pdb.set_trace()
-

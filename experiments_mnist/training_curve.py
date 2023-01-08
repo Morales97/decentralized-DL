@@ -9,7 +9,7 @@ import time
 
 sys.path.insert(0, os.path.join(sys.path[0], '..'))
 
-from mnist_cnn import train_mnist
+from train_mnist_OLD import train_mnist
 
 
 
@@ -187,7 +187,6 @@ config = {
     'steps_weight_distance': 25,
     'data_split': 'yes',     # NOTE 'no' will sample with replacement from the FULL dataset, which will be truly IID
     'same_init': True,
-    'small_test_set': True,
     'p_label_skew': 0,
     'net': 'convnet',
     # 'freeze_step': 200,

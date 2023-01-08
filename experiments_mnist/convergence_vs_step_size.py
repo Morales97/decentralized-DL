@@ -5,8 +5,8 @@ import pdb
 import matplotlib.pyplot as plt
 
 sys.path.insert(0, os.path.join(sys.path[0], '..'))
-from mnist_cnn import train_mnist
-from utils import save_experiment, load_results, save_sweep, load_sweep_results, get_sweep_filename, get_folder_name
+from train_mnist_OLD import train_mnist
+from helpers.utils import save_experiment, load_results, save_sweep, load_sweep_results, get_sweep_filename, get_folder_name
 
 
 def sweep_step_sizes(config, expt, early_stop=False, save_expts=False, do_save_sweep=True, root=None):
@@ -124,7 +124,6 @@ config = {
     'steps_eval': 1000,  
     'data_split': 'yes',     # NOTE 'no' will sample with replacement from the FULL dataset, which will be truly IID
     'same_init': True,
-    'small_test_set': False,
     'lrs': list(np.logspace(np.log10(0.04),np.log10(0.8), 7)),
     'p_label_skew': 0,
     # 'acc_th': 0.975,
