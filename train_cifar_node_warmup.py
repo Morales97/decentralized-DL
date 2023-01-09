@@ -72,7 +72,7 @@ def train_cifar(config, expt, wandb):
     # data
     if 'data_split' not in config.keys():
         config['data_split'] = 'yes'   # default: split dataset between workers
-    train_loader, test_loader = get_data(config, n_nodes, batch_size)
+    train_loader, test_loader = get_data(config, n_nodes[-1], batch_size)
     if config['data_split'] == 'yes':
         train_loader_lengths = [len(t) for t in train_loader]
         train_loader_iter = [iter(t) for t in train_loader]
