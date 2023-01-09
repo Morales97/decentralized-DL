@@ -185,7 +185,7 @@ config = {
     'steps': 50000//(128*16)*300,
     'warmup_steps': 50000//(128*16)*5,
     'steps_eval': 50000//(128*4),
-    'data_split': 'no', # NOTE 'no' will sample with replacement from the FULL dataset, which will be truly IID
+    'data_split': 'yes', # NOTE 'no' will sample with replacement from the FULL dataset, which will be truly IID
     'same_init': True,
     'p_label_skew': 0,
     'net': 'resnet18',
