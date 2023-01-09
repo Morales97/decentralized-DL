@@ -109,6 +109,9 @@ def train_cifar(config, expt, wandb):
                 for g in opt.param_groups:
                     g['lr'] = lr
 
+        if step == config['steps']//2:
+            expt['local_steps'] = 16
+
         # decay lr at 50% and 75%
         if step == config['steps']//2 or step == config['steps']//4*3:
             for opt in opts:
@@ -200,9 +203,9 @@ config = {
 
 # expt = {'topology': 'solo', 'local_steps': 0}
 # expt = {'topology': 'centralized', 'label': 'Centralized', 'local_steps': 0}
-# expt = {'topology': 'fully_connected', 'local_steps': 0}
+expt = {'topology': 'fully_connected', 'local_steps': 0}
 # expt = {'topology': 'fully_connected', 'local_steps': 5, 'eval_on_average_model': True}
-expt = {'topology': 'fully_connected', 'local_steps': 16}
+# expt = {'topology': 'fully_connected', 'local_steps': 16}
 # expt = {'topology': 'fully_connected', 'local_steps': 50}
 # expt = {'topology': 'random', 'degree': 4, 'local_steps': 0}
 # expt = {'topology': 'exponential_graph', 'local_steps': 0}
