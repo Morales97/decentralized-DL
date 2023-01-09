@@ -57,15 +57,11 @@ def increase_nodes(config, expt, models, opts, n_nodes_new, device):
     models = [get_model(config, device) for _ in range(n_nodes_new)]
     for i in range(len(models)):
         models[i].load_state_dict(avg_model.state_dict())
-
-    pdb.set_trace()
     
     opt_sd = get_average_opt(config, device, opts)
     opts = [optim.SGD(model.parameters(), lr=config['lr'], momentum=0.9, nesterov=True, weight_decay=1e-4) for model in models]
     for i in range(len(opts)):
         opts[i].load_state_dict(opt_sd)
-
-    pdb.set_trace()
 
     # update gossip matrix
     comm_matrix = get_diff_matrix(expt, n_nodes_new)
@@ -210,7 +206,7 @@ config = {
     'n_nodes': [8, 16],
     'batch_size': 128,
     'lr': 0.2*16,
-    'steps': [10, 50000//(128*16)*300],
+    'steps': [50000//(128*16)*150, 50000//(128*16)*300],
     'warmup_steps': 50000//(128*16)*5,
     'steps_eval': 50000//(128*4),
     'data_split': 'yes', # NOTE 'no' will sample with replacement from the FULL dataset, which will be truly IID
@@ -218,7 +214,7 @@ config = {
     'p_label_skew': 0,
     'net': 'resnet18',
     'wandb': True,
-    'eval_on_average_model': True,
+    'eval_on_average_model': False,
     'dataset': 'cifar10',
 }
 
