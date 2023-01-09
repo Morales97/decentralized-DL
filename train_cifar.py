@@ -202,11 +202,11 @@ config = {
 # expt = {'topology': 'centralized', 'label': 'Centralized', 'local_steps': 0}
 # expt = {'topology': 'fully_connected', 'local_steps': 0}
 # expt = {'topology': 'fully_connected', 'local_steps': 5, 'eval_on_average_model': True}
-# expt2 = {'topology': 'fully_connected', 'local_steps': 10}
+expt = {'topology': 'fully_connected', 'local_steps': 16}
 # expt = {'topology': 'fully_connected', 'local_steps': 50}
 # expt = {'topology': 'random', 'degree': 4, 'local_steps': 0}
 # expt = {'topology': 'exponential_graph', 'local_steps': 0}
-expt = {'topology': 'ring', 'local_steps': 0}
+# expt = {'topology': 'ring', 'local_steps': 0}
 # expt = {'topology': 'ring', 'local_steps': 0, 'data_split': 'no', 'eval_on_average_model': True}
 
 if __name__ == '__main__':
