@@ -4,6 +4,8 @@ import pdb
 import torch
 import copy 
 from model.model import get_model
+import torch.optim as optim
+
 
 def get_diff_matrix(expt, num_clients):
     topology = expt['topology']
@@ -116,3 +118,22 @@ def get_average_model(config, device, models):
         }
     )
     return model
+
+def get_average_opt(config, device, opts):
+    '''Average all optimizers, all-reduce for momentum terms'''
+
+    opts_sd = [copy.deepcopy(opt.state_dict()) for opt in opts]
+    model = get_model(config, device)
+    opt = optim.SGD(model.parameters(), lr=config['lr'], momentum=0.9, nesterov=True, weight_decay=1e-4)
+    keys = opts_sd[0]['state'].keys()
+    
+    weights = np.ones(len(opts)) / len(opts)
+    
+    opt_state_dict = opt.state_dict()
+    for key in keys:
+        opt_state_dict['state'][key]['momentum_buffer'] = torch.stack(
+                [weights[j]*opts_sd[j]['state'][key]['momentum_buffer'] for j in range(len(weights))],
+                dim=0,
+            ).sum(0) / weights.sum() 
+    
+    return opt_state_dict

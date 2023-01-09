@@ -1,7 +1,7 @@
 import numpy as np
 import pdb
 from data.data import get_data
-from topology import get_diff_matrix, diffuse, get_average_model
+from topology import get_diff_matrix, diffuse, get_average_model, get_average_opt
 import time
 import torch
 import torch.optim as optim
@@ -51,10 +51,26 @@ def worker_local_step(model, opt, train_loader_iter, device):
     return loss.item()
 
 
-def increase_nodes(config, models, opts, n_nodes_new, device):
+def increase_nodes(config, expt, models, opts, n_nodes_new, device):
     ''' All-reduce average all models and optimizers, and use to initialize new nodes'''
     avg_model = get_average_model(config, device, models)
+    models = [get_model(config, device) for _ in range(n_nodes_new)]
+    for i in range(len(models)):
+        models[i].load_state_dict(avg_model.state_dict())
+
     pdb.set_trace()
+    
+    opt_sd = get_average_opt(config, device, opts)
+    opts = [optim.SGD(model.parameters(), lr=config['lr'], momentum=0.9, nesterov=True, weight_decay=1e-4) for model in models]
+    for i in range(len(opts)):
+        opts[i].load_state_dict(opt_sd)
+
+    pdb.set_trace()
+    
+    # update gossip matrix
+    comm_matrix = get_diff_matrix(expt, n_nodes_new)
+
+    return models, opts, comm_matrix
 ########################################################################################
 
 
@@ -175,7 +191,6 @@ def train_cifar(config, expt, wandb):
 
         n_nodes_current = n_nodes[1]
         increase_nodes(config, models, opts, n_nodes_current, device)
-        comm_matrix = get_diff_matrix(expt, n_nodes_current)
 
     return logger.accuracies, logger.test_losses, logger.train_losses, None, None, logger.weight_distance
 
