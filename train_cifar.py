@@ -179,8 +179,8 @@ def train_cifar(config, expt, wandb):
 
 
 config = {
-    'n_nodes': 1,
-    'batch_size': 128*8,
+    'n_nodes': 16,
+    'batch_size': 128,
     'lr': 0.2*16,
     'steps': 50000//(128*16)*300,
     'warmup_steps': 50000//(128*16)*5,
@@ -190,17 +190,17 @@ config = {
     'p_label_skew': 0,
     'net': 'resnet18',
     'wandb': True,
-    'eval_on_average_model': False,
+    'eval_on_average_model': True,
     'dataset': 'cifar10',
 }
 
 
-expt = {'topology': 'centralized', 'label': 'Centralized', 'local_steps': 0}
+# expt = {'topology': 'centralized', 'label': 'Centralized', 'local_steps': 0}
 # expt3 = {'topology': 'centralized', 'label': 'Centralized, LR warm up (100)', 'local_steps': 0, 'warmup_steps': 100}
 
 # expt = {'topology': 'solo', 'local_steps': 0}
 # expt = {'topology': 'centralized', 'label': 'Centralized', 'local_steps': 0}
-# expt = {'topology': 'fully_connected', 'local_steps': 0}
+expt = {'topology': 'fully_connected', 'local_steps': 0}
 # expt = {'topology': 'fully_connected', 'local_steps': 5, 'eval_on_average_model': True}
 # expt2 = {'topology': 'fully_connected', 'local_steps': 10}
 # expt = {'topology': 'fully_connected', 'local_steps': 50}
