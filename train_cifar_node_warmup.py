@@ -111,7 +111,11 @@ def train_cifar(config, expt, wandb):
     ts_total = time.time()
     ts_steps_eval = time.time()
     epoch = 0
-    for step in range(config['steps']):
+    total_steps = config['steps'][-1]
+    current_stage = 0
+    step_increase_nodes = config['steps'][current_stage]
+
+    for step in range(total_steps):
 
         if config['data_split'] == 'yes':
             for i, l in enumerate(train_loader_lengths):
@@ -125,11 +129,20 @@ def train_cifar(config, expt, wandb):
                     g['lr'] = lr
 
         # decay lr at 50% and 75%
-        if step == config['steps']//2 or step == config['steps']//4*3:
+        if step == total_steps//2 or step == total_steps//4*3:
             for opt in opts:
                 for g in opt.param_groups:
                     g['lr'] = g['lr']/10
             print('lr decayed to %.4f' % g['lr'])
+
+        # increase number of nodes
+        if step == step_increase_nodes:
+            current_stage += 1
+            n_nodes_current = n_nodes[current_stage]
+            step_increase_nodes = config['steps'][current_stage]
+
+            models, opts, comm_matrix = increase_nodes(config, expt, models, opts, n_nodes_current, device)
+            print('Increased number of nodes to %d' % n_nodes_current)
 
         # local update
         train_loss = 0
@@ -150,7 +163,7 @@ def train_cifar(config, expt, wandb):
 
         # evaluate per node
         if (not config['eval_on_average_model']) and decentralized:
-            if (step+1) % config['steps_eval'] == 0 or (step+1) == config['steps']:
+            if (step+1) % config['steps_eval'] == 0 or (step+1) == total_steps:
                 acc_workers = []
                 loss_workers = []
                 ts_eval = time.time()
@@ -173,7 +186,7 @@ def train_cifar(config, expt, wandb):
 
         # evaluate on averaged model
         else:
-            if (step+1) % config['steps_eval'] == 0 or (step+1) == config['steps']:
+            if (step+1) % config['steps_eval'] == 0 or (step+1) == total_steps:
                 ts_eval = time.time()
                 model = get_average_model(config, device, models)
                 test_loss, acc = evaluate_model(model, test_loader, device)
@@ -189,9 +202,7 @@ def train_cifar(config, expt, wandb):
 
                 ts_steps_eval = time.time()
 
-        n_nodes_current = n_nodes[1]
-        increase_nodes(config, expt, models, opts, n_nodes_current, device)
-
+  
     return logger.accuracies, logger.test_losses, logger.train_losses, None, None, logger.weight_distance
 
 
@@ -199,7 +210,7 @@ config = {
     'n_nodes': [8, 16],
     'batch_size': 128,
     'lr': 0.2*16,
-    'steps': 50000//(128*16)*300,
+    'steps': [10, 50000//(128*16)*300],
     'warmup_steps': 50000//(128*16)*5,
     'steps_eval': 50000//(128*4),
     'data_split': 'yes', # NOTE 'no' will sample with replacement from the FULL dataset, which will be truly IID
