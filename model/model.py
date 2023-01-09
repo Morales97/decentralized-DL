@@ -14,3 +14,4 @@ def get_model(config, device):
         raise Exception('model not supported')
 
     return model.to(device)
+

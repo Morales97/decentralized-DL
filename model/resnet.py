@@ -5,7 +5,8 @@ From https://github.com/epfml/LocalSGD-Code/blob/master/distributed_code/pcode/m
 # -*- coding: utf-8 -*-
 import math
 import torch.nn as nn
-
+from torchsummary import summary
+import pdb
 
 __all__ = ["resnet"]
 
@@ -305,3 +306,8 @@ def resnet18(config):
     model = ResNet_cifar(dataset=config['dataset'], resnet_size=20)
     # model = ResNet_imagenet(dataset=dataset, resnet_size=resnet_size)
     return model
+
+if __name__ == '__main__':
+    model = resnet18({'dataset': 'cifar10'})
+    summary(model, (1, 28, 28))
+    pdb.set_trace()
