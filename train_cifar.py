@@ -179,8 +179,8 @@ def train_cifar(config, expt, wandb):
 
 
 config = {
-    'n_nodes': 1,
-    'batch_size': 128*16,
+    'n_nodes': 8,
+    'batch_size': 128,
     'lr': 0.2*16,
     'steps': 50000//(128*16)*300,
     'warmup_steps': 50000//(128*16)*5,
@@ -194,22 +194,6 @@ config = {
     'dataset': 'cifar10',
 }
 
-
-config2 = {
-    'n_nodes': 1,
-    'batch_size': 128,
-    'lr': 0.2,
-    'steps': 50000//128*300,
-    'warmup_steps': 50000//128*5,
-    'steps_eval': 50000//(128*4),
-    'data_split': 'yes', # NOTE 'no' will sample with replacement from the FULL dataset, which will be truly IID
-    'same_init': True,
-    'p_label_skew': 0,
-    'net': 'resnet18',
-    'wandb': True,
-    'eval_on_average_model': False,
-    'dataset': 'cifar10',
-}
 
 expt = {'topology': 'centralized', 'label': 'Centralized', 'local_steps': 0}
 # expt3 = {'topology': 'centralized', 'label': 'Centralized, LR warm up (100)', 'local_steps': 0, 'warmup_steps': 100}
@@ -228,9 +212,9 @@ expt = {'topology': 'centralized', 'label': 'Centralized', 'local_steps': 0}
 if __name__ == '__main__':
 
 
-    name = get_expt_name(config2, expt)
-    wandb.init(name=name, dir='.', config={**config2, **expt}, reinit=True, project='MLO-CIFAR10', entity='morales97')
-    acc, test_loss, train_loss, _, _, _ = train_cifar(config2, expt, wandb)
+    name = get_expt_name(config, expt)
+    wandb.init(name=name, dir='.', config={**config, **expt}, reinit=True, project='MLO-CIFAR10', entity='morales97')
+    acc, test_loss, train_loss, _, _, _ = train_cifar(config, expt, wandb)
     wandb.finish()
 
 
