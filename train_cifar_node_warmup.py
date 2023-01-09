@@ -86,7 +86,8 @@ def train_cifar(config, expt, wandb):
         for i in range(1, len(models)):
             models[i].load_state_dict(models[0].state_dict())
 
-    comm_matrix = get_diff_matrix(expt, n_nodes[0])
+    n_nodes_current = n_nodes[0]
+    comm_matrix = get_diff_matrix(expt, n_nodes_current)
     # print(comm_matrix)
 
     logger = Logger(wandb)
@@ -124,8 +125,8 @@ def train_cifar(config, expt, wandb):
             elif config['data_split'] == 'no':
                 train_loss += worker_local_step(models[i],
                                                 opts[i], iter(train_loader), device)
-        epoch += n_nodes*batch_size / 50000
-        train_loss /= n_nodes
+        epoch += n_nodes_current*batch_size / 50000
+        train_loss /= n_nodes_current
         logger.log_step(step, epoch, train_loss, ts_total, ts_step)
 
         # gossip
@@ -172,9 +173,9 @@ def train_cifar(config, expt, wandb):
 
                 ts_steps_eval = time.time()
 
-
-        increase_nodes(config, models, opts, n_nodes[1], device)
-        comm_matrix = get_diff_matrix(expt, n_nodes[1])
+        n_nodes_current = n_nodes[1]
+        increase_nodes(config, models, opts, n_nodes_current, device)
+        comm_matrix = get_diff_matrix(expt, n_nodes_current)
 
     return logger.accuracies, logger.test_losses, logger.train_losses, None, None, logger.weight_distance
 
