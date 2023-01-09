@@ -309,5 +309,5 @@ def resnet18(config):
 
 if __name__ == '__main__':
     model = resnet18({'dataset': 'cifar10'})
-    summary(model, (1, 28, 28))
+    summary(model, (3, 32, 32))
     pdb.set_trace()
