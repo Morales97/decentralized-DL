@@ -309,5 +309,5 @@ def resnet18(config):
 
 if __name__ == '__main__':
     model = resnet18({'dataset': 'cifar10'}).to('cuda')
-    summary(model, (3, 32, 32))
+    summary(model, (2048, 3, 32, 32))
     pdb.set_trace()
