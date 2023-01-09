@@ -86,7 +86,7 @@ def train_cifar(config, expt, wandb):
         for i in range(1, len(models)):
             models[i].load_state_dict(models[0].state_dict())
 
-    comm_matrix = get_diff_matrix(expt, n_nodes)
+    comm_matrix = get_diff_matrix(expt, n_nodes[0])
     # print(comm_matrix)
 
     logger = Logger(wandb)
@@ -174,6 +174,7 @@ def train_cifar(config, expt, wandb):
 
 
         increase_nodes(config, models, opts, n_nodes[1], device)
+        comm_matrix = get_diff_matrix(expt, n_nodes[1])
 
     return logger.accuracies, logger.test_losses, logger.train_losses, None, None, logger.weight_distance
 
