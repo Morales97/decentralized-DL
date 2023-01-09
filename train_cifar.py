@@ -195,7 +195,7 @@ config = {
 }
 
 
-expt = {'topology': 'centralized', 'label': 'Centralized', 'local_steps': 0}
+# expt = {'topology': 'centralized', 'label': 'Centralized', 'local_steps': 0}
 # expt3 = {'topology': 'centralized', 'label': 'Centralized, LR warm up (100)', 'local_steps': 0, 'warmup_steps': 100}
 
 # expt = {'topology': 'solo', 'local_steps': 0}
@@ -206,11 +206,10 @@ expt = {'topology': 'centralized', 'label': 'Centralized', 'local_steps': 0}
 # expt = {'topology': 'fully_connected', 'local_steps': 50}
 # expt = {'topology': 'random', 'degree': 4, 'local_steps': 0}
 # expt = {'topology': 'exponential_graph', 'local_steps': 0}
-# expt = {'topology': 'ring', 'local_steps': 0}
+expt = {'topology': 'ring', 'local_steps': 0}
 # expt = {'topology': 'ring', 'local_steps': 0, 'data_split': 'no', 'eval_on_average_model': True}
 
 if __name__ == '__main__':
-
 
     name = get_expt_name(config, expt)
     wandb.init(name=name, dir='.', config={**config, **expt}, reinit=True, project='MLO-CIFAR10', entity='morales97')
