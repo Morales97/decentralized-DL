@@ -130,6 +130,7 @@ def get_average_opt(config, device, opts):
     weights = np.ones(len(opts)) / len(opts)
     
     opt_state_dict = opt.state_dict()
+    pdb.set_trace()
     for key in keys:
         opt_state_dict['state'][key]['momentum_buffer'] = torch.stack(
                 [weights[j]*opts_sd[j]['state'][key]['momentum_buffer'] for j in range(len(weights))],
