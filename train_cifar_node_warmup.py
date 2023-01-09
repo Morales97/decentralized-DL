@@ -66,7 +66,7 @@ def increase_nodes(config, expt, models, opts, n_nodes_new, device):
         opts[i].load_state_dict(opt_sd)
 
     pdb.set_trace()
-    
+
     # update gossip matrix
     comm_matrix = get_diff_matrix(expt, n_nodes_new)
 
@@ -190,7 +190,7 @@ def train_cifar(config, expt, wandb):
                 ts_steps_eval = time.time()
 
         n_nodes_current = n_nodes[1]
-        increase_nodes(config, models, opts, n_nodes_current, device)
+        increase_nodes(config, expt, models, opts, n_nodes_current, device)
 
     return logger.accuracies, logger.test_losses, logger.train_losses, None, None, logger.weight_distance
 
