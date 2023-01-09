@@ -51,6 +51,10 @@ def worker_local_step(model, opt, train_loader_iter, device):
     return loss.item()
 
 
+def increase_nodes(config, models, opts, n_nodes_new, device):
+    ''' All-reduce average all models and optimizers, and use to initialize new nodes'''
+    avg_model = get_average_model(config, device, models)
+    pdb.set_trace()
 ########################################################################################
 
 
@@ -62,14 +66,8 @@ def train_cifar(config, expt, wandb):
     if 'eval_on_average_model' not in config.keys():
         config['eval_on_average_model'] = False
 
-    # central training
-    if not decentralized:
-        n_nodes = 1
-        batch_size = config['batch_size'] * config['n_nodes']
-    # decentralized
-    else:
-        n_nodes = config['n_nodes']
-        batch_size = config['batch_size']
+    n_nodes = config['n_nodes']
+    batch_size = config['batch_size']
 
     # data
     if 'data_split' not in config.keys():
@@ -82,7 +80,7 @@ def train_cifar(config, expt, wandb):
     # init
     torch.manual_seed(0)
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
-    models = [get_model(config, device) for _ in range(n_nodes)]
+    models = [get_model(config, device) for _ in range(n_nodes[0])]
     opts = [optim.SGD(model.parameters(), lr=config['lr'], momentum=0.9, nesterov=True, weight_decay=1e-4) for model in models]
     if config['same_init']:
         for i in range(1, len(models)):
@@ -175,17 +173,19 @@ def train_cifar(config, expt, wandb):
                 ts_steps_eval = time.time()
 
 
+        increase_nodes(config, models, opts, n_nodes[1], device)
+
     return logger.accuracies, logger.test_losses, logger.train_losses, None, None, logger.weight_distance
 
 
 config = {
-    'n_nodes': 16,
+    'n_nodes': [8, 16],
     'batch_size': 128,
     'lr': 0.2*16,
     'steps': 50000//(128*16)*300,
     'warmup_steps': 50000//(128*16)*5,
     'steps_eval': 50000//(128*4),
-    'data_split': 'yes', # NOTE 'no' will sample with replacement from the FULL dataset, which will be truly IID
+    'data_split': 'no', # NOTE 'no' will sample with replacement from the FULL dataset, which will be truly IID
     'same_init': True,
     'p_label_skew': 0,
     'net': 'resnet18',
