@@ -7,6 +7,7 @@ import math
 import torch.nn as nn
 from torchsummary import summary
 import pdb
+import torchvision 
 
 __all__ = ["resnet"]
 
@@ -307,7 +308,11 @@ def resnet18(config):
     # model = ResNet_imagenet(dataset=dataset, resnet_size=resnet_size)
     return model
 
+def resnet50():
+    return torchvision.models.resnet50()
+
 if __name__ == '__main__':
-    model = resnet18({'dataset': 'cifar10'}).to('cuda')
-    summary(model, (2048, 3, 32, 32))
+    # model = resnet18({'dataset': 'cifar10'}).to('cuda')
+    model = resnet50()
+    summary(model, (3, 32, 32))
     pdb.set_trace()
