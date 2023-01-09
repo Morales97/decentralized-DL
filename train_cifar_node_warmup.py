@@ -203,7 +203,7 @@ def train_cifar(config, expt, wandb):
 
 
 config = {
-    'n_nodes': [8, 16],
+    'n_nodes': [4, 16],
     'batch_size': 128,
     'lr': 0.2*16,
     'steps': [50000//(128*16)*150, 50000//(128*16)*300],
