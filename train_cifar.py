@@ -109,8 +109,8 @@ def train_cifar(config, expt, wandb):
                 for g in opt.param_groups:
                     g['lr'] = lr
 
-        if step == config['steps']//2:
-            expt['local_steps'] = 16
+        # if step == config['steps']//2:
+        #     expt['local_steps'] = 16
 
         # decay lr at 50% and 75%
         if step == config['steps']//2 or step == config['steps']//4*3:
