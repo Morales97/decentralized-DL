@@ -12,7 +12,7 @@ def get_model(args, device):
     elif args.net == 'resnet18':
         model = resnet18(args)
     elif args.net == 'vgg':
-        model = VGG(args)
+        model = VGG()
     else:
         raise Exception('model not supported')
 
