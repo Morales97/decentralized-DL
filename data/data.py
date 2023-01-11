@@ -7,7 +7,7 @@ import torch.utils.data as data
 from data.mnist import get_heterogeneous_mnist, get_mnist_split, get_mnist_iid
 from data.cifar import get_cifar
 
-ROOT_LOCAL = '.'
+ROOT_LOCAL = './data'
 ROOT_CLUSTER = '/mloraw1/danmoral/data'
 
 def _get_mnist(config, root, n_nodes, batch_size):

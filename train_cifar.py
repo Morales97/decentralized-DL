@@ -79,7 +79,7 @@ def train(args, steps, wandb):
     if args.data_split:
         train_loader_lengths = [len(t) for t in train_loader]
         train_loader_iter = [iter(t) for t in train_loader]
-    pdb.set_trace()
+
     # init nodes
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
     models = [get_model(args, device) for _ in range(args.n_nodes)]
@@ -144,14 +144,14 @@ def train(args, steps, wandb):
                 model = get_average_model(args, device, models)
                 test_loss, acc = evaluate_model(model, test_loader, device)
                 logger.log_eval(step, epoch, float(acc*100), test_loss, ts_eval, ts_steps_eval)
-                print('Step % d -- Test accuracy: %.2f -- Test loss: %.3f -- Train loss: %.3f -- Time (total/last/eval): %.2f / %.2f / %.2f s' %
-                      (step, float(acc*100), test_loss, train_loss, time.time() - ts_total, time.time() - ts_steps_eval, time.time() - ts_eval))
+                print('Epoch %.3f (Step %d) -- Test accuracy: %.2f -- Test loss: %.3f -- Train loss: %.3f -- Time (total/last/eval): %.2f / %.2f / %.2f s' %
+                      (epoch, step, float(acc*100), test_loss, train_loss, time.time() - ts_total, time.time() - ts_steps_eval, time.time() - ts_eval))
                 
             # evaluate on all models
             else:
                 acc, test_loss, acc_workers, loss_workers, acc_avg, test_loss_avg = eval_all_models(args, models, test_loader, device)
                 logger.log_eval_per_node(step, epoch, acc, test_loss, acc_workers, loss_workers, acc_avg, test_loss_avg, ts_eval, ts_steps_eval)
-                print('Epoch %.3f (Step %d-- Test accuracy: %.2f -- Test loss: %.3f -- Train loss: %.3f -- Time (total/last/eval): %.2f / %.2f / %.2f s' %
+                print('Epoch %.3f (Step %d) -- Test accuracy: %.2f -- Test loss: %.3f -- Train loss: %.3f -- Time (total/last/eval): %.2f / %.2f / %.2f s' %
                       (epoch, step, acc, test_loss, train_loss, time.time() - ts_total, time.time() - ts_steps_eval, time.time() - ts_eval))
 
             ts_steps_eval = time.time()
