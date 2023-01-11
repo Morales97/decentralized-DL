@@ -21,7 +21,7 @@ spec:
       containers:
       - name: container-name
         image: ic-registry.epfl.ch/mlo/dani-mlo:v2
-        workingDir : /home/danmoral
+        workingDir : /mlodata1/danmoral/decentralized-DL
         command: ["/bin/bash"]
         args:
         - "-c"
