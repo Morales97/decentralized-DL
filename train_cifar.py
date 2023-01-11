@@ -59,7 +59,6 @@ def worker_local_step(model, opt, train_loader_iter, device):
     output = model(input)
     opt.zero_grad()
     loss = F.cross_entropy(output, target)
-    pdb.set_trace()
     loss.backward()
     opt.step()
 
