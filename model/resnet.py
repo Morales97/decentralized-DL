@@ -300,11 +300,11 @@ class ResNet_cifar(ResNetBase):
         return x
 
 
-def resnet18(config):
+def resnet18(args):
     """
     Constructs a ResNet-18 model.
     """
-    model = ResNet_cifar(dataset=config['dataset'], resnet_size=20)
+    model = ResNet_cifar(dataset=args.dataset, resnet_size=20)
     # model = ResNet_imagenet(dataset=dataset, resnet_size=resnet_size)
     return model
 
