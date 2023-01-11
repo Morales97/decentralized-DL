@@ -4,21 +4,18 @@ import time
 import numpy as np
 import os
 
-def get_expt_name(config, expt, warmup=False):
-    if expt['topology'] == 'centralized' or expt['topology'] == 'fully_connected':
+def get_expt_name(args, warmup=False):
+    if args.topology == 'centralized' or args.topology == 'fully_connected':
         topology = 'FC' 
     else:
-        topology = expt['topology']
-    name = topology + '_b' + str(config['batch_size']) + '_lr' + str(config['lr'])
+        topology = args.topology
+    name = topology + '_b' + str(args.batch_size) + '_lr' + str(args.lr)
 
     if warmup:
         name += '_warmup'
     
-    if expt['local_steps'] > 0:
-        name += '_local' + str(expt['local_steps'])
-
-    if config['data_split'] == 'no':
-        name += '_iid'
+    if args.local_steps > 0:
+        name += '_local' + str(args.local_steps)
 
     return name
 

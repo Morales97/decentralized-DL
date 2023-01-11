@@ -7,8 +7,9 @@ from model.model import get_model
 import torch.optim as optim
 
 
-def get_diff_matrix(expt, num_clients):
-    topology = expt['topology']
+def get_gossip_matrix(args):
+    topology = args.topology
+    num_clients = args.n_nodes
 
     if topology == 'solo' or num_clients == 1:
         W = np.eye(num_clients)
@@ -23,7 +24,7 @@ def get_diff_matrix(expt, num_clients):
         W = np.ones((num_clients, num_clients)) / num_clients
 
     elif topology == 'FC_alpha':    
-        alpha = expt['local_steps'] / (1+expt['local_steps'])
+        alpha = args.local_steps / (1+args.local_steps)
         W = alpha * np.eye(num_clients) + (1-alpha) * np.ones((num_clients,num_clients)) / num_clients
     
     elif topology == 'exponential_graph':
@@ -46,32 +47,32 @@ def get_diff_matrix(expt, num_clients):
         for i in range(num_clients):
             indxs = np.arange(num_clients).tolist()
             indxs.remove(i)
-            edges = np.random.choice(indxs, expt['degree']-1, replace=False)     # NOTE: considering self-connection for degree
+            edges = np.random.choice(indxs, args.degree-1, replace=False)     # NOTE: considering self-connection for degree
             W[i][edges] = 1     # degree is in-degree, out-degree is not controlled. W[edges][i] would make degree in out-degree
-        W /= (expt['degree'])
+        W /= (args.degree)
 
     return W
 
-def diffuse(W, models, step, expt):
-    if expt['topology'] == 'centralized':
+def diffuse(args, W, models, step):
+    if args.topology == 'centralized':
         return
     
-    if expt['topology'] == 'FC_alpha':          # implicit local steps with W
+    if args.topology == 'FC_alpha':          # implicit local steps with W
         diffuse_params(W, models)
 
-    elif expt['topology'] == 'FC_randomized_local_steps':     # take a local step with prob (1-p)
-        p = 1 / (1+expt['local_steps'])
+    elif args.topology == 'FC_randomized_local_steps':     # take a local step with prob (1-p)
+        p = 1 / (1+args.local_steps)
         if np.random.uniform() < p:
             diffuse_params(W, models)
         else:
             pass
 
-    elif expt['local_steps'] > 0 and (step+1) % expt['local_steps'] != 0:
+    elif args.local_steps > 0 and (step+1) % args.local_steps != 0:
         pass
 
     elif isinstance(W, list):
-        if 'time_varying' in expt['topology']:      # time-varying
-            if expt['topology'] == 'EG_time_varying_random':
+        if 'time_varying' in args.topology:      # time-varying
+            if args.topology == 'EG_time_varying_random':
                 diffuse_params(W[np.random.choice(len(W))], models)
             else:
                 diffuse_params(W[step%len(W)], models)
@@ -98,13 +99,13 @@ def diffuse_params(W, models):
             }
         )
 
-def get_average_model(config, device, models):
+def get_average_model(args, device, models):
     '''Average all models (one all-reduce communication at the end to converte to one only model'''
     if len(models) == 1:
         return models[0]
 
     models_sd = [copy.deepcopy(model.state_dict()) for model in models]
-    model = get_model(config, device)
+    model = get_model(args, device)
     keys = models_sd[0].keys()
     
     weights = np.ones(len(models)) / len(models)

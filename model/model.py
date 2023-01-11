@@ -1,15 +1,15 @@
 from model.convnet import ConvNet, ConvNet_OP, MLP
 from model.resnet import resnet18
 
-def get_model(config, device):
-    if config['net'] == 'convnet':
+def get_model(args, device):
+    if args.net == 'convnet':
         model = ConvNet()
-    elif config['net'] == 'convnet_op':
+    elif args.net == 'convnet_op':
         model = ConvNet_OP()
-    elif config['net'] == 'mlp':
+    elif args.net == 'mlp':
         model = MLP()
-    elif config['net'] == 'resnet18':
-        model = resnet18(config)
+    elif args.net == 'resnet18':
+        model = resnet18(args)
     else:
         raise Exception('model not supported')
 

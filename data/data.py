@@ -5,7 +5,7 @@ from torchvision import datasets, transforms
 import torch
 import torch.utils.data as data
 from data.mnist import get_heterogeneous_mnist, get_mnist_split, get_mnist_iid
-from data.cifar import get_cifar_split
+from data.cifar import get_cifar
 
 ROOT_LOCAL = '.'
 ROOT_CLUSTER = '/mloraw1/danmoral/data'
@@ -22,25 +22,25 @@ def _get_mnist(config, root, n_nodes, batch_size):
         raise Exception('data split modality not supported')
 
 
-def _get_cifar(config, root, n_nodes, batch_size):
+def _get_cifar(args, root):
     
-    if config['p_label_skew'] > 0:
+    if args.p_label_skew > 0:
         raise Exception('Heterogeneous CIFAR not supported yet')
-    elif config['data_split'] == 'yes':
-        return get_cifar_split(config, root, n_nodes, batch_size)
-    elif config['data_split'] == 'no':
-        raise Exception('IID CIFAR not supported yet')
+    elif args.data_split:
+        return get_cifar(args, root, iid=False)
+    else:
+        return get_cifar(args, root, iid=True)
 
 
-def get_data(config, n_nodes, batch_size, local_exec=False):
-    if local_exec:
+def get_data(args):
+    if args.local_exec:
         root = ROOT_LOCAL
     else:
         root = ROOT_CLUSTER
 
-    if config['dataset'] == 'mnist':
-        return _get_mnist(config, root, n_nodes, batch_size)
-    elif config['dataset'] in ['cifar10', 'cifar100']:
-        return _get_cifar(config, root, n_nodes, batch_size)
+    if args.dataset == 'mnist':
+        return _get_mnist(args, root, args.n_nodes, args.batch_size)
+    elif args.dataset in ['cifar10', 'cifar100']:
+        return _get_cifar(args, root)
     else:
         raise Exception('Dataset not supported')
