@@ -2,4 +2,6 @@
 experiments_mnist/results/*
 train_job.yaml
 train_job.yaml
+cifar-10-batches-py/*
 *.yaml
+*.gz
