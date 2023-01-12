@@ -19,7 +19,7 @@ class Logger:
             'Total time': time.time() - ts_total,
             'Time/step': time.time() - ts_step,
         }
-        self.wandb.log(log)
+        if self.wandb: self.wandb.log(log)
 
     def log_eval(self, step, epoch, acc, test_loss, ts_eval, ts_steps_eval):
         self.accuracies.append(acc)
@@ -32,7 +32,7 @@ class Logger:
             'Time/eval': time.time() - ts_eval,
             'Time since last eval': time.time() - ts_steps_eval
         }
-        self.wandb.log(log)
+        if self.wandb: self.wandb.log(log)
 
     def log_eval_random_node(self, step, epoch, acc, test_loss):
         self.accuracies.append(acc)
@@ -43,7 +43,7 @@ class Logger:
             'Test Accuracy [random node]': acc,
             'Test Loss [random node]': test_loss,
         }
-        self.wandb.log(log)
+        if self.wandb: self.wandb.log(log)
 
     def log_eval_per_node(self, step, epoch, acc, test_loss, acc_nodes, loss_nodes, acc_avg, loss_avg, ts_eval, ts_steps_eval):
         self.accuracies.append(acc)
@@ -62,7 +62,7 @@ class Logger:
             'Time/eval': time.time() - ts_eval,
             'Time since last eval': time.time() - ts_steps_eval
         }
-        self.wandb.log(log)
+        if self.wandb: self.wandb.log(log)
 
     def log_weight_distance(self, step, epoch, weight_dist):
         self.weight_distance.append(weight_dist)
@@ -71,4 +71,4 @@ class Logger:
             'Epoch': epoch,
             'Weight distance to init': weight_dist,
         }
-        self.wandb.log(log)
+        if self.wandb: self.wandb.log(log)

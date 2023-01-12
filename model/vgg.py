@@ -56,14 +56,12 @@ class VGG(nn.Module):
         self.classifier = nn.Sequential(
             nn.Linear(512, 512),
             nn.ReLU(),
-            nn.Dropout(),
+            # nn.Dropout(),
             nn.Linear(512, 10)
         )
         
     def forward(self, x):
-        for layer in self.features:
-            x = layer(x)
-        
+        x = self.features(x)
         x = x.view(x.size()[0], -1)
         x = self.classifier(x)
         return x
