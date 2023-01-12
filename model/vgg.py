@@ -7,7 +7,7 @@ class VGG(nn.Module):
     """
     PyTorch implementation of VGG-16, adapted as C2 in Keskar et al. (2017). Pretrained imagenet model is used.
     """
-    def __init__(self):
+    def __init__(self, init_weights=True):
         super().__init__()
     
         self.features = nn.Sequential(
@@ -60,6 +60,20 @@ class VGG(nn.Module):
             nn.Linear(512, 10)
         )
         
+
+        if init_weights:
+            for m in self.modules():
+                if isinstance(m, nn.Conv2d):
+                    nn.init.kaiming_normal_(m.weight, mode="fan_out", nonlinearity="relu")
+                    if m.bias is not None:
+                        nn.init.constant_(m.bias, 0)
+                elif isinstance(m, nn.BatchNorm2d):
+                    nn.init.constant_(m.weight, 1)
+                    nn.init.constant_(m.bias, 0)
+                elif isinstance(m, nn.Linear):
+                    nn.init.normal_(m.weight, 0, 0.01)
+                    nn.init.constant_(m.bias, 0)
+
     def forward(self, x):
         x = self.features(x)
         x = x.view(x.size()[0], -1)
