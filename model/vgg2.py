@@ -15,7 +15,7 @@ class VGG(nn.Module):
     '''
     VGG model
     '''
-    def __init__(self, features):
+    def __init__(self, features, n_classes):
         super(VGG, self).__init__()
         self.features = features
         self.classifier = nn.Sequential(
@@ -25,7 +25,7 @@ class VGG(nn.Module):
             nn.Dropout(),
             nn.Linear(512, 512),
             nn.ReLU(True),
-            nn.Linear(512, 10),
+            nn.Linear(512, n_classes),
         )
          # Initialize weights
         for m in self.modules():
@@ -67,10 +67,12 @@ cfg = {
 }
 
 
-def vgg11():
+def vgg11(args):
     """VGG 11-layer model (configuration "A")"""
-    return VGG(make_layers(cfg['A']))
-
+    if args.dataset == 'cifar10':
+        return VGG(make_layers(cfg['A']), 10)
+    if args.dataset == 'cifar100':
+        return VGG(make_layers(cfg['A']), 100)
 
 def vgg11_bn():
     """VGG 11-layer model (configuration "A") with batch normalization"""

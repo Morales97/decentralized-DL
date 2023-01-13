@@ -7,7 +7,7 @@ class VGG(nn.Module):
     """
     PyTorch implementation of VGG-16, adapted as C2 in Keskar et al. (2017). Pretrained imagenet model is used.
     """
-    def __init__(self, init_weights=True):
+    def __init__(self, n_classes, init_weights=True):
         super().__init__()
     
         self.features = nn.Sequential(
@@ -57,7 +57,7 @@ class VGG(nn.Module):
             nn.Linear(512, 512),
             nn.ReLU(),
             # nn.Dropout(),
-            nn.Linear(512, 10)
+            nn.Linear(512, n_classes)
         )
         
 
@@ -80,6 +80,11 @@ class VGG(nn.Module):
         x = self.classifier(x)
         return x
 
+def vgg16(args):
+    if args.dataset == 'cifar10':
+        return VGG(n_classes=10)
+    elif args.dataset == 'cifar100':
+        return VGG(n_classes=100)
 
 if __name__ == '__main__':
     model = VGG()

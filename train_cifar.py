@@ -132,7 +132,7 @@ def train(args, steps, wandb):
         logger.log_step(step, epoch, train_loss, ts_total, ts_step)
 
         # gossip
-        diffuse(args, comm_matrix, models, step)
+        diffuse(args, comm_matrix, models, step, epoch)
 
         # evaluate 
         if (step+1) % args.steps_eval == 0 or (step+1) == steps['total_steps']:

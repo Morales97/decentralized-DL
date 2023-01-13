@@ -1,6 +1,6 @@
 from model.convnet import ConvNet, ConvNet_OP, MLP
 from model.resnet import resnet18
-from model.vgg import VGG
+from model.vgg import vgg16
 from model.vgg2 import vgg11, vgg11_bn
 
 def get_model(args, device):
@@ -13,9 +13,9 @@ def get_model(args, device):
     elif args.net == 'resnet18':
         model = resnet18(args)
     elif args.net == 'vgg':     # modified VGG-16 (Keskar et al, 2017)
-        model = VGG()
+        model = vgg16(args)
     elif args.net == 'vgg11':   # modified VGG-11 (Beyond Spectral Gap)
-        model = vgg11()
+        model = vgg11(args)
     elif args.net == 'vgg11bn': # modified VGG-11 with BN 
         model = vgg11_bn()
     else:

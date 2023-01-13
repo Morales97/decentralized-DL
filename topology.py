@@ -53,7 +53,12 @@ def get_gossip_matrix(args):
 
     return W
 
-def diffuse(args, W, models, step):
+def diffuse(args, W, models, step, epoch):
+    # for post-local SGD, use fully connected in the first X epochs
+    if args.post_local_epochs < epoch:  
+        W = np.ones((args.n_nodes, args.n_nodes)) / args.n_nodes
+        return diffuse_params(W, models)
+
     if args.topology == 'centralized':
         return
     
@@ -66,7 +71,8 @@ def diffuse(args, W, models, step):
             diffuse_params(W, models)
         else:
             pass
-
+        
+    # local steps    
     elif args.local_steps > 0 and (step+1) % args.local_steps != 0:
         pass
 
