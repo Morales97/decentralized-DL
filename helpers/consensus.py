@@ -12,7 +12,7 @@ from topology import get_average_model
 def compute_node_consensus(args, device, models):
     avg_model = get_average_model(args, device, models)
     state_dict_avg = avg_model.state_dict()
-    models_sd = [models[i].state_dict() for i in models]
+    models_sd = [model.state_dict() for model in models]
     L2_diff = 0
     for key in state_dict_avg.keys():
         L2_diff += torch.stack(
