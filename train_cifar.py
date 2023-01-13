@@ -133,7 +133,7 @@ def train(args, steps, wandb):
 
         # gossip
         diffuse(args, comm_matrix, models, step, epoch)
-
+        
         # evaluate 
         if (step+1) % args.steps_eval == 0 or (step+1) == steps['total_steps']:
             ts_eval = time.time()
