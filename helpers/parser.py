@@ -40,7 +40,9 @@ def get_parser():
                         help='topology of gossip matrix. see topology.py for options') 
     parser.add_argument('--local_steps', type=int, default=0,
                         help='number of local steps inbetween each gossip') 
-  
+    parser.add_argument('--post_local_epochs', type=int, default=0,
+                        help='number of epochs of all-reduce comm before changing to local SGD. If 0, do not use post-local SGD') 
+
     # hyperparameters
     parser.add_argument('--seed', type=int, default=0,
                         help='random seed')
