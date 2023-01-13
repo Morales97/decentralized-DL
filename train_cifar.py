@@ -10,6 +10,7 @@ from helpers.utils import save_experiment, get_expt_name
 from helpers.logger import Logger
 from helpers.parser import parse_args
 from helpers.optimizer import get_optimizer
+from helpers.consensus import compute_node_consensus
 import wandb
 import os
 
@@ -155,6 +156,11 @@ def train(args, steps, wandb):
                       (epoch, step, acc, test_loss, train_loss, time.time() - ts_total, time.time() - ts_steps_eval, time.time() - ts_eval))
 
             ts_steps_eval = time.time()
+
+        # evaluate consensus
+        if step % args.steps_consensus == 0:
+            L2_dist = compute_node_consensus(args, device, models)
+            logger.log_consensus(step, epoch, L2_dist)
 
 
 if __name__ == '__main__':
