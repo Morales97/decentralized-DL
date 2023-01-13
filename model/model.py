@@ -17,7 +17,7 @@ def get_model(args, device):
     elif args.net == 'vgg11':   # modified VGG-11 (Beyond Spectral Gap)
         model = vgg11(args)
     elif args.net == 'vgg11bn': # modified VGG-11 with BN 
-        model = vgg11_bn()
+        model = vgg11_bn(args)
     else:
         raise Exception('model not supported')
 

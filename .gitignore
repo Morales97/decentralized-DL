@@ -5,3 +5,4 @@ train_job.yaml
 data/cifar-10-batches-py/*
 *.yaml
 *.gz
+data/cifar-100-python/*
