@@ -16,6 +16,6 @@ def compute_node_consensus(args, device, models):
     L2_diff = 0
     for key in state_dict_avg.keys():
         L2_diff += torch.stack(
-                            [(state_dict_avg[key] - models_sd[i][key])**2 for i in range(args.n_nodes)], dim=0
-                            ).sum() / args.n_nodes
+                            [(state_dict_avg[key] - models_sd[i][key])**2 for i in range(args.n_nodes[0])], dim=0
+                            ).sum() / args.n_nodes[0]
     return L2_diff

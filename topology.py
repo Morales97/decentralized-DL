@@ -7,9 +7,10 @@ from model.model import get_model
 import torch.optim as optim
 
 
-def get_gossip_matrix(args):
-    topology = args.topology
-    num_clients = args.n_nodes
+def get_gossip_matrix(args, phase):
+    topology = args.topology[phase]
+    num_clients = args.n_nodes[phase]
+    local_steps = args.local_steps[phase]
 
     if topology == 'solo' or num_clients == 1:
         W = np.eye(num_clients)
@@ -24,7 +25,7 @@ def get_gossip_matrix(args):
         W = np.ones((num_clients, num_clients)) / num_clients
 
     elif topology == 'FC_alpha':    
-        alpha = args.local_steps / (1+args.local_steps)
+        alpha = local_steps / (1+local_steps)
         W = alpha * np.eye(num_clients) + (1-alpha) * np.ones((num_clients,num_clients)) / num_clients
     
     elif topology == 'exponential_graph':
@@ -53,32 +54,31 @@ def get_gossip_matrix(args):
 
     return W
 
-def diffuse(args, W, models, step, epoch):
+def diffuse(args, phase, W, models, step):
     # for post-local SGD, use fully connected in the first X epochs
-    if epoch < args.post_local_epochs:
-        W = np.ones((args.n_nodes, args.n_nodes)) / args.n_nodes
-        return diffuse_params(W, models)
+    topology = args.topology[phase]
+    local_steps = args.local_steps[phase]
 
-    if args.topology == 'centralized':
+    if topology == 'centralized':
         return
     
-    if args.topology == 'FC_alpha':          # implicit local steps with W
+    if topology == 'FC_alpha':          # implicit local steps with W
         diffuse_params(W, models)
 
-    elif args.topology == 'FC_randomized_local_steps':     # take a local step with prob (1-p)
-        p = 1 / (1+args.local_steps)
+    elif topology == 'FC_randomized_local_steps':     # take a local step with prob (1-p)
+        p = 1 / (1+local_steps)
         if np.random.uniform() < p:
             diffuse_params(W, models)
         else:
             pass
         
     # local steps    
-    elif args.local_steps > 0 and (step+1) % args.local_steps != 0:
+    elif local_steps > 0 and (step+1) % local_steps != 0:
         pass
 
     elif isinstance(W, list):
-        if 'time_varying' in args.topology:      # time-varying
-            if args.topology == 'EG_time_varying_random':
+        if 'time_varying' in topology:      # time-varying
+            if topology == 'EG_time_varying_random':
                 diffuse_params(W[np.random.choice(len(W))], models)
             else:
                 diffuse_params(W[step%len(W)], models)
