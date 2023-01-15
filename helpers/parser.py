@@ -42,7 +42,7 @@ def get_parser():
                         help='number of local steps inbetween each gossip') 
     parser.add_argument('--epochs', type=int, default=300,
                         help='number epochs to train for') 
-    parser.add_argument('--start_epoch_phases', type=float, nargs='+', default=[0],
+    parser.add_argument('--start_epoch_phases', type=int, nargs='+', default=[0],
                         help='start epoch for each training phase. If [0], only one training phase') 
 
     # hyperparameters
