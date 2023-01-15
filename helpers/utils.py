@@ -9,7 +9,12 @@ def get_expt_name(args, warmup=False):
         topology = 'FC' 
     else:
         topology = args.topology
-    name = topology + '_b' + str(args.batch_size) + '_lr' + str(args.lr)
+    name = topology
+    
+    if args.n_nodes not in [1, 16]:
+        name += '_n' + str(args.n_nodes)
+    
+    name += '_b' + str(args.batch_size) + '_lr' + str(args.lr)
 
     if warmup:
         name += '_warmup'
