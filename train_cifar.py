@@ -171,7 +171,7 @@ def train(args, steps, wandb):
             L2_dist = compute_node_consensus(args, device, models)
             logger.log_consensus(step, epoch, L2_dist)
             L2_dist_init = compute_weight_distance(models[0], init_model)
-            logger.weight_distance(step, epoch, L2_dist_init)
+            logger.log_weight_distance(step, epoch, L2_dist_init)
 
 
 if __name__ == '__main__':
