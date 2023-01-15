@@ -10,7 +10,7 @@ from helpers.utils import save_experiment, get_expt_name
 from helpers.logger import Logger
 from helpers.parser import parse_args
 from helpers.optimizer import get_optimizer
-from helpers.consensus import compute_node_consensus
+from helpers.consensus import compute_node_consensus, compute_weight_distance
 import wandb
 import os
 
@@ -88,6 +88,8 @@ def train(args, steps, wandb):
     if args.same_init:
         for i in range(1, len(models)):
             models[i].load_state_dict(models[0].state_dict())
+    init_model = get_model(args, device)
+    init_model.load_state_dict(models[0].load_state_dict())
 
     # gossip matrix
     comm_matrix = get_gossip_matrix(args, 0)
@@ -99,7 +101,6 @@ def train(args, steps, wandb):
 
     # TRAIN LOOP
     phase = 0
-    pdb.set_trace()
     for step in range(steps['total_steps']):
 
         if args.data_split:
@@ -126,7 +127,6 @@ def train(args, steps, wandb):
             phase += 1
             comm_matrix = get_gossip_matrix(args, phase)
             print('[Epoch %d] Changing to phase %d. Nodes: %d. Topology: %s. Local steps: %s.' % (epoch, phase+1, args.n_nodes[phase], args.topology[phase], args.local_steps[phase]))
-            pdb.set_trace()
 
         # local update for each worker
         train_loss = 0
@@ -166,10 +166,12 @@ def train(args, steps, wandb):
 
             ts_steps_eval = time.time()
 
-        # evaluate consensus
+        # evaluate consensus and L2 dist from init
         if step % args.steps_consensus == 0:
             L2_dist = compute_node_consensus(args, device, models)
             logger.log_consensus(step, epoch, L2_dist)
+            L2_dist_init = compute_weight_distance(models[0], init_model)
+            logger.weight_distance(step, epoch, L2_dist_init)
 
 
 if __name__ == '__main__':
