@@ -125,7 +125,7 @@ def train(args, steps, wandb):
         if step in steps['phases_start'] and step > 0:
             phase += 1
             comm_matrix = get_gossip_matrix(args, phase)
-            print('[Epoch %d] Changing to phase %d. Nodes: %d. Topology: %s. Local steps: %s.' % (epoch, phase+1, args.nodes[phase], args.topology[phase], args.local_steps[phase]))
+            print('[Epoch %d] Changing to phase %d. Nodes: %d. Topology: %s. Local steps: %s.' % (epoch, phase+1, args.n_nodes[phase], args.topology[phase], args.local_steps[phase]))
             pdb.set_trace()
 
         # local update for each worker
