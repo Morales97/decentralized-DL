@@ -89,7 +89,7 @@ def train(args, steps, wandb):
         for i in range(1, len(models)):
             models[i].load_state_dict(models[0].state_dict())
     init_model = get_model(args, device)
-    init_model.load_state_dict(models[0].load_state_dict())
+    init_model.load_state_dict(models[0].state_dict())
 
     # gossip matrix
     comm_matrix = get_gossip_matrix(args, 0)
