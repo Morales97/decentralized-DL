@@ -10,7 +10,7 @@ from helpers.utils import save_experiment, get_expt_name
 from helpers.logger import Logger
 from helpers.parser import parse_args
 from helpers.optimizer import get_optimizer
-from helpers.consensus import compute_node_consensus
+from helpers.consensus import compute_node_consensus, compute_weight_distance
 import wandb
 import os
 
@@ -83,14 +83,16 @@ def train(args, steps, wandb):
 
     # init nodes
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
-    models = [get_model(args, device) for _ in range(args.n_nodes)]
+    models = [get_model(args, device) for _ in range(args.n_nodes[0])]
     opts = [get_optimizer(args, model) for model in models]
     if args.same_init:
         for i in range(1, len(models)):
             models[i].load_state_dict(models[0].state_dict())
+    init_model = get_model(args, device)
+    init_model.load_state_dict(models[0].state_dict())
 
     # gossip matrix
-    comm_matrix = get_gossip_matrix(args)
+    comm_matrix = get_gossip_matrix(args, 0)
     # print(comm_matrix)
 
     logger = Logger(wandb)
@@ -98,6 +100,7 @@ def train(args, steps, wandb):
     ts_steps_eval = time.time()
 
     # TRAIN LOOP
+    phase = 0
     for step in range(steps['total_steps']):
 
         if args.data_split:
@@ -119,6 +122,12 @@ def train(args, steps, wandb):
                     g['lr'] = g['lr']/10
             print('lr decayed to %.4f' % g['lr'])
 
+        # training phase
+        if step in steps['phases_start'] and step > 0:
+            phase += 1
+            comm_matrix = get_gossip_matrix(args, phase)
+            print('[Epoch %d] Changing to phase %d. Nodes: %d. Topology: %s. Local steps: %s.' % (epoch, phase+1, args.n_nodes[phase], args.topology[phase], args.local_steps[phase]))
+
         # local update for each worker
         train_loss = 0
         ts_step = time.time()
@@ -129,11 +138,11 @@ def train(args, steps, wandb):
                 train_loss += worker_local_step(models[i], opts[i], iter(train_loader), device)
         
         epoch = step / steps['steps_per_epoch']
-        train_loss /= args.n_nodes
+        train_loss /= args.n_nodes[phase]
         logger.log_step(step, epoch, train_loss, ts_total, ts_step)
 
         # gossip
-        diffuse(args, comm_matrix, models, step, epoch)
+        diffuse(args, phase, comm_matrix, models, step)
         
         # evaluate 
         if (step+1) % args.steps_eval == 0 or (step+1) == steps['total_steps']:
@@ -157,10 +166,12 @@ def train(args, steps, wandb):
 
             ts_steps_eval = time.time()
 
-        # evaluate consensus
+        # evaluate consensus and L2 dist from init
         if step % args.steps_consensus == 0:
             L2_dist = compute_node_consensus(args, device, models)
             logger.log_consensus(step, epoch, L2_dist)
+            L2_dist_init = compute_weight_distance(models[0], init_model)
+            logger.log_weight_distance(step, epoch, L2_dist_init)
 
 
 if __name__ == '__main__':
@@ -171,12 +182,13 @@ if __name__ == '__main__':
     if not args.expt_name:
         args.expt_name = get_expt_name(args)
     
-    steps_per_epoch =  50000 // (args.batch_size * args.n_nodes)    # 50000 is number of training samples in CIFAR-10
+    steps_per_epoch =  50000 // (args.batch_size * args.n_nodes[0])    # 50000 is number of training samples in CIFAR-10
     steps = {
         'steps_per_epoch': steps_per_epoch, 
         'total_steps': steps_per_epoch * args.epochs,
         'warmup_steps': steps_per_epoch * args.lr_warmup_epochs,
-        'decay_steps': [np.floor(steps_per_epoch * args.epochs * decay) for decay in args.lr_decay]
+        'decay_steps': [np.floor(steps_per_epoch * args.epochs * decay) for decay in args.lr_decay],
+        'phases_start': [np.floor(steps_per_epoch * phase_start) for phase_start in args.start_epoch_phases],
     }
 
     if args.wandb:
@@ -186,3 +198,4 @@ if __name__ == '__main__':
     else:
         train(args, steps, None)
 
+# python train_cifar.py --lr=3.2 --topology=ring --dataset=cifar100 --wandb=False --local_exec=True

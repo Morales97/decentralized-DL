@@ -5,21 +5,23 @@ import numpy as np
 import os
 
 def get_expt_name(args, warmup=False):
-    if args.topology == 'centralized' or args.topology == 'fully_connected':
+    if args.topology[0] == 'centralized' or args.topology[0] == 'fully_connected':
         topology = 'FC' 
+    elif args.topology[0] == 'exponential_graph':
+        topology = 'EG' 
     else:
-        topology = args.topology
+        topology = args.topology[0]
     name = topology
     
-    if args.n_nodes not in [1, 16]:
-        name += '_n' + str(args.n_nodes)
+    if args.n_nodes[0] not in [1, 16]:
+        name += '_n' + str(args.n_nodes[0])
     
     name += '_b' + str(args.batch_size) + '_lr' + str(args.lr)
 
     if warmup:
         name += '_warmup'
     
-    if args.local_steps > 0:
+    if args.local_steps[0] > 0:
         name += '_local' + str(args.local_steps)
 
     return name

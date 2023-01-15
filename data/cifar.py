@@ -72,7 +72,7 @@ def get_cifar(args, root, iid=True):
     else:
         # split train dataset
         traindata_split = data.random_split(
-            traindata, [int(traindata.data.shape[0] / args.n_nodes) for _ in range(args.n_nodes)])
+            traindata, [int(traindata.data.shape[0] / args.n_nodes[0]) for _ in range(args.n_nodes[0])])
         train_loader = [data.DataLoader(
             x, batch_size=args.batch_size, shuffle=True) for x in traindata_split]
 

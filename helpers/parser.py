@@ -32,16 +32,18 @@ def get_parser():
                         help='choice of architecture') 
     
     # decentralized
-    parser.add_argument('--n_nodes', type=int, default=16,
+    parser.add_argument('--n_nodes', type=int, nargs='+', default=[16],
                         help='number of nodes') 
     parser.add_argument('--same_init', type=boolfromstr, default=True,
                         help='initialize all models equally')
-    parser.add_argument('--topology', type=str, default='ring',
+    parser.add_argument('-t', '--topology', type=str, nargs='+', default=['ring'],
                         help='topology of gossip matrix. see topology.py for options') 
-    parser.add_argument('--local_steps', type=int, default=0,
+    parser.add_argument('--local_steps', type=int, nargs='+', default=[0],
                         help='number of local steps inbetween each gossip') 
-    parser.add_argument('--post_local_epochs', type=int, default=0,
-                        help='number of epochs of all-reduce comm before changing to local SGD. If 0, do not use post-local SGD') 
+    parser.add_argument('--epochs', type=int, default=300,
+                        help='number epochs to train for') 
+    parser.add_argument('--start_epoch_phases', type=int, nargs='+', default=[0],
+                        help='start epoch for each training phase. If [0], only one training phase') 
 
     # hyperparameters
     parser.add_argument('--seed', type=int, default=0,
@@ -52,8 +54,6 @@ def get_parser():
                         help='learning rate')   
     parser.add_argument('--lr_decay', type=list, default=[0.5, 0.75],
                         help='decay lr by 10 at the listed fractions of training')                                       
-    parser.add_argument('--epochs', type=int, default=300,
-                        help='number epochs to train for') 
     parser.add_argument('--lr_warmup_epochs', type=int, default=5,
                         help='warm up learning rate in the first epochs') 
 
