@@ -99,6 +99,7 @@ def train(args, steps, wandb):
 
     # TRAIN LOOP
     phase = 0
+    pdb.set_trace()
     for step in range(steps['total_steps']):
 
         if args.data_split:
@@ -125,7 +126,7 @@ def train(args, steps, wandb):
             phase += 1
             comm_matrix = get_gossip_matrix(args, phase)
             print('[Epoch %d] Changing to phase %d. Nodes: %d. Topology: %s. Local steps: %s.' % (epoch, phase+1, args.nodes[phase], args.topology[phase], args.local_steps[phase]))
-
+            pdb.set_trace()
 
         # local update for each worker
         train_loss = 0
