@@ -186,7 +186,7 @@ if __name__ == '__main__':
         'total_steps': steps_per_epoch * args.epochs,
         'warmup_steps': steps_per_epoch * args.lr_warmup_epochs,
         'decay_steps': [np.floor(steps_per_epoch * args.epochs * decay) for decay in args.lr_decay],
-        'phases_start': [np.floor(steps_per_epoch * phase_start / args.epochs) for phase_start in args.start_epoch_phases],
+        'phases_start': [np.floor(steps_per_epoch * phase_start) for phase_start in args.start_epoch_phases],
     }
 
     if args.wandb:
