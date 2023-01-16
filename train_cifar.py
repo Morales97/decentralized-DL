@@ -73,10 +73,10 @@ def initialize_nodes(args, models, opts, n_nodes_new, device):
     for i in range(len(models)):
         models[i].load_state_dict(avg_model.state_dict())
     
-    opt_sd = get_average_opt(opts)
+    # opt_sd = get_average_opt(opts)
     opts = [get_optimizer(args, model) for model in models]
-    for i in range(len(opts)):
-        opts[i].load_state_dict(opt_sd)
+    # for i in range(len(opts)):
+        # opts[i].load_state_dict(opt_sd)
 
     return models, opts
 
