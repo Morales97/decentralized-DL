@@ -79,6 +79,17 @@ def initialize_nodes(args, models, opts, n_nodes_new, device):
         # new_opts[i].load_state_dict(opt_sd)
     return new_models, new_opts
 
+def initialize_nodes2(args, models, opts, nodes_to_add, device):
+    ''' All-reduce average all models and optimizers, and use to initialize new nodes (all of them with same params and momentum)'''
+    avg_model = get_average_model(args, device, models)
+    for i in range(nodes_to_add):
+        new_model = get_model(args, device)
+        new_model.load_state_dict(avg_model.state_dict())
+        models += new_model
+        opts += get_optimizer(args. new_model)
+
+    return models, opts
+
 ########################################################################################
 
 
@@ -145,7 +156,9 @@ def train(args, steps, wandb):
         if phase+1 < total_phases and epoch > args.start_epoch_phases[phase+1]:
             phase += 1
             comm_matrix = get_gossip_matrix(args, phase)
-            models, opts = initialize_nodes(args, models, opts, args.n_nodes[phase], device)
+            if args.n_nodes[phase] > args.n_nodes[phase-1]:
+                nodes_to_add = args.n_nodes[phase] - args.n_nodes[phase-1]
+                models, opts = initialize_nodes2(args, models, opts, nodes_to_add, device)
             print('[Epoch %d] Changing to phase %d. Nodes: %d. Topology: %s. Local steps: %s.' % (epoch, phase, args.n_nodes[phase], args.topology[phase], args.local_steps[phase]))
 
         # local update for each worker
