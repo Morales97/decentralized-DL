@@ -198,7 +198,6 @@ def train(args, steps, wandb):
             logger.log_weight_distance_layer0(step, epoch, L2_dist_l0)
             grad_norm = get_gradient_norm(models[0])
             logger.log_grad_norm(step, epoch, grad_norm)
-            pdb.set_trace()
 
     logger.log_max_acc(max_acc)
 
