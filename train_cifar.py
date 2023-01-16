@@ -70,8 +70,8 @@ def initialize_nodes(args, models, opts, n_nodes_new, device):
     ''' All-reduce average all models and optimizers, and use to initialize new nodes (all of them with same params and momentum)'''
     avg_model = get_average_model(args, device, models)
     new_models = [get_model(args, device) for _ in range(n_nodes_new)]
-    for i in range(len(models)):
-        models[i].load_state_dict(avg_model.state_dict())
+    for i in range(len(new_models)):
+        new_models[i].load_state_dict(avg_model.state_dict())
     
     # opt_sd = get_average_opt(opts)
     new_opts = [get_optimizer(args, model) for model in new_models]
@@ -223,4 +223,4 @@ if __name__ == '__main__':
         train(args, steps, None)
 
 # python train_cifar_NEW.py --lr=3.2 --topology=ring --dataset=cifar100 --wandb=False --local_exec=True
-# python train_cifar_NEW.py --lr=3.2 --topology ring fully_connected --local_steps 0 0 --dataset=cifar100 --wandb=False --local_exec=True --n_nodes 8 16 --start_epoch_phases 0 1 --eval_on_average_model=True
+# python train_cifar.py --lr=3.2 --topology ring fully_connected --local_steps 0 0 --dataset=cifar100 --wandb=False --local_exec=True --n_nodes 8 16 --start_epoch_phases 0 1 --eval_on_average_model=True
