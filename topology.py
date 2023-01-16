@@ -126,7 +126,7 @@ def get_average_model(args, device, models):
     )
     return model
 
-def get_average_opt(config, device, opts):
+def get_average_opt(opts):
     '''Average all optimizers, all-reduce for momentum terms'''
 
     opts_sd = [copy.deepcopy(opt.state_dict()) for opt in opts]
