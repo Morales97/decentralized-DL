@@ -75,9 +75,8 @@ def initialize_nodes(args, models, opts, n_nodes_new, device):
     
     # opt_sd = get_average_opt(opts)
     new_opts = [get_optimizer(args, model) for model in new_models]
-    # for i in range(len(opts)):
-        # opts[i].load_state_dict(opt_sd)
-    pdb.set_trace()
+    # for i in range(len(new_opts)):
+        # new_opts[i].load_state_dict(opt_sd)
     return new_models, new_opts
 
 ########################################################################################
