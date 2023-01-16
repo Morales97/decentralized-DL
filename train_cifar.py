@@ -10,7 +10,7 @@ from helpers.utils import save_experiment, get_expt_name
 from helpers.logger import Logger
 from helpers.parser import parse_args
 from helpers.optimizer import get_optimizer
-from helpers.consensus import compute_node_consensus, compute_weight_distance
+from helpers.consensus import compute_node_consensus, compute_weight_distance, get_gradient_norm
 import wandb
 import os
 
@@ -170,8 +170,11 @@ def train(args, steps, wandb):
         if step % args.steps_consensus == 0:
             L2_dist = compute_node_consensus(args, device, models)
             logger.log_consensus(step, epoch, L2_dist)
-            L2_dist_init = compute_weight_distance(models[0], init_model)
+            L2_dist_init, L2_dist_l0 = compute_weight_distance(models[0], init_model)
             logger.log_weight_distance(step, epoch, L2_dist_init)
+            logger.log_weight_distance_layer0(step, epoch, L2_dist_l0)
+            grad_norm = get_gradient_norm(models[0])
+            logger.log_grad_norm(step, epoch, grad_norm)
 
 
 if __name__ == '__main__':

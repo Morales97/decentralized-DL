@@ -82,3 +82,20 @@ class Logger:
             'Consensus [L2 dist]': L2_dist,
         }
         if self.wandb: self.wandb.log(log)
+
+    def log_grad_norm(self, step, epoch, grad_norm):
+        log = {
+            'Iteration': step,
+            'Epoch': epoch,
+            'Gradient norm': grad_norm,
+        }
+        if self.wandb: self.wandb.log(log)
+    
+
+    def log_weight_distance_layer0(self, step, epoch, wd_l0):
+        log = {
+            'Iteration': step,
+            'Epoch': epoch,
+            'Weight distance Layer 0': wd_l0,
+        }
+        if self.wandb: self.wandb.log(log)
