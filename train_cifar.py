@@ -1,7 +1,7 @@
 import numpy as np
 import pdb
 from data.data import get_data
-from topology import get_gossip_matrix, diffuse, get_average_model
+from topology import get_gossip_matrix, diffuse, get_average_model, get_average_opt
 import time
 import torch
 from model.model import get_model
@@ -66,6 +66,20 @@ def worker_local_step(model, opt, train_loader_iter, device):
     return loss.item()
 
 
+def initialize_nodes(args, models, opts, n_nodes_new, device):
+    ''' All-reduce average all models and optimizers, and use to initialize new nodes (all of them with same params and momentum)'''
+    avg_model = get_average_model(args, device, models)
+    models = [get_model(args, device) for _ in range(n_nodes_new)]
+    for i in range(len(models)):
+        models[i].load_state_dict(avg_model.state_dict())
+    
+    opt_sd = get_average_opt(opts)
+    opts = [get_optimizer(args, model) for model in models]
+    for i in range(len(opts)):
+        opts[i].load_state_dict(opt_sd)
+
+    return models, opts
+
 ########################################################################################
 
 
@@ -101,8 +115,14 @@ def train(args, steps, wandb):
 
     # TRAIN LOOP
     phase = 0
-    for step in range(steps['total_steps']):
-
+    total_phases = len(args.start_epoch_phases)
+    lr_decay_phase = 0
+    total_lr_phases = len(args.lr_decay)
+    step = 0
+    epoch = 0
+    max_acc = 0
+    # for step in range(steps['total_steps']):
+    while epoch < args.epochs:
         if args.data_split:
             for i, l in enumerate(train_loader_lengths):
                 if step % l == 0:
@@ -116,17 +136,18 @@ def train(args, steps, wandb):
                     g['lr'] = lr
 
         # lr decay
-        if step in steps['decay_steps']:
+        if lr_decay_phase < total_lr_phases and epoch > args.lr_decay[lr_decay_phase]:
             for opt in opts:
                 for g in opt.param_groups:
                     g['lr'] = g['lr']/10
             print('lr decayed to %.4f' % g['lr'])
 
-        # training phase
-        if step in steps['phases_start'] and step > 0:
+        # advance to the next training phase
+        if phase+1 < total_phases and epoch > args.start_epoch_phases[phase+1]:
             phase += 1
             comm_matrix = get_gossip_matrix(args, phase)
-            print('[Epoch %d] Changing to phase %d. Nodes: %d. Topology: %s. Local steps: %s.' % (epoch, phase+1, args.n_nodes[phase], args.topology[phase], args.local_steps[phase]))
+            models, opts = initialize_nodes(args, models, opts, args.n_nodes[phase], device)
+            print('[Epoch %d] Changing to phase %d. Nodes: %d. Topology: %s. Local steps: %s.' % (epoch, phase, args.n_nodes[phase], args.topology[phase], args.local_steps[phase]))
 
         # local update for each worker
         train_loss = 0
@@ -137,15 +158,15 @@ def train(args, steps, wandb):
             else:
                 train_loss += worker_local_step(models[i], opts[i], iter(train_loader), device)
         
-        epoch = step / steps['steps_per_epoch']
+        step +=1
+        epoch += args.n_nodes[phase] * args.batch_size / 50000
         train_loss /= args.n_nodes[phase]
         logger.log_step(step, epoch, train_loss, ts_total, ts_step)
-
         # gossip
         diffuse(args, phase, comm_matrix, models, step)
         
         # evaluate 
-        if (step+1) % args.steps_eval == 0 or (step+1) == steps['total_steps']:
+        if step % args.steps_eval == 0 or epoch >= args.epochs:
             ts_eval = time.time()
             
             # evaluate on averaged model
@@ -164,6 +185,9 @@ def train(args, steps, wandb):
                 print('Epoch %.3f (Step %d) -- Test accuracy: %.2f -- Test loss: %.3f -- Train loss: %.3f -- Time (total/last/eval): %.2f / %.2f / %.2f s' %
                       (epoch, step, acc, test_loss, train_loss, time.time() - ts_total, time.time() - ts_steps_eval, time.time() - ts_eval))
 
+            if acc > max_acc:
+                max_acc = acc
+
             ts_steps_eval = time.time()
 
         # evaluate consensus and L2 dist from init
@@ -176,6 +200,7 @@ def train(args, steps, wandb):
             grad_norm = get_gradient_norm(models[0])
             logger.log_grad_norm(step, epoch, grad_norm)
 
+    logger.log_max_acc(max_acc)
 
 if __name__ == '__main__':
     from helpers.parser import SCRATCH_DIR
@@ -185,13 +210,8 @@ if __name__ == '__main__':
     if not args.expt_name:
         args.expt_name = get_expt_name(args)
     
-    steps_per_epoch =  50000 // (args.batch_size * args.n_nodes[0])    # 50000 is number of training samples in CIFAR-10
     steps = {
-        'steps_per_epoch': steps_per_epoch, 
-        'total_steps': steps_per_epoch * args.epochs,
-        'warmup_steps': steps_per_epoch * args.lr_warmup_epochs,
-        'decay_steps': [np.floor(steps_per_epoch * args.epochs * decay) for decay in args.lr_decay],
-        'phases_start': [np.floor(steps_per_epoch * phase_start) for phase_start in args.start_epoch_phases],
+        'warmup_steps': 50000 / (args.n_nodes[0] * args.batch_size) * args.lr_warmup_epochs,    # NOTE using n_nodes[0] to compute warmup epochs. Assuming warmup occurs in the first phase
     }
 
     if args.wandb:
@@ -201,4 +221,5 @@ if __name__ == '__main__':
     else:
         train(args, steps, None)
 
-# python train_cifar.py --lr=3.2 --topology=ring --dataset=cifar100 --wandb=False --local_exec=True
+# python train_cifar_NEW.py --lr=3.2 --topology=ring --dataset=cifar100 --wandb=False --local_exec=True
+# python train_cifar_NEW.py --lr=3.2 --topology ring fully_connected --local_steps 0 0 --dataset=cifar100 --wandb=False --local_exec=True --n_nodes 8 16 --start_epoch_phases 0 1 --eval_on_average_model=True

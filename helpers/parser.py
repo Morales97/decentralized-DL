@@ -52,7 +52,7 @@ def get_parser():
                         help='batch size for a single node')
     parser.add_argument('--lr', type=float, default=0.2,
                         help='learning rate')   
-    parser.add_argument('--lr_decay', type=list, default=[0.5, 0.75],
+    parser.add_argument('--lr_decay', type=int, nargs='+', default=[150, 225],
                         help='decay lr by 10 at the listed fractions of training')                                       
     parser.add_argument('--lr_warmup_epochs', type=int, default=5,
                         help='warm up learning rate in the first epochs') 

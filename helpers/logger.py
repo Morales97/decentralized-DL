@@ -99,3 +99,11 @@ class Logger:
             'Weight distance Layer 0': wd_l0,
         }
         if self.wandb: self.wandb.log(log)
+    
+    def log_max_acc(self, max_acc):
+        if max_acc < 1:
+            max_acc *= 100
+        log = {
+            'Max Accuracy': max_acc,
+        }
+        if self.wandb: self.wandb.log(log)
