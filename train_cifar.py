@@ -69,16 +69,16 @@ def worker_local_step(model, opt, train_loader_iter, device):
 def initialize_nodes(args, models, opts, n_nodes_new, device):
     ''' All-reduce average all models and optimizers, and use to initialize new nodes (all of them with same params and momentum)'''
     avg_model = get_average_model(args, device, models)
-    models = [get_model(args, device) for _ in range(n_nodes_new)]
+    new_models = [get_model(args, device) for _ in range(n_nodes_new)]
     for i in range(len(models)):
         models[i].load_state_dict(avg_model.state_dict())
     
     # opt_sd = get_average_opt(opts)
-    opts = [get_optimizer(args, model) for model in models]
+    new_opts = [get_optimizer(args, model) for model in new_models]
     # for i in range(len(opts)):
         # opts[i].load_state_dict(opt_sd)
-
-    return models, opts
+    pdb.set_trace()
+    return new_models, new_opts
 
 ########################################################################################
 
@@ -199,6 +199,7 @@ def train(args, steps, wandb):
             logger.log_weight_distance_layer0(step, epoch, L2_dist_l0)
             grad_norm = get_gradient_norm(models[0])
             logger.log_grad_norm(step, epoch, grad_norm)
+            pdb.set_trace()
 
     logger.log_max_acc(max_acc)
 
