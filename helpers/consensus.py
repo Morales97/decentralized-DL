@@ -17,9 +17,10 @@ def compute_node_consensus(args, device, models):
     models_sd = [model.state_dict() for model in models]
     L2_diff = 0
     for key in state_dict_avg.keys():
-        L2_diff += torch.stack(
-                            [(state_dict_avg[key] - models_sd[i][key])**2 for i in range(args.n_nodes[0])], dim=0
-                            ).sum() / args.n_nodes[0]
+        if 'weight' in key or 'bias' in key:
+            L2_diff += torch.stack(
+                                [(state_dict_avg[key] - models_sd[i][key])**2 for i in range(args.n_nodes[0])], dim=0
+                                ).sum() / args.n_nodes[0]
     return L2_diff
 
 def compute_weight_distance(model, init_model):
@@ -28,7 +29,8 @@ def compute_weight_distance(model, init_model):
     init_sd = init_model.state_dict()
     dist = 0
     for i, key in enumerate(sd.keys()):
-        dist += torch.sum((sd[key] - init_sd[key])**2)
+        if 'weight' in key or 'bias' in key:
+            dist += torch.sum((sd[key] - init_sd[key])**2)
         if i == 0:
             dist_l0 = torch.sum((sd[key] - init_sd[key])**2)
     
