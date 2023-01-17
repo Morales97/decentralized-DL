@@ -73,20 +73,23 @@ def initialize_nodes(args, models, opts, n_nodes_new, device):
     for i in range(len(new_models)):
         new_models[i].load_state_dict(avg_model.state_dict())
     
-    # opt_sd = get_average_opt(opts)
+    opt_sd = get_average_opt(opts)
     new_opts = [get_optimizer(args, model) for model in new_models]
-    # for i in range(len(new_opts)):
-        # new_opts[i].load_state_dict(opt_sd)
+    for i in range(len(new_opts)):
+        new_opts[i].load_state_dict(opt_sd)
     return new_models, new_opts
 
 def initialize_nodes2(args, models, opts, nodes_to_add, device):
     ''' All-reduce average all models and optimizers, and use to initialize new nodes (all of them with same params and momentum)'''
     avg_model = get_average_model(args, device, models)
+    opt_sd = get_average_opt(opts)
     for i in range(nodes_to_add):
         new_model = get_model(args, device)
         new_model.load_state_dict(avg_model.state_dict())
         models += [new_model]
-        opts += [get_optimizer(args, new_model)]
+        new_opt = get_optimizer(args, new_model)
+        new_opt.load_state_dict(opt_sd)
+        opts += [new_opt]
 
     return models, opts
 
@@ -147,6 +150,7 @@ def train(args, steps, wandb):
 
         # lr decay
         if lr_decay_phase < total_lr_phases and epoch > args.lr_decay[lr_decay_phase]:
+            lr_decay_phase += 1
             for opt in opts:
                 for g in opt.param_groups:
                     g['lr'] = g['lr']/10
@@ -157,8 +161,9 @@ def train(args, steps, wandb):
             phase += 1
             comm_matrix = get_gossip_matrix(args, phase)
             if args.n_nodes[phase] > args.n_nodes[phase-1]:
-                nodes_to_add = args.n_nodes[phase] - args.n_nodes[phase-1]
-                models, opts = initialize_nodes2(args, models, opts, nodes_to_add, device)
+                models, opts = initialize_nodes(args, models, opts, args.n_nodes[phase], device)
+                #nodes_to_add = args.n_nodes[phase] - args.n_nodes[phase-1]
+                # models, opts = initialize_nodes2(args, models, opts, nodes_to_add, device)
             print('[Epoch %d] Changing to phase %d. Nodes: %d. Topology: %s. Local steps: %s.' % (epoch, phase, args.n_nodes[phase], args.topology[phase], args.local_steps[phase]))
 
         # local update for each worker
@@ -236,3 +241,4 @@ if __name__ == '__main__':
 
 # python train_cifar_NEW.py --lr=3.2 --topology=ring --dataset=cifar100 --wandb=False --local_exec=True
 # python train_cifar.py --lr=3.2 --topology ring fully_connected --local_steps 0 0 --dataset=cifar100 --wandb=False --local_exec=True --n_nodes 8 16 --start_epoch_phases 0 1 --eval_on_average_model=True
+# python train_cifar.py --lr=3.2 --expt_name=C1.2_ring8_ring16 --topology ring fully_connected --local_steps 0 16 --n_nodes 8 16 --start_epoch_phases 0 6 --epochs=225 --lr_decay 75 150 --dataset=cifar100 --seed=0
