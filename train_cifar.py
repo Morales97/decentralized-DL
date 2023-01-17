@@ -85,7 +85,6 @@ def initialize_nodes2(args, models, opts, nodes_to_add, device):
     for i in range(nodes_to_add):
         new_model = get_model(args, device)
         new_model.load_state_dict(avg_model.state_dict())
-        pdb.set_trace()
         models += [new_model]
         opts += [get_optimizer(args, new_model)]
 
@@ -175,6 +174,7 @@ def train(args, steps, wandb):
         epoch += args.n_nodes[phase] * args.batch_size / 50000
         train_loss /= args.n_nodes[phase]
         logger.log_step(step, epoch, train_loss, ts_total, ts_step)
+        
         # gossip
         diffuse(args, phase, comm_matrix, models, step)
         
