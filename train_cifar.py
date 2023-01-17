@@ -85,8 +85,9 @@ def initialize_nodes2(args, models, opts, nodes_to_add, device):
     for i in range(nodes_to_add):
         new_model = get_model(args, device)
         new_model.load_state_dict(avg_model.state_dict())
-        models += new_model
-        opts += get_optimizer(args. new_model)
+        pdb.set_trace()
+        models += [new_model]
+        opts += [get_optimizer(args, new_model)]
 
     return models, opts
 
