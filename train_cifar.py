@@ -196,7 +196,7 @@ def train(args, steps, wandb):
             # evaluate on average of EMA models
             ema_model = get_average_model(args, device, ema_models)
             ema_test_loss, ema_acc = evaluate_model(ema_model, test_loader, device)
-            logger.log_ema_acc(step, epoch, ema_acc)
+            logger.log_ema_acc(step, epoch, float(ema_acc*100))
 
             # evaluate on averaged model
             if args.eval_on_average_model:
