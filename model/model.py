@@ -44,6 +44,5 @@ def add_noise_to_models(models, std, device):
     for model in models:
         for param in model.parameters():
             noise = torch.randn(*param.size()) * std    # Gaussian noise N(0, std^2) with param's size
-            noise.to(device)
             with torch.no_grad():
-                param.add_(noise)
+                param.add_(noise.to(device))
