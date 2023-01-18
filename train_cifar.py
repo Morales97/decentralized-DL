@@ -4,7 +4,7 @@ from data.data import get_data
 from topology import get_gossip_matrix, diffuse, get_average_model, get_average_opt
 import time
 import torch
-from model.model import get_model
+from model.model import get_model, get_ema_models
 import torch.nn.functional as F
 from helpers.utils import save_experiment, get_expt_name
 from helpers.logger import Logger
@@ -51,7 +51,7 @@ def eval_all_models(args, models, test_loader, device):
     
     return acc, test_loss, acc_workers, loss_workers, acc_avg, test_loss_avg
 
-def worker_local_step(model, opt, train_loader_iter, device):
+def worker_local_step(model, opt, train_loader_iter, ema_opt, step, device):
     input, target = next(train_loader_iter)
     input = input.to(device)
     target = target.to(device)
@@ -62,6 +62,7 @@ def worker_local_step(model, opt, train_loader_iter, device):
     loss = F.cross_entropy(output, target)
     loss.backward()
     opt.step()
+    ema_opt.update(step)
 
     return loss.item()
 
@@ -117,6 +118,7 @@ def train(args, steps, wandb):
             models[i].load_state_dict(models[0].state_dict())
     init_model = get_model(args, device)
     init_model.load_state_dict(models[0].state_dict())
+    ema_models, ema_opts = get_ema_models(args, models, device)
 
     # gossip matrix
     comm_matrix = get_gossip_matrix(args, 0)
@@ -171,9 +173,9 @@ def train(args, steps, wandb):
         ts_step = time.time()
         for i in range(len(models)):
             if args.data_split:
-                train_loss += worker_local_step(models[i], opts[i], train_loader_iter[i], device)
+                train_loss += worker_local_step(models[i], opts[i], train_loader_iter[i], ema_opts[i], step, device)
             else:
-                train_loss += worker_local_step(models[i], opts[i], iter(train_loader), device)
+                train_loss += worker_local_step(models[i], opts[i], iter(train_loader), ema_opts[i], step, device)
         
         step +=1
         epoch += args.n_nodes[phase] * args.batch_size / 50000
@@ -187,21 +189,25 @@ def train(args, steps, wandb):
         if step % args.steps_eval == 0 or epoch >= args.epochs:
             ts_eval = time.time()
             
+            # evaluate on average of EMA models
+            ema_model = get_average_model(args, device, ema_models)
+            ema_test_loss, ema_acc = evaluate_model(ema_model, test_loader, device)
+
             # evaluate on averaged model
             if args.eval_on_average_model:
                 ts_eval = time.time()
                 model = get_average_model(args, device, models)
                 test_loss, acc = evaluate_model(model, test_loader, device)
                 logger.log_eval(step, epoch, float(acc*100), test_loss, ts_eval, ts_steps_eval)
-                print('Epoch %.3f (Step %d) -- Test accuracy: %.2f -- Test loss: %.3f -- Train loss: %.3f -- Time (total/last/eval): %.2f / %.2f / %.2f s' %
-                      (epoch, step, float(acc*100), test_loss, train_loss, time.time() - ts_total, time.time() - ts_steps_eval, time.time() - ts_eval))
+                print('Epoch %.3f (Step %d) -- Test accuracy: %.2f -- EMA accuracy: %.2f -- Test loss: %.3f -- Train loss: %.3f -- Time (total/last/eval): %.2f / %.2f / %.2f s' %
+                      (epoch, step, float(acc*100), float(ema_acc*100), test_loss, train_loss, time.time() - ts_total, time.time() - ts_steps_eval, time.time() - ts_eval))
                 
             # evaluate on all models
             else:
                 acc, test_loss, acc_workers, loss_workers, acc_avg, test_loss_avg = eval_all_models(args, models, test_loader, device)
                 logger.log_eval_per_node(step, epoch, acc, test_loss, acc_workers, loss_workers, acc_avg, test_loss_avg, ts_eval, ts_steps_eval)
-                print('Epoch %.3f (Step %d) -- Test accuracy: %.2f -- Test loss: %.3f -- Train loss: %.3f -- Time (total/last/eval): %.2f / %.2f / %.2f s' %
-                      (epoch, step, acc, test_loss, train_loss, time.time() - ts_total, time.time() - ts_steps_eval, time.time() - ts_eval))
+                print('Epoch %.3f (Step %d) -- Test accuracy: %.2f -- EMA accuracy: %.2f -- Test loss: %.3f -- Train loss: %.3f -- Time (total/last/eval): %.2f / %.2f / %.2f s' %
+                      (epoch, step, acc, float(ema_acc*100), test_loss, train_loss, time.time() - ts_total, time.time() - ts_steps_eval, time.time() - ts_eval))
                 acc = acc_avg
 
             if acc > max_acc:

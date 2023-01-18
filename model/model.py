@@ -2,6 +2,7 @@ from model.convnet import ConvNet, ConvNet_OP, MLP
 from model.resnet import resnet18
 from model.vgg import vgg16
 from model.vgg2 import vgg11, vgg11_bn
+from helpers.optimizer import OptimizerEMA
 
 def get_model(args, device):
     if args.net == 'convnet':
@@ -23,3 +24,15 @@ def get_model(args, device):
 
     return model.to(device)
 
+def get_ema_models(args, models, device):
+    ema_models = []
+    ema_opts = []
+    for model in models:
+        ema_model = get_model(args, device)
+        for param in ema_model.parameters():
+            param.detach_()
+        ema_opt = OptimizerEMA(model, ema_model, alpha=args.alpha)
+        ema_models.append(ema_model)
+        ema_opts.append(ema_opt)
+
+    return ema_models, ema_opts
