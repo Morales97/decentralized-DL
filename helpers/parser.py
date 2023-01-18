@@ -44,7 +44,8 @@ def get_parser():
                         help='number epochs to train for') 
     parser.add_argument('--start_epoch_phases', type=int, nargs='+', default=[0],
                         help='start epoch for each training phase. If [0], only one training phase') 
-
+    parser.add_argument('--model_std', type=float, default=0,
+                        help='standard deviation for noise applied to each model`s parameters')  
     # hyperparameters
     parser.add_argument('--seed', type=int, default=0,
                         help='random seed')

@@ -4,7 +4,7 @@ from data.data import get_data
 from topology import get_gossip_matrix, diffuse, get_average_model, get_average_opt
 import time
 import torch
-from model.model import get_model, get_ema_models
+from model.model import add_noise_to_models, get_model, get_ema_models
 import torch.nn.functional as F
 from helpers.utils import save_experiment, get_expt_name
 from helpers.logger import Logger
@@ -172,6 +172,9 @@ def train(args, steps, wandb):
                 # models, opts = initialize_nodes2(args, models, opts, nodes_to_add, device)
             print('[Epoch %d] Changing to phase %d. Nodes: %d. Topology: %s. Local steps: %s.' % (epoch, phase, args.n_nodes[phase], args.topology[phase], args.local_steps[phase]))
 
+        if args.model_std > 0:
+            add_noise_to_models(models, args.model_std)
+
         # local update for each worker
         train_loss = 0
         ts_step = time.time()
@@ -252,5 +255,6 @@ if __name__ == '__main__':
         train(args, steps, None)
 
 # python train_cifar.py --lr=3.2 --topology=ring --dataset=cifar100 --wandb=False --local_exec=True
+# python train_cifar.py --lr=3.2 --topology=fully_connected --dataset=cifar100 --wandb=False --local_exec=True --model_std=0.01
 # python train_cifar.py --lr=3.2 --topology ring fully_connected --local_steps 0 0 --dataset=cifar100 --wandb=False --local_exec=True --n_nodes 8 16 --start_epoch_phases 0 1 --eval_on_average_model=True --steps_eval=20
 # python train_cifar.py --lr=3.2 --expt_name=C1.2_ring8_ring16 --topology ring fully_connected --local_steps 0 16 --n_nodes 8 16 --start_epoch_phases 0 6 --epochs=225 --lr_decay 75 150 --dataset=cifar100 --seed=0

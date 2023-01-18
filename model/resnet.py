@@ -316,3 +316,5 @@ if __name__ == '__main__':
     # model = resnet50().to('cpu')
     summary(model, (3, 32, 32))
     pdb.set_trace()
+    for param in model.parameters():
+        pdb.set_trace()
