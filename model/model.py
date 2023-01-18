@@ -24,11 +24,13 @@ def get_model(args, device):
 
     return model.to(device)
 
-def get_ema_models(args, models, device):
+def get_ema_models(args, models, device, ema_init=None):
     ema_models = []
     ema_opts = []
     for model in models:
         ema_model = get_model(args, device)
+        if ema_init is not None:
+            ema_model.load_state_dict(ema_init.state_dict())
         for param in ema_model.parameters():
             param.detach_()
         ema_opt = OptimizerEMA(model, ema_model, alpha=args.alpha)

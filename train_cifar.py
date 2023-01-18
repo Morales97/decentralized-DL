@@ -67,7 +67,7 @@ def worker_local_step(model, opt, train_loader_iter, ema_opt, step, device):
     return loss.item()
 
 
-def initialize_nodes(args, models, opts, n_nodes_new, device):
+def initialize_nodes(args, models, opts, ema_models, n_nodes_new, device):
     ''' All-reduce average all models and optimizers, and use to initialize new nodes (all of them with same params and momentum)'''
     avg_model = get_average_model(args, device, models)
     new_models = [get_model(args, device) for _ in range(n_nodes_new)]
@@ -78,7 +78,11 @@ def initialize_nodes(args, models, opts, n_nodes_new, device):
     new_opts = [get_optimizer(args, model) for model in new_models]
     for i in range(len(new_opts)):
         new_opts[i].load_state_dict(opt_sd)
-    return new_models, new_opts
+
+    ema_avg_model = get_average_model(args, device, ema_models)
+    new_ema_models, new_ema_opts = get_ema_models(args, new_models, device, ema_init=ema_avg_model)
+
+    return new_models, new_opts, new_ema_models, new_ema_opts
 
 def initialize_nodes2(args, models, opts, nodes_to_add, device):
     ''' All-reduce average all models and optimizers, and use to initialize new nodes (all of them with same params and momentum)'''
@@ -163,7 +167,7 @@ def train(args, steps, wandb):
             phase += 1
             comm_matrix = get_gossip_matrix(args, phase)
             if args.n_nodes[phase] > args.n_nodes[phase-1]:
-                models, opts = initialize_nodes(args, models, opts, args.n_nodes[phase], device)
+                models, opts, ema_models, ema_opts = initialize_nodes(args, models, opts, args.n_nodes[phase], device)
                 #nodes_to_add = args.n_nodes[phase] - args.n_nodes[phase-1]
                 # models, opts = initialize_nodes2(args, models, opts, nodes_to_add, device)
             print('[Epoch %d] Changing to phase %d. Nodes: %d. Topology: %s. Local steps: %s.' % (epoch, phase, args.n_nodes[phase], args.topology[phase], args.local_steps[phase]))
@@ -246,6 +250,6 @@ if __name__ == '__main__':
     else:
         train(args, steps, None)
 
-# python train_cifar_NEW.py --lr=3.2 --topology=ring --dataset=cifar100 --wandb=False --local_exec=True
-# python train_cifar.py --lr=3.2 --topology ring fully_connected --local_steps 0 0 --dataset=cifar100 --wandb=False --local_exec=True --n_nodes 8 16 --start_epoch_phases 0 1 --eval_on_average_model=True
+# python train_cifar.py --lr=3.2 --topology=ring --dataset=cifar100 --wandb=False --local_exec=True
+# python train_cifar.py --lr=3.2 --topology ring fully_connected --local_steps 0 0 --dataset=cifar100 --wandb=False --local_exec=True --n_nodes 8 16 --start_epoch_phases 0 1 --eval_on_average_model=True --steps_eval=20
 # python train_cifar.py --lr=3.2 --expt_name=C1.2_ring8_ring16 --topology ring fully_connected --local_steps 0 16 --n_nodes 8 16 --start_epoch_phases 0 6 --epochs=225 --lr_decay 75 150 --dataset=cifar100 --seed=0
