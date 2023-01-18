@@ -40,9 +40,10 @@ def get_ema_models(args, models, device, ema_init=None):
 
     return ema_models, ema_opts
 
-def add_noise_to_models(models, std):
+def add_noise_to_models(models, std, device):
     for model in models:
         for param in model.parameters():
             noise = torch.randn(*param.size()) * std    # Gaussian noise N(0, std^2) with param's size
+            noise.to(device)
             with torch.no_grad():
                 param.add_(noise)

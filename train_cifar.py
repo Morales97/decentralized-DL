@@ -173,7 +173,7 @@ def train(args, steps, wandb):
             print('[Epoch %d] Changing to phase %d. Nodes: %d. Topology: %s. Local steps: %s.' % (epoch, phase, args.n_nodes[phase], args.topology[phase], args.local_steps[phase]))
 
         if args.model_std > 0:
-            add_noise_to_models(models, args.model_std)
+            add_noise_to_models(models, args.model_std, device)
 
         # local update for each worker
         train_loss = 0
