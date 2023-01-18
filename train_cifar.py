@@ -163,6 +163,7 @@ def train(args, steps, wandb):
             # evaluate on average of EMA models
             ema_model = get_average_model(args, device, ema_models)
             ema_test_loss, ema_acc = evaluate_model(ema_model, test_loader, device)
+            ema_acc = ema_acc*100
             logger.log_ema_acc(step, epoch, float(ema_acc*100))
 
             # evaluate on averaged model
@@ -184,6 +185,8 @@ def train(args, steps, wandb):
 
             if acc > max_acc:
                 max_acc = acc
+            if ema_acc > max_ema_acc:
+                max_ema_acc = ema_acc
 
             ts_steps_eval = time.time()
 
@@ -198,6 +201,7 @@ def train(args, steps, wandb):
             logger.log_grad_norm(step, epoch, grad_norm)
 
     logger.log_max_acc(max_acc)
+    logger.log_max_ema_acc(max_ema_acc)
 
 if __name__ == '__main__':
     from helpers.parser import SCRATCH_DIR

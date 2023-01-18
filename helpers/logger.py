@@ -124,3 +124,12 @@ class Logger:
             'EMA Accuracy': ema_acc,
         }
         if self.wandb: self.wandb.log(log)
+
+
+    def log_max_ema_acc(self, max_acc):
+        if max_acc < 1:
+            max_acc *= 100
+        log = {
+            'Max EMA Accuracy': max_acc,
+        }
+        if self.wandb: self.wandb.log(log)
