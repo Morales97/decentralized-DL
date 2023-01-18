@@ -167,7 +167,7 @@ def train(args, steps, wandb):
             phase += 1
             comm_matrix = get_gossip_matrix(args, phase)
             if args.n_nodes[phase] > args.n_nodes[phase-1]:
-                models, opts, ema_models, ema_opts = initialize_nodes(args, models, opts, args.n_nodes[phase], device)
+                models, opts, ema_models, ema_opts = initialize_nodes(args, models, opts, ema_models, args.n_nodes[phase], device)
                 #nodes_to_add = args.n_nodes[phase] - args.n_nodes[phase-1]
                 # models, opts = initialize_nodes2(args, models, opts, nodes_to_add, device)
             print('[Epoch %d] Changing to phase %d. Nodes: %d. Topology: %s. Local steps: %s.' % (epoch, phase, args.n_nodes[phase], args.topology[phase], args.local_steps[phase]))
