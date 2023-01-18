@@ -74,6 +74,14 @@ class Logger:
         }
         if self.wandb: self.wandb.log(log)
 
+    def log_weight_norm(self, step, epoch, weight_norm):
+        log = {
+            'Iteration': step,
+            'Epoch': epoch,
+            'Weight L2 norm': weight_norm,
+        }
+        if self.wandb: self.wandb.log(log)
+
     def log_consensus(self, step, epoch, L2_dist):
         self.consensus.append(L2_dist)
         log = {

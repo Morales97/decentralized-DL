@@ -28,13 +28,15 @@ def compute_weight_distance(model, init_model):
     sd = model.state_dict()
     init_sd = init_model.state_dict()
     dist = 0
+    L2_norm = 0
     for i, key in enumerate(sd.keys()):
         if 'weight' in key or 'bias' in key:
             dist += torch.sum((sd[key] - init_sd[key])**2)
-        if i == 0:
-            dist_l0 = torch.sum((sd[key] - init_sd[key])**2)
+            L2_norm += torch.sum((sd[key])**2)
+        # if i == 0:
+            # dist_l0 = torch.sum((sd[key] - init_sd[key])**2)
     
-    return torch.sqrt(dist).item(), torch.sqrt(dist_l0).item()
+    return torch.sqrt(dist).item(), torch.sqrt(L2_norm).item()#, torch.sqrt(dist_l0).item()
 
 def get_gradient_norm(model):
     grad = 0
