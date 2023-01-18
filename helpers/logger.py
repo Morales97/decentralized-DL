@@ -29,6 +29,7 @@ class Logger:
             'Iteration': step,
             'Epoch': epoch,
             'Test Accuracy': acc,
+            'Test Accuracy [avg model]': acc/100,   # NOTE /100 to make it consistent with value in log_eval_per_node()
             'Test Loss': test_loss,
             'Time/eval': time.time() - ts_eval,
             'Time since last eval': time.time() - ts_steps_eval

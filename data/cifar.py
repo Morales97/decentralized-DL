@@ -79,3 +79,17 @@ def get_cifar(args, root, iid=True):
     test_loader = get_cifar_test(args, root)
 
     return train_loader, test_loader
+
+
+# def create_ffcv_dataset():
+#     datasets = {
+#         'train': datasets.CIFAR10('/tmp', train=True, download=True),
+#         'test': datasets.CIFAR10('/tmp', train=False, download=True)
+#     }
+
+#     for (name, ds) in datasets.items():
+#         writer = DatasetWriter(f'/tmp/cifar_{name}.beton', {
+#             'image': RGBImageField(),
+#             'label': IntField()
+#         })
+#         writer.from_indexed_dataset(ds)
