@@ -107,3 +107,11 @@ class Logger:
             'Max Accuracy': max_acc,
         }
         if self.wandb: self.wandb.log(log)
+
+    def log_ema_acc(self, step, epoch, ema_acc):
+        log = {
+            'Iteration': step,
+            'Epoch': epoch,
+            'EMA Accuracy': ema_acc,
+        }
+        if self.wandb: self.wandb.log(log)
