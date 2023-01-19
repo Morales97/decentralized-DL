@@ -127,6 +127,12 @@ def train(args, steps, wandb):
                     g['lr'] = g['lr']/10
             print('lr decayed to %.4f' % g['lr'])
 
+        # drop weight decay
+        if args.wd_drop > 0 and epoch > args.wd_drop:
+            for opt in opts:
+                for g in opt.param_groups:
+                    g['weight_decay'] = 0     
+
         # advance to the next training phase
         if phase+1 < total_phases and epoch > args.start_epoch_phases[phase+1]:
             phase += 1

@@ -69,6 +69,8 @@ def get_parser():
                         help='use nesterov momentum')
     parser.add_argument('--wd', type=float, default=1e-4,
                         help='weight decay, L2 regularization')
+    parser.add_argument('--wd_drop', type=int, default=0,
+                        help='[Experimental] Epoch where weight decay is dropped. If 0, do not drop') 
     parser.add_argument('--gossip_momentum', type=boolfromstr, default=False,
                         help='if True, also communicate momentum (NOTE: to be implemented). otherwise, each model has its own momentum term')
 
