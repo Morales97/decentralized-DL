@@ -39,9 +39,8 @@ def compute_weight_distance(model, init_model):
     return torch.sqrt(dist).item(), torch.sqrt(L2_norm).item()#, torch.sqrt(dist_l0).item()
 
 def get_gradient_norm(model):
-    grad = 0
-    for param in model.parameters():
-        if param.requires_grad:
-            grad += param.grad.norm()  
-    return grad
+    """ computes gradient norm of parameters, as if all parameters where concatenated in a single vector"""
+    grads = [p.grad for p in model.parameters() if p.grad is not None]
+    total_norm = torch.norm(torch.stack([torch.norm(g.detach()) for g in grads]))
+    return total_norm
 
