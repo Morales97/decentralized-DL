@@ -104,6 +104,7 @@ def train(args, steps, wandb):
     step = 0
     epoch = 0
     max_acc = 0
+    max_ema_acc = 0
     # for step in range(steps['total_steps']):
     while epoch < args.epochs:
         if args.data_split:
