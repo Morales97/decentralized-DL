@@ -133,3 +133,11 @@ class Logger:
             'Max EMA Accuracy': max_acc,
         }
         if self.wandb: self.wandb.log(log)
+
+
+    def log_swa_acc(self, epoch, swa_acc):
+        log = {
+            'Epoch': epoch,
+            'SWA Accuracy': swa_acc,
+        }
+        if self.wandb: self.wandb.log(log)

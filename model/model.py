@@ -1,7 +1,7 @@
 from model.convnet import ConvNet, ConvNet_OP, MLP
 from model.resnet import resnet18
-from model.vgg import vgg16
-from model.vgg2 import vgg11, vgg11_bn
+from model.vgg import vgg16_C2
+from model.vgg2 import vgg11, vgg11_bn, vgg16
 from helpers.optimizer import OptimizerEMA
 import torch 
 
@@ -20,6 +20,8 @@ def get_model(args, device):
         model = vgg11(args)
     elif args.net == 'vgg11bn': # modified VGG-11 with BN 
         model = vgg11_bn(args)
+    elif args.net == 'vgg16':   # modified VGG-16 (less hidden units in linear layers)
+        model = vgg16(args)
     else:
         raise Exception('model not supported')
 

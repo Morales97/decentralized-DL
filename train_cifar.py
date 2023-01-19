@@ -62,6 +62,20 @@ def initialize_nodes2(args, models, opts, nodes_to_add, device):
 
     return models, opts
 
+def update_SWA(args, swa_model, models, device, n):
+    avg_model = get_average_model(args, device, models)
+    if swa_model is None:
+        swa_model = get_model(args, device)
+        swa_model.load_state_dict(avg_model.state_dict())
+    else:
+        for swa_param, avg_param in zip(swa_model.state_dict().values(), avg_model.state_dict().values()):
+            if swa_param.dtype == torch.float32:
+                swa_param.mul_(n/(n+1))
+                swa_param.add_(avg_param /(n+1))  
+    n += 1
+    return swa_model, n
+
+
 ########################################################################################
 
 
@@ -87,6 +101,7 @@ def train(args, steps, wandb):
     init_model = get_model(args, device)
     init_model.load_state_dict(models[0].state_dict())
     ema_models, ema_opts = get_ema_models(args, models, device)
+    swa_model = None
 
     # gossip matrix
     comm_matrix = get_gossip_matrix(args, 0)
@@ -105,6 +120,8 @@ def train(args, steps, wandb):
     epoch = 0
     max_acc = 0
     max_ema_acc = 0
+    n_swa = 0
+    epoch_swa = 100 # start averaging for SWA at epoch 100
     # for step in range(steps['total_steps']):
     while epoch < args.epochs:
         if args.data_split:
@@ -163,6 +180,13 @@ def train(args, steps, wandb):
         # gossip
         diffuse(args, phase, comm_matrix, models, step)
         
+        # SWA update
+        if epoch > epoch_swa:
+            epoch_swa += 1
+            swa_model, n_swa = update_SWA(args, swa_model, models, device, n_swa)
+            test_loss, acc = evaluate_model(swa_model, test_loader, device)
+            logger.log_swa_acc(epoch, acc*100)
+
         # evaluate 
         if step % args.steps_eval == 0 or epoch >= args.epochs:
             ts_eval = time.time()
