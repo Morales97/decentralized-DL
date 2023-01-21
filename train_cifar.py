@@ -180,7 +180,7 @@ def train(args, steps, wandb):
                 if not late_ema_active:
                     step_offset = step
                     late_ema_active = True
-                late_ema_opts[i].update(step-step_offset)
+                late_ema_opts[i].update(step - step_offset)
 
         step +=1
         epoch += args.n_nodes[phase] * args.batch_size / 50000
@@ -209,7 +209,6 @@ def train(args, steps, wandb):
                 late_ema_model = get_average_model(args, device, late_ema_models)
                 _, late_ema_acc = evaluate_model(late_ema_model, test_loader, device)
                 logger.log_late_ema_acc(step, epoch, float(late_ema_acc*100)) 
-                pdb.set_trace()
 
             # evaluate on averaged model
             if args.eval_on_average_model:
