@@ -44,6 +44,8 @@ def get_parser():
                         help='number epochs to train for') 
     parser.add_argument('--start_epoch_phases', type=int, nargs='+', default=[0],
                         help='start epoch for each training phase. If [0], only one training phase') 
+    parser.add_argument('--epoch_swa', type=int, default=100,
+                        help='epoch when to start SWA averaging') 
     parser.add_argument('--model_std', type=float, default=0,
                         help='standard deviation for noise applied to each model`s parameters')  
     # hyperparameters

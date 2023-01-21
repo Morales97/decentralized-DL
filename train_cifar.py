@@ -121,7 +121,8 @@ def train(args, steps, wandb):
     max_acc = 0
     max_ema_acc = 0
     n_swa = 0
-    epoch_swa = 100 # start averaging for SWA at epoch 100
+    epoch_swa = args.epoch_swa # epoch to start SWA averaging (default: 100)
+    
     # for step in range(steps['total_steps']):
     while epoch < args.epochs:
         if args.data_split:
