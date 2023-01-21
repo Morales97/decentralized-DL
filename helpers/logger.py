@@ -125,6 +125,13 @@ class Logger:
         }
         if self.wandb: self.wandb.log(log)
 
+    def log_late_ema_acc(self, step, epoch, ema_acc):
+        log = {
+            'Iteration': step,
+            'Epoch': epoch,
+            'Late EMA Accuracy': ema_acc,
+        }
+        if self.wandb: self.wandb.log(log)
 
     def log_max_ema_acc(self, max_acc):
         if max_acc < 1:

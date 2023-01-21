@@ -15,7 +15,7 @@ from helpers.evaluate import eval_all_models, evaluate_model
 import wandb
 import os
 
-def worker_local_step(model, opt, train_loader_iter, ema_opt, step, device):
+def worker_local_step(model, opt, train_loader_iter, device):
     input, target = next(train_loader_iter)
     input = input.to(device)
     target = target.to(device)
@@ -26,7 +26,6 @@ def worker_local_step(model, opt, train_loader_iter, ema_opt, step, device):
     loss = F.cross_entropy(output, target)
     loss.backward()
     opt.step()
-    ema_opt.update(step)
 
     return loss.item()
 
@@ -88,6 +87,9 @@ def train(args, steps, wandb):
     init_model = get_model(args, device)
     init_model.load_state_dict(models[0].state_dict())
     ema_models, ema_opts = get_ema_models(args, models, device)
+    if args.late_ema_epoch > 0:
+        late_ema_models, late_ema_opts = get_ema_models(args, models, device)
+        late_ema_active = False   # indicate when to init step_offset
     swa_model = None
 
     # gossip matrix
@@ -161,10 +163,18 @@ def train(args, steps, wandb):
         ts_step = time.time()
         for i in range(len(models)):
             if args.data_split:
-                train_loss += worker_local_step(models[i], opts[i], train_loader_iter[i], ema_opts[i], step, device)
+                train_loss += worker_local_step(models[i], opts[i], train_loader_iter[i], device)
             else:
-                train_loss += worker_local_step(models[i], opts[i], iter(train_loader), ema_opts[i], step, device)
-        
+                train_loss += worker_local_step(models[i], opts[i], iter(train_loader), device)
+            
+            # EMA updates
+            ema_opts[i].update(step)
+            if args.late_ema_epoch > 0 and epoch > args.late_ema_epoch:
+                if not late_ema_active:
+                    step_offset = step
+                    late_ema_active = True
+                late_ema_opts[i].update(step-step_offset)
+
         step +=1
         epoch += args.n_nodes[phase] * args.batch_size / 50000
         train_loss /= args.n_nodes[phase]
@@ -188,6 +198,10 @@ def train(args, steps, wandb):
             ema_model = get_average_model(args, device, ema_models)
             ema_test_loss, ema_acc = evaluate_model(ema_model, test_loader, device)
             logger.log_ema_acc(step, epoch, float(ema_acc*100))
+            if late_ema_active:
+                late_ema_model = get_average_model(args, device, late_ema_models)
+                _, late_ema_acc = evaluate_model(late_ema_model, test_loader, device)
+                logger.log_late_ema_acc(step, epoch, float(late_ema_acc*100)) 
 
             # evaluate on averaged model
             if args.eval_on_average_model:
