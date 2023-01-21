@@ -30,8 +30,8 @@ def worker_local_step(model, opt, train_loader_iter, device):
     return loss.item()
 
 
-def initialize_nodes(args, models, opts, ema_models, n_nodes_new, device):
-    ''' All-reduce average all models and optimizers, and use to initialize new nodes (all of them with same params and momentum)'''
+def initialize_nodes(args, models, opts, n_nodes_new, device):
+    ''' All-reduce all models and optimizers, and use to initialize new nodes (all of them with same params and momentum)'''
     avg_model = get_average_model(args, device, models)
     new_models = [get_model(args, device) for _ in range(n_nodes_new)]
     for i in range(len(new_models)):
@@ -42,11 +42,13 @@ def initialize_nodes(args, models, opts, ema_models, n_nodes_new, device):
     for i in range(len(new_opts)):
         new_opts[i].load_state_dict(opt_sd)
 
+    return new_models, new_opts, 
+
+def init_nodes_EMA(args, models, ema_models, device):
+    ''' Initialize EMA models for new nodes from an All-Reduce average of previous EMA models'''
     ema_avg_model = get_average_model(args, device, ema_models)
-    new_ema_models, new_ema_opts = get_ema_models(args, new_models, device, ema_init=ema_avg_model)
-
-    return new_models, new_opts, new_ema_models, new_ema_opts
-
+    new_ema_models, new_ema_opts = get_ema_models(args, models, device, ema_init=ema_avg_model)
+    return new_ema_models, new_ema_opts
 
 def update_SWA(args, swa_model, models, device, n):
     avg_model = get_average_model(args, device, models)
@@ -144,9 +146,14 @@ def train(args, steps, wandb):
         if phase+1 < total_phases and epoch > args.start_epoch_phases[phase+1]:
             phase += 1
             comm_matrix = get_gossip_matrix(args, phase)
+            
             # init new nodes
             if args.n_nodes[phase] > args.n_nodes[phase-1]: # if n_nodes doesn't change, no need to re-init models
-                models, opts, ema_models, ema_opts = initialize_nodes(args, models, opts, ema_models, args.n_nodes[phase], device)
+                models, opts = initialize_nodes(args, models, opts, args.n_nodes[phase], device)
+                ema_models, ema_opts = init_nodes_EMA(args, models, ema_models, device)
+                if args.late_ema_epoch > 0:
+                    late_ema_models, late_ema_opts = init_nodes_EMA(args, models, late_ema_models, device)
+
             # optionally, update lr
             if len(args.lr) > 1:
                 for opt in opts:
@@ -202,6 +209,7 @@ def train(args, steps, wandb):
                 late_ema_model = get_average_model(args, device, late_ema_models)
                 _, late_ema_acc = evaluate_model(late_ema_model, test_loader, device)
                 logger.log_late_ema_acc(step, epoch, float(late_ema_acc*100)) 
+                pdb.set_trace()
 
             # evaluate on averaged model
             if args.eval_on_average_model:
@@ -261,5 +269,5 @@ if __name__ == '__main__':
 
 # python train_cifar.py --lr=3.2 --topology=ring --dataset=cifar100 --wandb=False --local_exec=True
 # python train_cifar.py --lr=3.2 --topology=fully_connected --dataset=cifar100 --wandb=False --local_exec=True --model_std=0.01
-# python train_cifar.py --lr=3.2 --topology ring fully_connected --local_steps 0 0 --dataset=cifar100 --wandb=False --local_exec=True --n_nodes 8 16 --start_epoch_phases 0 1 --eval_on_average_model=True --steps_eval=20 --lr 3.2 1.6
+# python train_cifar.py --lr=3.2 --topology ring fully_connected --local_steps 0 0 --dataset=cifar100 --wandb=False --local_exec=True --n_nodes 8 16 --start_epoch_phases 0 1 --eval_on_average_model=True --steps_eval=20 --lr 3.2 1.6 --late_ema_epoch=1
 # python train_cifar.py --lr=3.2 --expt_name=C1.2_ring8_ring16 --topology ring fully_connected --local_steps 0 16 --n_nodes 8 16 --start_epoch_phases 0 6 --epochs=225 --lr_decay 75 150 --dataset=cifar100 --seed=0
