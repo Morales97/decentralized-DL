@@ -53,7 +53,7 @@ def get_parser():
                         help='random seed')
     parser.add_argument('--batch_size', type=int, default=128,
                         help='batch size for a single node')
-    parser.add_argument('--lr', type=float, default=0.2,
+    parser.add_argument('--lr', type=float, nargs='+', default=[0.2],
                         help='learning rate')   
     parser.add_argument('--lr_decay', type=int, nargs='+', default=[150, 225],
                         help='decay lr by 10 at the listed fractions of training')                                       

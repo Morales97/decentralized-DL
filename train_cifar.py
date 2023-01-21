@@ -48,19 +48,6 @@ def initialize_nodes(args, models, opts, ema_models, n_nodes_new, device):
 
     return new_models, new_opts, new_ema_models, new_ema_opts
 
-def initialize_nodes2(args, models, opts, nodes_to_add, device):
-    ''' All-reduce average all models and optimizers, and use to initialize new nodes (all of them with same params and momentum)'''
-    avg_model = get_average_model(args, device, models)
-    opt_sd = get_average_opt(opts)
-    for i in range(nodes_to_add):
-        new_model = get_model(args, device)
-        new_model.load_state_dict(avg_model.state_dict())
-        models += [new_model]
-        new_opt = get_optimizer(args, new_model)
-        new_opt.load_state_dict(opt_sd)
-        opts += [new_opt]
-
-    return models, opts
 
 def update_SWA(args, swa_model, models, device, n):
     avg_model = get_average_model(args, device, models)
@@ -122,7 +109,7 @@ def train(args, steps, wandb):
     max_ema_acc = 0
     n_swa = 0
     epoch_swa = args.epoch_swa # epoch to start SWA averaging (default: 100)
-    
+
     # for step in range(steps['total_steps']):
     while epoch < args.epochs:
         if args.data_split:
@@ -132,7 +119,7 @@ def train(args, steps, wandb):
 
         # lr warmup
         if step < steps['warmup_steps']:
-            lr = args.lr * (step+1) / steps['warmup_steps']
+            lr = args.lr[0] * (step+1) / steps['warmup_steps']
             for opt in opts:
                 for g in opt.param_groups:
                     g['lr'] = lr
@@ -155,10 +142,15 @@ def train(args, steps, wandb):
         if phase+1 < total_phases and epoch > args.start_epoch_phases[phase+1]:
             phase += 1
             comm_matrix = get_gossip_matrix(args, phase)
-            if args.n_nodes[phase] > args.n_nodes[phase-1]:
+            # init new nodes
+            if args.n_nodes[phase] > args.n_nodes[phase-1]: # if n_nodes doesn't change, no need to re-init models
                 models, opts, ema_models, ema_opts = initialize_nodes(args, models, opts, ema_models, args.n_nodes[phase], device)
-                #nodes_to_add = args.n_nodes[phase] - args.n_nodes[phase-1]
-                # models, opts = initialize_nodes2(args, models, opts, nodes_to_add, device)
+            # optionally, update lr
+            if len(args.lr) > 1:
+                for opt in opts:
+                    for g in opt.param_groups:
+                        g['lr'] = args.lr[phase]
+
             print('[Epoch %d] Changing to phase %d. Nodes: %d. Topology: %s. Local steps: %s.' % (epoch, phase, args.n_nodes[phase], args.topology[phase], args.local_steps[phase]))
 
         if args.model_std > 0:
@@ -255,5 +247,5 @@ if __name__ == '__main__':
 
 # python train_cifar.py --lr=3.2 --topology=ring --dataset=cifar100 --wandb=False --local_exec=True
 # python train_cifar.py --lr=3.2 --topology=fully_connected --dataset=cifar100 --wandb=False --local_exec=True --model_std=0.01
-# python train_cifar.py --lr=3.2 --topology ring fully_connected --local_steps 0 0 --dataset=cifar100 --wandb=False --local_exec=True --n_nodes 8 16 --start_epoch_phases 0 1 --eval_on_average_model=True --steps_eval=20
+# python train_cifar.py --lr=3.2 --topology ring fully_connected --local_steps 0 0 --dataset=cifar100 --wandb=False --local_exec=True --n_nodes 8 16 --start_epoch_phases 0 1 --eval_on_average_model=True --steps_eval=20 --lr 3.2 1.6
 # python train_cifar.py --lr=3.2 --expt_name=C1.2_ring8_ring16 --topology ring fully_connected --local_steps 0 16 --n_nodes 8 16 --start_epoch_phases 0 6 --epochs=225 --lr_decay 75 150 --dataset=cifar100 --seed=0
