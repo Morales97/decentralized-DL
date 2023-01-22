@@ -76,6 +76,8 @@ def get_parser():
                         help='weight decay, L2 regularization')
     parser.add_argument('--wd_drop', type=int, default=0,
                         help='[Experimental] Epoch where weight decay is dropped. If 0, do not drop') 
+    parser.add_argument('--momentum_drop', type=int, default=0,
+                        help='[Experimental] Epoch where momentum is dropped. If 0, do not drop') 
 
     # data
     parser.add_argument('--dataset', type=str, default='cifar10',

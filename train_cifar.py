@@ -113,7 +113,7 @@ def train(args, steps, wandb):
     max_ema_acc = 0
     n_swa = 0
     epoch_swa = args.epoch_swa # epoch to start SWA averaging (default: 100)
-
+    
     # for step in range(steps['total_steps']):
     while epoch < args.epochs:
         if args.data_split:
@@ -141,6 +141,13 @@ def train(args, steps, wandb):
             for opt in opts:
                 for g in opt.param_groups:
                     g['weight_decay'] = 0     
+
+        # drop momentum
+        if args.momentum_drop > 0 and epoch > args.momentum_drop:
+            for opt in opts:
+                for g in opt.param_groups:
+                    g['momentum'] = 0  
+                    g['nesterov'] = False
 
         # advance to the next training phase
         if phase+1 < total_phases and epoch > args.start_epoch_phases[phase+1]:
