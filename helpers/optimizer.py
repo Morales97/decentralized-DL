@@ -32,6 +32,33 @@ class OptimizerEMA(object):
                 ema_param.mul_(_alpha)
                 ema_param.add_(param * one_minus_alpha)
 
+class NewOptimizerEMA(object):
+    '''
+    EMA optimizer which can optionally apply EMA to BN statistics (see EMAN paper by Cai et al)
+    With eman=True, it should be exactly the same as OptimizerEMA
+    '''
+    def __init__(self, model, ema_model, alpha=0.999, eman=True):
+        self.model = model
+        self.ema_model = ema_model
+        self.alpha = alpha
+        self.eman = eman
+
+
+    def update(self, step):
+        _alpha = min(self.alpha, (step + 1)/(step + 10)) # ramp up EMA
+        one_minus_alpha = 1.0 - _alpha
+
+        # update learnable parameters
+        for param, ema_param in zip(self.model.parameters(), self.ema_model.parameters()):
+            ema_param.mul_(_alpha)
+            ema_param.add_(param * one_minus_alpha)
+
+        if self.eman:
+            # update buffers (aka, non-learnable parameters). These are usually only BN stats
+            for buffer, ema_buffer in zip(self.model.buffers(), self.ema_model.buffers()):
+                ema_buffer.mul_(_alpha)
+                ema_buffer.add_(buffer * one_minus_alpha)
+
 
 ##### Update BN statistics (from SWA repo: https://github.com/timgaripov/swa/blob/411b2fcad59bec60c6c9eb1eb19ab906540e5ea2/utils.py#L74) #####
 
