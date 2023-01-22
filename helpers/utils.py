@@ -134,6 +134,17 @@ def load_sweep_results(path):
     return dicts['steps'], dicts['accuracy'], dicts['test_loss'], dicts['train_loss']
 
 
+class AccuracyTracker(object):
+    def __init__(self):
+        self.max_acc = 0
+
+    def update(self, acc):
+        if acc > self.max_acc:
+            self.max_acc = acc
+
+    def get(self):
+        return self.max_acc
+
 if __name__ == '__main__':
     # config = {'test': 1}
     # save_experiment(config, None, filename='experiments_mnist/results/test')

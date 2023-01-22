@@ -6,10 +6,10 @@ import time
 import torch
 from model.model import add_noise_to_models, get_model, get_ema_models
 import torch.nn.functional as F
-from helpers.utils import save_experiment, get_expt_name
+from helpers.utils import save_experiment, get_expt_name, AccuracyTracker
 from helpers.logger import Logger
 from helpers.parser import parse_args
-from helpers.optimizer import get_optimizer
+from helpers.optimizer import get_optimizer, bn_update
 from helpers.consensus import compute_node_consensus, compute_weight_distance, get_gradient_norm
 from helpers.evaluate import eval_all_models, evaluate_model
 import wandb
@@ -56,6 +56,7 @@ def update_SWA(args, swa_model, models, device, n):
         swa_model = get_model(args, device)
         swa_model.load_state_dict(avg_model.state_dict())
     else:
+        # difference to original implementation: they update BN parameters with a pass over data, we use the parameters at each point
         for swa_param, avg_param in zip(swa_model.state_dict().values(), avg_model.state_dict().values()):
             if swa_param.dtype == torch.float32:
                 swa_param.mul_(n/(n+1))
@@ -94,7 +95,7 @@ def train(args, steps, wandb):
         late_ema_active = False   # indicate when to init step_offset
     swa_model = None
 
-    # gossip matrix
+    # initialize variables
     comm_matrix = get_gossip_matrix(args, 0)
     # print(comm_matrix)
 
@@ -102,18 +103,19 @@ def train(args, steps, wandb):
     ts_total = time.time()
     ts_steps_eval = time.time()
 
-    # TRAIN LOOP
     phase = 0
     total_phases = len(args.start_epoch_phases)
     lr_decay_phase = 0
     total_lr_phases = len(args.lr_decay)
     step = 0
     epoch = 0
-    max_acc = 0
-    max_ema_acc = 0
+    max_acc = AccuracyTracker()
+    max_ema_acc = AccuracyTracker()
+    max_late_ema_acc = AccuracyTracker()
     n_swa = 0
     epoch_swa = args.epoch_swa # epoch to start SWA averaging (default: 100)
-    
+
+    # TRAIN LOOP
     # for step in range(steps['total_steps']):
     while epoch < args.epochs:
         if args.data_split:
@@ -212,10 +214,12 @@ def train(args, steps, wandb):
             ema_model = get_average_model(args, device, ema_models)
             ema_test_loss, ema_acc = evaluate_model(ema_model, test_loader, device)
             logger.log_ema_acc(step, epoch, float(ema_acc*100))
+            max_ema_acc.update(ema_acc)
             if late_ema_active:
                 late_ema_model = get_average_model(args, device, late_ema_models)
                 _, late_ema_acc = evaluate_model(late_ema_model, test_loader, device)
                 logger.log_late_ema_acc(step, epoch, float(late_ema_acc*100)) 
+                max_late_ema_acc.update(late_ema_acc)
 
             # evaluate on averaged model
             if args.eval_on_average_model:
@@ -234,11 +238,7 @@ def train(args, steps, wandb):
                       (epoch, step, acc, float(ema_acc*100), test_loss, train_loss, time.time() - ts_total, time.time() - ts_steps_eval, time.time() - ts_eval))
                 acc = acc_avg
 
-            if acc > max_acc:
-                max_acc = acc
-            if ema_acc > max_ema_acc:
-                max_ema_acc = ema_acc
-
+            max_acc.update(acc)
             ts_steps_eval = time.time()
 
         # evaluate consensus and L2 dist from init
@@ -251,8 +251,24 @@ def train(args, steps, wandb):
             grad_norm = get_gradient_norm(models[0])
             logger.log_grad_norm(step, epoch, grad_norm)
 
-    logger.log_max_acc(max_acc)
-    logger.log_max_ema_acc(max_ema_acc)
+
+    # Make a full pass over EMA and SWA models to update 
+    logger.log_single_acc(max_acc.get(), log_as='Max Accuracy')
+    logger.log_single_acc(max_ema_acc.get(), log_as='Max EMA Accuracy')
+    logger.log_single_acc(max_late_ema_acc.get(), log_as='Max Late EMA Accuracy')
+
+    if epoch > args.epoch_swa:
+        bn_update(train_loader, swa_model, device)
+        _, swa_acc = evaluate_model(swa_model, test_loader, device)
+        logger.log_single_acc(swa_acc, log_as='SWA Acc (after BN)')
+        print('SWA Final Accuracy: %.2f' % swa_acc)
+
+    bn_update(train_loader, ema_model, device)
+    _, ema_acc = evaluate_model(ema_model, test_loader, device)
+    logger.log_single_acc(ema_acc, log_as='EMA Acc (after BN)')
+    print('EMA Final Accuracy: %.2f' % ema_acc)
+
+
 
 if __name__ == '__main__':
     from helpers.parser import SCRATCH_DIR
@@ -273,7 +289,7 @@ if __name__ == '__main__':
     else:
         train(args, steps, None)
 
-# python train_cifar.py --lr=3.2 --topology=ring --dataset=cifar100 --wandb=False --local_exec=True
+# python train_cifar.py --lr=3.2 --topology=ring --dataset=cifar100 --wandb=False --local_exec=True --eval_on_average_model=True
 # python train_cifar.py --lr=3.2 --topology=fully_connected --dataset=cifar100 --wandb=False --local_exec=True --model_std=0.01
 # python train_cifar.py --lr=3.2 --topology ring fully_connected --local_steps 0 0 --dataset=cifar100 --wandb=False --local_exec=True --n_nodes 8 16 --start_epoch_phases 0 1 --eval_on_average_model=True --steps_eval=20 --lr 3.2 1.6 --late_ema_epoch=1
 # python train_cifar.py --lr=3.2 --expt_name=C1.2_ring8_ring16 --topology ring fully_connected --local_steps 0 16 --n_nodes 8 16 --start_epoch_phases 0 6 --epochs=225 --lr_decay 75 150 --dataset=cifar100 --seed=0

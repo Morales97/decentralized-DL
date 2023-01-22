@@ -108,14 +108,6 @@ class Logger:
             'Weight distance Layer 0': wd_l0,
         }
         if self.wandb: self.wandb.log(log)
-    
-    def log_max_acc(self, max_acc):
-        if max_acc < 1:
-            max_acc *= 100
-        log = {
-            'Max Accuracy': max_acc,
-        }
-        if self.wandb: self.wandb.log(log)
 
     def log_ema_acc(self, step, epoch, ema_acc):
         log = {
@@ -133,18 +125,17 @@ class Logger:
         }
         if self.wandb: self.wandb.log(log)
 
-    def log_max_ema_acc(self, max_acc):
-        if max_acc < 1:
-            max_acc *= 100
-        log = {
-            'Max EMA Accuracy': max_acc,
-        }
-        if self.wandb: self.wandb.log(log)
-
-
     def log_swa_acc(self, epoch, swa_acc):
         log = {
             'Epoch': epoch,
             'SWA Accuracy': swa_acc,
+        }
+        if self.wandb: self.wandb.log(log)
+
+    def log_single_acc(self, acc, log_as='placeholder'):
+        if acc < 1:
+            acc *= 100
+        log = {
+            log_as: acc,
         }
         if self.wandb: self.wandb.log(log)
