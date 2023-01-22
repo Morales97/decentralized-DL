@@ -112,10 +112,12 @@ def vgg16(args):
     if args.dataset == 'cifar100':
         return VGG(make_layers(cfg['D']), 100)
 
-def vgg16_bn():
+def vgg16_bn(args):
     """VGG 16-layer model (configuration "D") with batch normalization"""
-    return VGG(make_layers(cfg['D'], batch_norm=True))
-
+    if args.dataset == 'cifar10':
+        return VGG(make_layers(cfg['D'], batch_norm=True), 10)
+    if args.dataset == 'cifar100':
+        return VGG(make_layers(cfg['D'], batch_norm=True), 100)
 
 def vgg19():
     """VGG 19-layer model (configuration "E")"""
