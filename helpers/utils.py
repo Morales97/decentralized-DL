@@ -1,5 +1,6 @@
 import json
 import pdb
+import shutil
 import time
 import numpy as np
 import os
@@ -147,8 +148,10 @@ class AccuracyTracker(object):
         return self.max_acc
 
 
-def save_checkpoint(state, filename):
+def save_checkpoint(state, filename, is_best=False):
     torch.save(state, filename)
+    if is_best:
+        shutil.copyfile(filename, 'model_best.pth.tar')
 
 if __name__ == '__main__':
     # config = {'test': 1}

@@ -2,10 +2,10 @@ import argparse
 import pdb
 
 # Directory to save checkpoints to
-SAVE_DIR = '.' 
+SAVE_DIR = '/mloraw1/danmoral/checkpoints/' 
 
 # wandb
-SCRATCH_DIR = '/scratch/danmoral' # directory to cache wandb artifacts in
+SCRATCH_DIR = '/mloraw1/danmoral/scratch/' # directory to cache wandb artifacts in
 ENTITY = 'morales97' # wandb username
 
 
@@ -24,9 +24,11 @@ def get_parser():
                         help='wandb entity to use')
     parser.add_argument('--save_dir', type=str, default=SAVE_DIR,
                         help='local directory to save experiment results to')
-    parser.add_argument('--save_model', type=boolfromstr, default=True,
+    parser.add_argument('--save_model', type=boolfromstr, default=False,
                         help='If not set, model will not be saved')
-
+    parser.add_argument('--save_interval', type=int, default=1000,
+                        help='step interval to save checkpoint') 
+                        
     # model
     parser.add_argument('--net', type=str, default='resnet18',
                         help='choice of architecture') 

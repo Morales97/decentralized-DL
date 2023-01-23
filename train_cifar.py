@@ -6,7 +6,7 @@ import time
 import torch
 from model.model import add_noise_to_models, get_model, get_ema_models
 import torch.nn.functional as F
-from helpers.utils import save_experiment, get_expt_name, AccuracyTracker
+from helpers.utils import save_experiment, get_expt_name, AccuracyTracker, save_checkpoint
 from helpers.logger import Logger
 from helpers.parser import parse_args
 from helpers.optimizer import get_optimizer, bn_update
@@ -266,6 +266,20 @@ def train(args, steps, wandb):
             grad_norm = get_gradient_norm(models[0])
             logger.log_grad_norm(step, epoch, grad_norm)
 
+        # save checkpoint
+        if args.save_model and step % args.save_interval == 0:
+            # if not args.multiprocessing_distributed or (args.multiprocessing_distributed and args.rank % ngpus_per_node == 0):
+            for i in range(len(models)):
+                save_checkpoint({
+                    'epoch': epoch,
+                    'step': step,
+                    'net': args.net,
+                    'state_dict': models[i].state_dict(),
+                    'ema_state_dict': ema_models[i].state_dict(),
+                    'optimizer' : opts[i].state_dict(),
+                }, filename=SAVE_DIR + 'checkpoint_m' + str(i) + '.pth.tar')
+
+
 
     # Make a full pass over EMA and SWA models to update 
     logger.log_single_acc(max_acc.get(), log_as='Max Accuracy')
@@ -286,9 +300,9 @@ def train(args, steps, wandb):
 
 
 if __name__ == '__main__':
-    from helpers.parser import SCRATCH_DIR
+    from helpers.parser import SCRATCH_DIR, SAVE_DIR
     args = parse_args()
-    os.environ['WANDB_CACHE_DIR'] = SCRATCH_DIR
+    os.environ['WANDB_CACHE_DIR'] = SCRATCH_DIR # NOTE this should be a directory periodically deleted. Otherwise, delete manually
 
     if not args.expt_name:
         args.expt_name = get_expt_name(args)
