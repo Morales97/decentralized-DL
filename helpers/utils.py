@@ -3,6 +3,7 @@ import pdb
 import time
 import numpy as np
 import os
+import torch 
 
 def get_expt_name(args, warmup=False):
     if args.topology[0] == 'centralized' or args.topology[0] == 'fully_connected':
@@ -144,6 +145,10 @@ class AccuracyTracker(object):
 
     def get(self):
         return self.max_acc
+
+
+def save_checkpoint(state, filename):
+    torch.save(state, filename)
 
 if __name__ == '__main__':
     # config = {'test': 1}
