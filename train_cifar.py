@@ -42,7 +42,18 @@ def initialize_nodes(args, models, opts, n_nodes_new, device):
     for i in range(len(new_opts)):
         new_opts[i].load_state_dict(opt_sd)
 
-    return new_models, new_opts, 
+    return new_models, new_opts
+
+def initialize_nodes_no_mom(args, models, n_nodes_new, device):
+    ''' Do not average momentum. Start new optimizers '''
+    avg_model = get_average_model(args, device, models)
+    new_models = [get_model(args, device) for _ in range(n_nodes_new)]
+    for i in range(len(new_models)):
+        new_models[i].load_state_dict(avg_model.state_dict())
+    
+    new_opts = [get_optimizer(args, model) for model in new_models]
+
+    return new_models, new_opts
 
 def init_nodes_EMA(args, models, ema_models, device):
     ''' Initialize EMA models for new nodes from an All-Reduce average of previous EMA models'''
@@ -158,7 +169,10 @@ def train(args, steps, wandb):
             
             # init new nodes
             if args.n_nodes[phase] > args.n_nodes[phase-1]: # if n_nodes doesn't change, no need to re-init models
-                models, opts = initialize_nodes(args, models, opts, args.n_nodes[phase], device)
+                if args.not_init_momentum:
+                    models, opts = initialize_nodes_no_mom(args, models, args.n_nodes[phase], device)
+                else:
+                    models, opts = initialize_nodes(args, models, opts, args.n_nodes[phase], device)
                 ema_models, ema_opts = init_nodes_EMA(args, models, ema_models, device)
                 if args.late_ema_epoch > 0:
                     late_ema_models, late_ema_opts = init_nodes_EMA(args, models, late_ema_models, device)
