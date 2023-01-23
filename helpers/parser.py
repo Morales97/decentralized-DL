@@ -87,9 +87,7 @@ def get_parser():
     parser.add_argument('--data_split', type=boolfromstr, default=False,
                         help='if False, sample with replacement from entire dataset (IID). if True, split dataset') 
     parser.add_argument('--p_label_skew', type=float, default=0,
-                        help='Label skew for heterogeneity. Requires data_split True.') 
-    parser.add_argument('--save_dir', type=str, default='/scratch/danmoral/checkpoints/',
-                        help='Directory to save checkpoints')    
+                        help='Label skew for heterogeneity. Requires data_split True.')    
 
     # evaluation
     parser.add_argument('--eval_on_average_model', type=boolfromstr, default=False,
