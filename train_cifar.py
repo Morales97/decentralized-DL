@@ -169,10 +169,11 @@ def train(args, steps, wandb):
             
             # init new nodes
             if args.n_nodes[phase] > args.n_nodes[phase-1]: # if n_nodes doesn't change, no need to re-init models
-                if args.not_init_momentum:
-                    models, opts = initialize_nodes_no_mom(args, models, args.n_nodes[phase], device)
+                if args.init_momentum:
+                    models, opts = initialize_nodes(args, models, opts, args.n_nodes[phase], device) 
                 else:
-                    models, opts = initialize_nodes(args, models, opts, args.n_nodes[phase], device)
+                    models, opts = initialize_nodes_no_mom(args, models, args.n_nodes[phase], device)
+
                 ema_models, ema_opts = init_nodes_EMA(args, models, ema_models, device)
                 if args.late_ema_epoch > 0:
                     late_ema_models, late_ema_opts = init_nodes_EMA(args, models, late_ema_models, device)
