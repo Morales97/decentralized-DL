@@ -205,9 +205,9 @@ def main_worker(gpu, ngpus_per_node, args, wandb):
     elif args.gpu is not None and torch.cuda.is_available():
         torch.cuda.set_device(args.gpu)
         model = model.cuda(args.gpu)
-    elif torch.backends.mps.is_available():
-        device = torch.device("mps")
-        model = model.to(device)
+    # elif torch.backends.mps.is_available():
+    #     device = torch.device("mps")
+    #     model = model.to(device)
     else:
         # DataParallel will divide and allocate batch_size to all available GPUs
         if args.arch.startswith('alexnet') or args.arch.startswith('vgg'):
@@ -221,8 +221,8 @@ def main_worker(gpu, ngpus_per_node, args, wandb):
             device = torch.device('cuda:{}'.format(args.gpu))
         else:
             device = torch.device("cuda")
-    elif torch.backends.mps.is_available():
-        device = torch.device("mps")
+    # elif torch.backends.mps.is_available():
+    #     device = torch.device("mps")
     else:
         device = torch.device("cpu")
     # define loss function (criterion), optimizer, and learning rate scheduler
