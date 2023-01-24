@@ -409,7 +409,7 @@ def validate(val_loader, model, criterion, args, logger, step, epoch, ema=False)
                 elif torch.backends.mps.is_available():
                     images = images.to('mps')
                     target = target.to('mps')
-                elif torch.cuda.is_available():
+                if torch.cuda.is_available():
                     target = target.cuda(args.gpu, non_blocking=True)
 
                 # compute output
