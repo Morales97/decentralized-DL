@@ -205,9 +205,9 @@ def main_worker(gpu, ngpus_per_node, args, wandb):
     elif args.gpu is not None and torch.cuda.is_available():
         torch.cuda.set_device(args.gpu)
         model = model.cuda(args.gpu)
-    # elif torch.backends.mps.is_available():
-    #     device = torch.device("mps")
-    #     model = model.to(device)
+    elif torch.backends.mps.is_available():
+        device = torch.device("mps")
+        model = model.to(device)
     else:
         # DataParallel will divide and allocate batch_size to all available GPUs
         if args.arch.startswith('alexnet') or args.arch.startswith('vgg'):
@@ -221,8 +221,8 @@ def main_worker(gpu, ngpus_per_node, args, wandb):
             device = torch.device('cuda:{}'.format(args.gpu))
         else:
             device = torch.device("cuda")
-    # elif torch.backends.mps.is_available():
-    #     device = torch.device("mps")
+    elif torch.backends.mps.is_available():
+        device = torch.device("mps")
     else:
         device = torch.device("cpu")
     # define loss function (criterion), optimizer, and learning rate scheduler
@@ -344,6 +344,7 @@ def main_worker(gpu, ngpus_per_node, args, wandb):
 
 def train(train_loader, model, criterion, optimizer, ema_optimizer, epoch, device, args, logger, step, ts_start):
     batch_time = AverageMeter('Time', ':6.3f')
+    log_time = AverageMeter('Time', ':6.3f')    # avearge batch time between logs 
     data_time = AverageMeter('Data', ':6.3f')
     losses = AverageMeter('Loss', ':.4e')
     top1 = AverageMeter('Acc@1', ':6.2f')
@@ -386,11 +387,13 @@ def train(train_loader, model, criterion, optimizer, ema_optimizer, epoch, devic
 
         # measure elapsed time
         batch_time.update(time.time() - end)
+        log_time.update(time.time() - end)
         end = time.time()
 
         if i % args.print_freq == 0:
             progress.display(i + 1)
-            logger.log_train_IN(step + i, epoch + i/(len(train_loader)), loss.item(), batch_time.val, ts_start)
+            logger.log_train_IN(step + i, epoch + i/(len(train_loader)), loss.item(), log_time.avg, ts_start)
+            log_time = AverageMeter('Time', ':6.3f')
 
     return i
 
@@ -403,10 +406,10 @@ def validate(val_loader, model, criterion, args, logger, step, epoch, ema=False)
                 i = base_progress + i
                 if args.gpu is not None and torch.cuda.is_available():
                     images = images.cuda(args.gpu, non_blocking=True)
-                if torch.backends.mps.is_available():
+                elif torch.backends.mps.is_available():
                     images = images.to('mps')
                     target = target.to('mps')
-                if torch.cuda.is_available():
+                elif torch.cuda.is_available():
                     target = target.cuda(args.gpu, non_blocking=True)
 
                 # compute output
@@ -572,4 +575,4 @@ if __name__ == '__main__':
     else:
         main(args, None)
 
-# python main.py -a resnet18 /mlodata1/kosson/datasets/imagenet --expt_name=IN_solo
+# python main.py -a resnet18 /mlodata1/kosson/datasets/imagenet --expt_name=IN_solo --gpu=0
