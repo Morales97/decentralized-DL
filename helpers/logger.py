@@ -22,6 +22,16 @@ class Logger:
         }
         if self.wandb: self.wandb.log(log)
 
+    def log_train_IN(self, step, epoch, train_loss, time_batch, ts_start):
+        log = {
+            'Train Loss': train_loss,
+            'Iteration': step,
+            'Epoch': epoch,
+            'Total time': time.time() - ts_start,
+            'Time/step': time_batch,
+        }
+        if self.wandb: self.wandb.log(log) 
+
     def log_eval(self, step, epoch, acc, test_loss, ts_eval, ts_steps_eval):
         self.accuracies.append(acc)
         self.test_losses.append(test_loss)
@@ -33,6 +43,17 @@ class Logger:
             'Test Loss': test_loss,
             'Time/eval': time.time() - ts_eval,
             'Time since last eval': time.time() - ts_steps_eval
+        }
+        if self.wandb: self.wandb.log(log)
+
+    def log_eval_IN(self, epoch, acc1, acc5, test_loss, eval_time):
+        log = {
+
+            'Epoch': epoch,
+            'Top-1 Accuracy': acc1,
+            'Top-5 Accuracy': acc5,
+            'Test Loss': test_loss,
+            'Time/eval': eval_time,
         }
         if self.wandb: self.wandb.log(log)
 
@@ -114,6 +135,15 @@ class Logger:
             'Iteration': step,
             'Epoch': epoch,
             'EMA Accuracy': ema_acc,
+        }
+        if self.wandb: self.wandb.log(log)
+
+    def log_ema_acc_IN(self, step, epoch, acc1, acc5):
+        log = {
+            'Iteration': step,
+            'Epoch': epoch,
+            'EMA Top-1 Accuracy': acc1,
+            'EMA Top-5 Accuracy': acc5,
         }
         if self.wandb: self.wandb.log(log)
 

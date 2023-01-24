@@ -10,7 +10,7 @@ from helpers.utils import save_experiment, get_expt_name, AccuracyTracker, save_
 from helpers.logger import Logger
 from helpers.parser import parse_args
 from helpers.optimizer import get_optimizer, bn_update
-from helpers.consensus import compute_node_consensus, compute_weight_distance, get_gradient_norm
+from helpers.consensus import compute_node_consensus, compute_weight_distance, get_gradient_norm, compute_weight_norm
 from helpers.evaluate import eval_all_models, evaluate_model
 import wandb
 import os
@@ -75,6 +75,23 @@ def update_SWA(args, swa_model, models, device, n):
     n += 1
     return swa_model, n
 
+def compute_model_tracking_metrics(args, logger, models, step, epoch, device, model_init=None):
+    # consensus distance
+    L2_dist = compute_node_consensus(args, device, models)
+    logger.log_consensus(step, epoch, L2_dist)
+    
+    # weight distance to init
+    if model_init is not None:
+        L2_dist_init = compute_weight_distance(models[0], model_init)
+        logger.log_weight_distance(step, epoch, L2_dist_init)
+    
+    # weight L2 norm
+    L2_norm = compute_weight_norm(models[0])
+    logger.log_weight_norm(step, epoch, L2_norm)
+    
+    # gradient L2 norm
+    grad_norm = get_gradient_norm(models[0])
+    logger.log_grad_norm(step, epoch, grad_norm)
 
 ########################################################################################
 
@@ -223,48 +240,43 @@ def train(args, steps, wandb):
 
         # evaluate 
         if step % args.steps_eval == 0 or epoch >= args.epochs:
-            ts_eval = time.time()
-            
-            # evaluate on average of EMA models
-            ema_model = get_average_model(args, device, ema_models)
-            ema_test_loss, ema_acc = evaluate_model(ema_model, test_loader, device)
-            logger.log_ema_acc(step, epoch, float(ema_acc*100))
-            max_ema_acc.update(ema_acc)
-            if late_ema_active:
-                late_ema_model = get_average_model(args, device, late_ema_models)
-                _, late_ema_acc = evaluate_model(late_ema_model, test_loader, device)
-                logger.log_late_ema_acc(step, epoch, float(late_ema_acc*100)) 
-                max_late_ema_acc.update(late_ema_acc)
-
-            # evaluate on averaged model
-            if args.eval_on_average_model:
+            with torch.no_grad():
                 ts_eval = time.time()
-                model = get_average_model(args, device, models)
-                test_loss, acc = evaluate_model(model, test_loader, device)
-                logger.log_eval(step, epoch, float(acc*100), test_loss, ts_eval, ts_steps_eval)
-                print('Epoch %.3f (Step %d) -- Test accuracy: %.2f -- EMA accuracy: %.2f -- Test loss: %.3f -- Train loss: %.3f -- Time (total/last/eval): %.2f / %.2f / %.2f s' %
-                      (epoch, step, float(acc*100), float(ema_acc*100), test_loss, train_loss, time.time() - ts_total, time.time() - ts_steps_eval, time.time() - ts_eval))
                 
-            # evaluate on all models
-            else:
-                acc, test_loss, acc_workers, loss_workers, acc_avg, test_loss_avg = eval_all_models(args, models, test_loader, device)
-                logger.log_eval_per_node(step, epoch, acc, test_loss, acc_workers, loss_workers, acc_avg, test_loss_avg, ts_eval, ts_steps_eval)
-                print('Epoch %.3f (Step %d) -- Test accuracy: %.2f -- EMA accuracy: %.2f -- Test loss: %.3f -- Train loss: %.3f -- Time (total/last/eval): %.2f / %.2f / %.2f s' %
-                      (epoch, step, acc, float(ema_acc*100), test_loss, train_loss, time.time() - ts_total, time.time() - ts_steps_eval, time.time() - ts_eval))
-                acc = acc_avg
+                # evaluate on average of EMA models
+                ema_model = get_average_model(args, device, ema_models)
+                _, ema_acc = evaluate_model(ema_model, test_loader, device)
+                logger.log_ema_acc(step, epoch, float(ema_acc*100))
+                max_ema_acc.update(ema_acc)
+                if late_ema_active:
+                    late_ema_model = get_average_model(args, device, late_ema_models)
+                    _, late_ema_acc = evaluate_model(late_ema_model, test_loader, device)
+                    logger.log_late_ema_acc(step, epoch, float(late_ema_acc*100)) 
+                    max_late_ema_acc.update(late_ema_acc)
 
-            max_acc.update(acc)
-            ts_steps_eval = time.time()
+                # evaluate on averaged model
+                if args.eval_on_average_model:
+                    ts_eval = time.time()
+                    model = get_average_model(args, device, models)
+                    test_loss, acc = evaluate_model(model, test_loader, device)
+                    logger.log_eval(step, epoch, float(acc*100), test_loss, ts_eval, ts_steps_eval)
+                    print('Epoch %.3f (Step %d) -- Test accuracy: %.2f -- EMA accuracy: %.2f -- Test loss: %.3f -- Train loss: %.3f -- Time (total/last/eval): %.2f / %.2f / %.2f s' %
+                        (epoch, step, float(acc*100), float(ema_acc*100), test_loss, train_loss, time.time() - ts_total, time.time() - ts_steps_eval, time.time() - ts_eval))
+                    
+                # evaluate on all models
+                else:
+                    acc, test_loss, acc_workers, loss_workers, acc_avg, test_loss_avg = eval_all_models(args, models, test_loader, device)
+                    logger.log_eval_per_node(step, epoch, acc, test_loss, acc_workers, loss_workers, acc_avg, test_loss_avg, ts_eval, ts_steps_eval)
+                    print('Epoch %.3f (Step %d) -- Test accuracy: %.2f -- EMA accuracy: %.2f -- Test loss: %.3f -- Train loss: %.3f -- Time (total/last/eval): %.2f / %.2f / %.2f s' %
+                        (epoch, step, acc, float(ema_acc*100), test_loss, train_loss, time.time() - ts_total, time.time() - ts_steps_eval, time.time() - ts_eval))
+                    acc = acc_avg
 
-        # evaluate consensus and L2 dist from init
-        if step % args.steps_consensus == 0:
-            L2_dist = compute_node_consensus(args, device, models)
-            logger.log_consensus(step, epoch, L2_dist)
-            L2_dist_init, L2_norm = compute_weight_distance(models[0], init_model)
-            logger.log_weight_distance(step, epoch, L2_dist_init)
-            logger.log_weight_norm(step, epoch, L2_norm)
-            grad_norm = get_gradient_norm(models[0])
-            logger.log_grad_norm(step, epoch, grad_norm)
+                max_acc.update(acc)
+                ts_steps_eval = time.time()
+
+        # log consensus distance, weight norm
+        if step % args.tracking_interaval == 0:
+            compute_model_tracking_metrics(args, logger, models, step, epoch, device)
 
         # save checkpoint
         if args.save_model and step % args.save_interval == 0:
@@ -278,6 +290,11 @@ def train(args, steps, wandb):
                     'ema_state_dict': ema_models[i].state_dict(),
                     'optimizer' : opts[i].state_dict(),
                 }, filename=SAVE_DIR + 'checkpoint_m' + str(i) + '.pth.tar')
+
+                if args.wandb:
+                    model_artifact = wandb.Artifact('ckpt_m' + str(i), type='model')
+                    model_artifact.add_file(filename=SAVE_DIR + 'checkpoint_m' + str(i) + '.pth.tar')
+                    wandb.log_artifact(model_artifact)
             print('Checkpoint(s) saved!')
 
     # Make a full pass over EMA and SWA models to update 

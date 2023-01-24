@@ -25,6 +25,14 @@ import torchvision.transforms as transforms
 from torch.optim.lr_scheduler import StepLR
 from torch.utils.data import Subset
 
+import wandb
+from helpers.parser import SCRATCH_DIR, SAVE_DIR, ENTITY
+import pdb
+from helpers.logger import Logger
+from model.model import get_ema_models
+from helpers.optimizer import OptimizerEMA
+
+
 model_names = sorted(name for name in models.__dict__
     if name.islower() and not name.startswith("__")
     and callable(models.__dict__[name]))
@@ -82,11 +90,28 @@ parser.add_argument('--multiprocessing-distributed', action='store_true',
                          'multi node data parallel training')
 parser.add_argument('--dummy', action='store_true', help="use fake data to benchmark")
 
+#### DM args ####
+# wandb 
+parser.add_argument('--expt_name', type=str, default='',
+                    help='Name of the experiment for wandb')
+parser.add_argument('--no_wandb', action='store_true',
+                    help='do not use wandb')  
+parser.add_argument('--project', type=str, default='MLO-ImageNet',
+                    help='wandb project to use')
+parser.add_argument('--entity', type=str, default=ENTITY,
+                    help='wandb entity to use')
+parser.add_argument('--save_dir', type=str, default=SAVE_DIR,
+                    help='local directory to save experiment results to')
+
+# EMA
+parser.add_argument('--ema', action='store_true',
+                    help='keep an exponential moving average model')  
+parser.add_argument('--alpha', type=float, default=0.995,
+                    help='EMA decaying rate')
+
 best_acc1 = 0
 
-
-def main():
-    args = parser.parse_args()
+def main(args):
 
     if args.seed is not None:
         random.seed(args.seed)
@@ -124,9 +149,10 @@ def main():
         main_worker(args.gpu, ngpus_per_node, args)
 
 
-def main_worker(gpu, ngpus_per_node, args):
+def main_worker(gpu, ngpus_per_node, args, wandb):
     global best_acc1
     args.gpu = gpu
+    logger = Logger(wandb)
 
     if args.gpu is not None:
         print("Use GPU: {} for training".format(args.gpu))
@@ -147,6 +173,13 @@ def main_worker(gpu, ngpus_per_node, args):
     else:
         print("=> creating model '{}'".format(args.arch))
         model = models.__dict__[args.arch]()
+
+    ema_model, ema_optimizer = None, None
+    if args.ema:
+        ema_model = models.__dict__[args.arch]()
+        for param in ema_model.parameters():
+            param.detach_()
+        ema_optimizer = OptimizerEMA(model, ema_model, alpha=args.alpha)
 
     if not torch.cuda.is_available() and not torch.backends.mps.is_available():
         print('using CPU, this will be slow')
@@ -198,7 +231,7 @@ def main_worker(gpu, ngpus_per_node, args):
     optimizer = torch.optim.SGD(model.parameters(), args.lr,
                                 momentum=args.momentum,
                                 weight_decay=args.weight_decay)
-    
+
     """Sets the learning rate to the initial LR decayed by 10 every 30 epochs"""
     scheduler = StepLR(optimizer, step_size=30, gamma=0.1)
     
@@ -274,21 +307,25 @@ def main_worker(gpu, ngpus_per_node, args):
         validate(val_loader, model, criterion, args)
         return
 
+    step = 0
+    ts_start = time.time()
     for epoch in range(args.start_epoch, args.epochs):
         if args.distributed:
             train_sampler.set_epoch(epoch)
 
         # train for one epoch
-        train(train_loader, model, criterion, optimizer, epoch, device, args)
+        step += train(train_loader, model, criterion, optimizer, ema_optimizer, epoch, device, args, logger, step, ts_start)
 
         # evaluate on validation set
-        acc1 = validate(val_loader, model, criterion, args)
+        acc1 = validate(val_loader, model, criterion, args, logger, step, epoch)
+        ema_acc1 = validate(val_loader, ema_model, criterion, args, logger, step, epoch, ema=True)
         
         scheduler.step()
         
         # remember best acc@1 and save checkpoint
         is_best = acc1 > best_acc1
         best_acc1 = max(acc1, best_acc1)
+        ema_best_acc1 = max(acc1, ema_best_acc1)
 
         if not args.multiprocessing_distributed or (args.multiprocessing_distributed
                 and args.rank % ngpus_per_node == 0):
@@ -301,8 +338,11 @@ def main_worker(gpu, ngpus_per_node, args):
                 'scheduler' : scheduler.state_dict()
             }, is_best)
 
+    logger.log_single_acc(best_acc1, log_as='Max Top-1 Accuracy')
+    logger.log_single_acc(ema_best_acc1, log_as='Max EMA Top-1 Accuracy')
 
-def train(train_loader, model, criterion, optimizer, epoch, device, args):
+
+def train(train_loader, model, criterion, optimizer, ema_optimizer, epoch, device, args, logger, step, ts_start):
     batch_time = AverageMeter('Time', ':6.3f')
     data_time = AverageMeter('Data', ':6.3f')
     losses = AverageMeter('Loss', ':.4e')
@@ -339,6 +379,10 @@ def train(train_loader, model, criterion, optimizer, epoch, device, args):
         optimizer.zero_grad()
         loss.backward()
         optimizer.step()
+        
+        # update EMA
+        if args.ema:
+            ema_optimizer.update(step + i)
 
         # measure elapsed time
         batch_time.update(time.time() - end)
@@ -346,11 +390,13 @@ def train(train_loader, model, criterion, optimizer, epoch, device, args):
 
         if i % args.print_freq == 0:
             progress.display(i + 1)
+            logger.log_train_IN(step + i, epoch + i/(len(train_loader)), loss.item(), batch_time.val, ts_start)
 
+    return i
 
-def validate(val_loader, model, criterion, args):
+def validate(val_loader, model, criterion, args, logger, step, epoch, ema=False):
 
-    def run_validate(loader, base_progress=0):
+    def run_validate(loader, _model, base_progress=0):
         with torch.no_grad():
             end = time.time()
             for i, (images, target) in enumerate(loader):
@@ -364,7 +410,7 @@ def validate(val_loader, model, criterion, args):
                     target = target.cuda(args.gpu, non_blocking=True)
 
                 # compute output
-                output = model(images)
+                output = _model(images)
                 loss = criterion(output, target)
 
                 # measure accuracy and record loss
@@ -392,7 +438,7 @@ def validate(val_loader, model, criterion, args):
     # switch to evaluate mode
     model.eval()
 
-    run_validate(val_loader)
+    run_validate(val_loader, model)
     if args.distributed:
         top1.all_reduce()
         top5.all_reduce()
@@ -406,6 +452,10 @@ def validate(val_loader, model, criterion, args):
         run_validate(aux_val_loader, len(val_loader))
 
     progress.display_summary()
+    if not ema:
+        logger.log_eval_IN(step, epoch, top1.avg, top5.avg, losses.avg, batch_time.sum)
+    else:
+        logger.log_ema_acc_IN(step, epoch, top1.avg, top5.avg)
 
     return top1.avg
 
@@ -512,4 +562,14 @@ def accuracy(output, target, topk=(1,)):
 
 
 if __name__ == '__main__':
-    main()
+    os.environ['WANDB_CACHE_DIR'] = SCRATCH_DIR # NOTE this should be a directory periodically deleted. Otherwise, delete manually
+    args = parser.parse_args()
+
+    if args.no_wandb:
+        wandb.init(name=args.expt_name, dir=args.save_dir, config=args, project=args.project, entity=args.entity)
+        main(args, wandb)
+        wandb.finish()
+    else:
+        main(args)
+
+# python main.py -a resnet18 /mlodata1/kosson/datasets/imagenet --expt_name=IN_solo
