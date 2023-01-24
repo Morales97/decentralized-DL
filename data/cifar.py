@@ -33,7 +33,7 @@ def get_cifar_test(args, root):
     return data.DataLoader(dataset, batch_size=100, shuffle=False)
 
 
-def get_cifar(args, root, iid=True):
+def get_cifar(args, root, batch_size, iid=True):
 
     # decide normalize parameter.
     if args.dataset == "cifar10":
@@ -66,15 +66,15 @@ def get_cifar(args, root, iid=True):
 
     if iid:
         sampler = data.RandomSampler(
-            traindata, replacement=True, num_samples=args.batch_size)
+            traindata, replacement=True, num_samples=batch_size)
         train_loader = data.DataLoader(
-            traindata, sampler=sampler, batch_size=args.batch_size)
+            traindata, sampler=sampler, batch_size=batch_size)
     else:
         # split train dataset
         traindata_split = data.random_split(
             traindata, [int(traindata.data.shape[0] / args.n_nodes[0]) for _ in range(args.n_nodes[0])])
         train_loader = [data.DataLoader(
-            x, batch_size=args.batch_size, shuffle=True) for x in traindata_split]
+            x, batch_size=batch_size, shuffle=True) for x in traindata_split]
 
     test_loader = get_cifar_test(args, root)
 

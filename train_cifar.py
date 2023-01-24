@@ -103,7 +103,7 @@ def train(args, steps, wandb):
     print('Random seed: ', args.seed)
 
     # data
-    train_loader, test_loader = get_data(args)
+    train_loader, test_loader = get_data(args, args.batch_size[0])
     if args.data_split:
         train_loader_lengths = [len(t) for t in train_loader]
         train_loader_iter = [iter(t) for t in train_loader]
@@ -184,6 +184,10 @@ def train(args, steps, wandb):
             phase += 1
             comm_matrix = get_gossip_matrix(args, phase)
             
+            if len(args.batch_size) > 1:
+                assert not args.data_split, 'if data not IID, should deal with finishing epoch'
+                train_loader, _ = get_data(args, args.batch_size[phase])
+
             # init new nodes
             if args.n_nodes[phase] > args.n_nodes[phase-1]: # if n_nodes doesn't change, no need to re-init models
                 if args.init_momentum:
@@ -224,7 +228,7 @@ def train(args, steps, wandb):
                 late_ema_opts[i].update(step - step_offset)
 
         step +=1
-        epoch += args.n_nodes[phase] * args.batch_size / 50000
+        epoch += args.n_nodes[phase] * args.batch_size[phase] / 50000
         train_loss /= args.n_nodes[phase]
         logger.log_step(step, epoch, train_loss, ts_total, ts_step)
         
@@ -324,7 +328,7 @@ if __name__ == '__main__':
         args.expt_name = get_expt_name(args)
     
     steps = {
-        'warmup_steps': 50000 / (args.n_nodes[0] * args.batch_size) * args.lr_warmup_epochs,    # NOTE using n_nodes[0] to compute warmup epochs. Assuming warmup occurs in the first phase
+        'warmup_steps': 50000 / (args.n_nodes[0] * args.batch_size[0]) * args.lr_warmup_epochs,    # NOTE using n_nodes[0] to compute warmup epochs. Assuming warmup occurs in the first phase
     }
 
     if args.wandb:
@@ -338,3 +342,5 @@ if __name__ == '__main__':
 # python train_cifar.py --lr=3.2 --topology=fully_connected --dataset=cifar100 --wandb=False --local_exec=True --model_std=0.01
 # python train_cifar.py --lr=3.2 --topology ring fully_connected --local_steps 0 0 --dataset=cifar100 --wandb=False --local_exec=True --n_nodes 8 16 --start_epoch_phases 0 1 --eval_on_average_model=True --steps_eval=20 --lr 3.2 1.6 --late_ema_epoch=1
 # python train_cifar.py --lr=3.2 --topology=ring --dataset=cifar100 --eval_on_average_model=True --n_nodes=4 --save_model=True --save_interval=20
+# python train_cifar.py --lr=3.2 --topology solo solo --local_steps 0 0 --dataset=cifar100 --wandb=False --local_exec=True --n_nodes 1 1 --batch_size 1024 2048 --start_epoch_phases 0 1 --steps_eval=40 --lr 3.2 1.6
+

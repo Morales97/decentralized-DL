@@ -58,7 +58,7 @@ def get_parser():
     # hyperparameters
     parser.add_argument('--seed', type=int, default=0,
                         help='random seed')
-    parser.add_argument('--batch_size', type=int, default=128,
+    parser.add_argument('--batch_size', type=int, nargs='+', default=[128],
                         help='batch size for a single node')
     parser.add_argument('--lr', type=float, nargs='+', default=[0.2],
                         help='learning rate')   
