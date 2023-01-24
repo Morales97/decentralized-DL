@@ -94,7 +94,7 @@ parser.add_argument('--dummy', action='store_true', help="use fake data to bench
 # wandb 
 parser.add_argument('--expt_name', type=str, default='',
                     help='Name of the experiment for wandb')
-parser.add_argument('--no_wandb', action='store_true',
+parser.add_argument('--no_wandb', action='store_true', default=False,
                     help='do not use wandb')  
 parser.add_argument('--project', type=str, default='MLO-ImageNet',
                     help='wandb project to use')
