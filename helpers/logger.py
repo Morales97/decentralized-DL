@@ -1,5 +1,5 @@
 import time 
-
+# NOTE I think I don't need to define self.wandb, just import wandb
 class Logger:
     def __init__(self, wandb):
         self.wandb = wandb

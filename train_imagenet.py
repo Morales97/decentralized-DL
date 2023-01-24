@@ -111,7 +111,7 @@ parser.add_argument('--alpha', type=float, default=0.995,
 
 best_acc1 = 0
 
-def main(args):
+def main(args, wandb):
 
     if args.seed is not None:
         random.seed(args.seed)
@@ -146,7 +146,7 @@ def main(args):
         mp.spawn(main_worker, nprocs=ngpus_per_node, args=(ngpus_per_node, args))
     else:
         # Simply call main_worker function
-        main_worker(args.gpu, ngpus_per_node, args)
+        main_worker(args.gpu, ngpus_per_node, args, wandb)
 
 
 def main_worker(gpu, ngpus_per_node, args, wandb):
