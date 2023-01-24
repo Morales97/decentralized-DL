@@ -565,11 +565,11 @@ if __name__ == '__main__':
     os.environ['WANDB_CACHE_DIR'] = SCRATCH_DIR # NOTE this should be a directory periodically deleted. Otherwise, delete manually
     args = parser.parse_args()
 
-    if args.no_wandb:
+    if not args.no_wandb:
         wandb.init(name=args.expt_name, dir=args.save_dir, config=args, project=args.project, entity=args.entity)
         main(args, wandb)
         wandb.finish()
     else:
-        main(args)
+        main(args, None)
 
 # python main.py -a resnet18 /mlodata1/kosson/datasets/imagenet --expt_name=IN_solo
