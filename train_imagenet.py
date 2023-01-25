@@ -29,7 +29,7 @@ import wandb
 from helpers.parser import SCRATCH_DIR, SAVE_DIR, ENTITY
 import pdb
 from helpers.logger import Logger
-from helpers.optimizer import OptimizerEMA
+from helpers.optimizer import NewOptimizerEMA_IN
 
 
 model_names = sorted(name for name in models.__dict__
@@ -180,7 +180,7 @@ def main_worker(gpu, ngpus_per_node, args, wandb):
         ema_model = models.__dict__[args.arch]()
         for param in ema_model.parameters():
             param.detach_()
-        ema_optimizer = OptimizerEMA(model, ema_model, alpha=args.alpha)
+        ema_optimizer = NewOptimizerEMA_IN(alpha=args.alpha)
 
     if not torch.cuda.is_available() and not torch.backends.mps.is_available():
         print('using CPU, this will be slow')
@@ -317,7 +317,7 @@ def main_worker(gpu, ngpus_per_node, args, wandb):
             train_sampler.set_epoch(epoch)
 
         # train for one epoch
-        step += train(train_loader, model, criterion, optimizer, ema_optimizer, epoch, device, args, logger, step, ts_start)
+        step += train(train_loader, model, criterion, optimizer, ema_model, ema_optimizer, epoch, device, args, logger, step, ts_start)
 
         # evaluate on validation set
         acc1 = validate(val_loader, model, criterion, args, logger, step, epoch)
@@ -348,7 +348,7 @@ def main_worker(gpu, ngpus_per_node, args, wandb):
     logger.log_single_acc(ema_best_acc1, log_as='Max EMA Top-1 Accuracy')
 
 
-def train(train_loader, model, criterion, optimizer, ema_optimizer, epoch, device, args, logger, step, ts_start):
+def train(train_loader, model, criterion, optimizer, ema_model, ema_optimizer, epoch, device, args, logger, step, ts_start):
     batch_time = AverageMeter('Time', ':6.3f')
     log_time = AverageMeter('Time', ':6.3f')    # avearge batch time between logs 
     data_time = AverageMeter('Data', ':6.3f')
@@ -390,9 +390,9 @@ def train(train_loader, model, criterion, optimizer, ema_optimizer, epoch, devic
         # update EMA
         if args.ema:
             pdb.set_trace()
-            ema_optimizer.update(step + i)
+            ema_optimizer.update(model, ema_model)
             pdb.set_trace()
-            
+
         # measure elapsed time
         batch_time.update(time.time() - end)
         log_time.update(time.time() - end)

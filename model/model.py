@@ -2,7 +2,7 @@ from model.convnet import ConvNet, ConvNet_OP, MLP
 from model.resnet import resnet18
 from model.vgg import vgg16_C2
 from model.vgg2 import vgg11, vgg11_bn, vgg16, vgg16_bn
-from helpers.optimizer import OptimizerEMA
+from helpers.optimizer import OptimizerEMA, NewOptimizerEMA
 import torch 
 
 def get_model(args, device):
@@ -38,7 +38,7 @@ def get_ema_models(args, models, device, ema_init=None):
             ema_model.load_state_dict(ema_init.state_dict())
         for param in ema_model.parameters():
             param.detach_()
-        ema_opt = OptimizerEMA(model, ema_model, alpha=args.alpha)
+        ema_opt = NewOptimizerEMA(model, ema_model, alpha=args.alpha)
         ema_models.append(ema_model)
         ema_opts.append(ema_opt)
 

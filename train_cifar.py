@@ -224,12 +224,12 @@ def train(args, steps, wandb):
                 train_loss += worker_local_step(models[i], opts[i], iter(train_loader), device)
             
             # EMA updates
-            ema_opts[i].update(step)
+            ema_opts[i].update()
             if args.late_ema_epoch > 0 and epoch > args.late_ema_epoch:
                 if not late_ema_active:
                     step_offset = step
                     late_ema_active = True
-                late_ema_opts[i].update(step - step_offset)
+                late_ema_opts[i].update()
 
         step +=1
         epoch += args.n_nodes[phase] * batch_size / 50000
