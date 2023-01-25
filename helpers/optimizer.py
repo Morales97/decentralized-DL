@@ -1,5 +1,6 @@
 import torch.optim as optim
 import torch
+import pdb
 
 def get_optimizer(args, model):
     if args.opt == 'SGD':
@@ -31,6 +32,8 @@ class OptimizerEMA(object):
                 # Update Exponential Moving Average parameters
                 ema_param.mul_(_alpha)
                 ema_param.add_(param * one_minus_alpha)
+        pdb.set_trace()
+
 
 class NewOptimizerEMA(object):
     '''

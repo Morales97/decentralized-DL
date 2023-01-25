@@ -389,8 +389,10 @@ def train(train_loader, model, criterion, optimizer, ema_optimizer, epoch, devic
         
         # update EMA
         if args.ema:
+            pdb.set_trace()
             ema_optimizer.update(step + i)
-
+            pdb.set_trace()
+            
         # measure elapsed time
         batch_time.update(time.time() - end)
         log_time.update(time.time() - end)
