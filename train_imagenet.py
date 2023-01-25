@@ -29,7 +29,6 @@ import wandb
 from helpers.parser import SCRATCH_DIR, SAVE_DIR, ENTITY
 import pdb
 from helpers.logger import Logger
-from model.model import get_ema_models
 from helpers.optimizer import OptimizerEMA
 
 
@@ -110,6 +109,7 @@ parser.add_argument('--alpha', type=float, default=0.995,
                     help='EMA decaying rate')
 
 best_acc1 = 0
+ema_best_acc1 = 0
 
 def main(args, wandb):
 
@@ -320,14 +320,17 @@ def main_worker(gpu, ngpus_per_node, args, wandb):
 
         # evaluate on validation set
         acc1 = validate(val_loader, model, criterion, args, logger, step, epoch)
-        ema_acc1 = validate(val_loader, ema_model, criterion, args, logger, step, epoch, ema=True)
         
         scheduler.step()
         
         # remember best acc@1 and save checkpoint
         is_best = acc1 > best_acc1
         best_acc1 = max(acc1, best_acc1)
-        ema_best_acc1 = max(acc1, ema_best_acc1)
+
+        # evaluate EMA
+        if args.ema:
+            ema_acc1 = validate(val_loader, ema_model, criterion, args, logger, step, epoch, ema=True)
+            ema_best_acc1 = max(ema_acc1, ema_best_acc1)
 
         if not args.multiprocessing_distributed or (args.multiprocessing_distributed
                 and args.rank % ngpus_per_node == 0):
