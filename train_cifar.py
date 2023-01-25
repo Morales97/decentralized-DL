@@ -133,6 +133,7 @@ def train(args, steps, wandb):
     ts_steps_eval = time.time()
 
     phase = 0
+    batch_size = args.batch_size[0]
     total_phases = len(args.start_epoch_phases)
     lr_decay_phase = 0
     total_lr_phases = len(args.lr_decay)
@@ -189,6 +190,7 @@ def train(args, steps, wandb):
             if len(args.batch_size) > 1:
                 assert not args.data_split, 'if data not IID, should deal with finishing epoch'
                 train_loader, _ = get_data(args, args.batch_size[phase])
+                batch_size = args.batch_size[phase]
 
             # init new nodes
             if args.n_nodes[phase] > args.n_nodes[phase-1]: # if n_nodes doesn't change, no need to re-init models
@@ -230,7 +232,7 @@ def train(args, steps, wandb):
                 late_ema_opts[i].update(step - step_offset)
 
         step +=1
-        epoch += args.n_nodes[phase] * args.batch_size[phase] / 50000
+        epoch += args.n_nodes[phase] * batch_size / 50000
         train_loss /= args.n_nodes[phase]
         logger.log_step(step, epoch, train_loss, ts_total, ts_step)
         
