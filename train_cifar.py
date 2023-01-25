@@ -122,6 +122,7 @@ def train(args, steps, wandb):
         late_ema_models, late_ema_opts = get_ema_models(args, models, device)
         late_ema_active = False   # indicate when to init step_offset
     swa_model = None
+    swa_model2 = None # average every step, not every epoch (Moving Average)
 
     # initialize variables
     comm_matrix = get_gossip_matrix(args, 0)
@@ -140,7 +141,8 @@ def train(args, steps, wandb):
     max_acc = AccuracyTracker()
     max_ema_acc = AccuracyTracker()
     max_late_ema_acc = AccuracyTracker()
-    n_swa = 0
+    max_swa2 = AccuracyTracker()
+    n_swa, n_swa2 = 0, 0
     epoch_swa = args.epoch_swa # epoch to start SWA averaging (default: 100)
 
     # TRAIN LOOP
@@ -240,7 +242,12 @@ def train(args, steps, wandb):
             epoch_swa += 1
             swa_model, n_swa = update_SWA(args, swa_model, models, device, n_swa)
             test_loss, acc = evaluate_model(swa_model, test_loader, device)
-            logger.log_swa_acc(epoch, acc*100)
+            logger.log_acc(step, epoch, acc*100, name='SWA Accuracy')
+
+        # MA update (SWA but every step)
+        if epoch > args.epoch_swa:
+            swa_model2, n_swa2 = update_SWA(args, swa_model2, models, device, n_swa2)
+
 
         # evaluate 
         if step % args.steps_eval == 0 or epoch >= args.epochs:
@@ -250,13 +257,20 @@ def train(args, steps, wandb):
                 # evaluate on average of EMA models
                 ema_model = get_average_model(args, device, ema_models)
                 _, ema_acc = evaluate_model(ema_model, test_loader, device)
-                logger.log_ema_acc(step, epoch, float(ema_acc*100))
+                logger.log_acc(step, epoch, ema_acc*100, 'EMA Accuracy')
                 max_ema_acc.update(ema_acc)
+                # Late EMA
                 if late_ema_active:
                     late_ema_model = get_average_model(args, device, late_ema_models)
                     _, late_ema_acc = evaluate_model(late_ema_model, test_loader, device)
-                    logger.log_late_ema_acc(step, epoch, float(late_ema_acc*100)) 
+                    logger.log_acc(step, epoch, late_ema_acc*100, 'Late EMA Accuracy') 
                     max_late_ema_acc.update(late_ema_acc)
+                # Moving Average
+                if epoch > args.epochs_swa:
+                    _, swa2_acc = evaluate_model(swa_model2, test_loader, device)
+                    logger.log_acc(step, epoch, swa2_acc*100, 'MA Accuracy') 
+                    max_swa2.update(swa2_acc)
+
 
                 # evaluate on averaged model
                 if args.eval_on_average_model:
@@ -301,11 +315,12 @@ def train(args, steps, wandb):
                     wandb.log_artifact(model_artifact)
             print('Checkpoint(s) saved!')
 
-    # Make a full pass over EMA and SWA models to update 
     logger.log_single_acc(max_acc.get(), log_as='Max Accuracy')
     logger.log_single_acc(max_ema_acc.get(), log_as='Max EMA Accuracy')
     logger.log_single_acc(max_late_ema_acc.get(), log_as='Max Late EMA Accuracy')
+    logger.log_single_acc(max_swa2.get(), log_as='Max MA Accuracy')
 
+    # Make a full pass over EMA and SWA models to update 
     if epoch > args.epoch_swa:
         bn_update(train_loader, swa_model, device)
         _, swa_acc = evaluate_model(swa_model, test_loader, device)
@@ -317,7 +332,10 @@ def train(args, steps, wandb):
     logger.log_single_acc(ema_acc, log_as='EMA Acc (after BN)')
     print('EMA Final Accuracy: %.2f' % ema_acc)
 
-
+    bn_update(train_loader, swa_model2, device)
+    _, swa2_acc = evaluate_model(swa_model2, test_loader, device)
+    logger.log_single_acc(swa2_acc, log_as='MA Acc (after BN)')
+    print('MA Final Accuracy: %.2f' % ema_acc)
 
 if __name__ == '__main__':
     from helpers.parser import SCRATCH_DIR, SAVE_DIR

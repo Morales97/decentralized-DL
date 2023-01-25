@@ -130,35 +130,20 @@ class Logger:
         }
         if self.wandb: self.wandb.log(log)
 
-    def log_ema_acc(self, step, epoch, ema_acc):
+    def log_acc(self, step, epoch, acc, name='placeholder'):
         log = {
             'Iteration': step,
             'Epoch': epoch,
-            'EMA Accuracy': ema_acc,
+            name: acc,
         }
         if self.wandb: self.wandb.log(log)
 
-    def log_ema_acc_IN(self, step, epoch, acc1, acc5):
+    def log_acc_IN(self, step, epoch, acc1, acc5, name='placeholder'):
         log = {
             'Iteration': step,
             'Epoch': epoch,
-            'EMA Top-1 Accuracy': acc1,
-            'EMA Top-5 Accuracy': acc5,
-        }
-        if self.wandb: self.wandb.log(log)
-
-    def log_late_ema_acc(self, step, epoch, ema_acc):
-        log = {
-            'Iteration': step,
-            'Epoch': epoch,
-            'Late EMA Accuracy': ema_acc,
-        }
-        if self.wandb: self.wandb.log(log)
-
-    def log_swa_acc(self, epoch, swa_acc):
-        log = {
-            'Epoch': epoch,
-            'SWA Accuracy': swa_acc,
+            name + ' Top-1 Accuracy': acc1,
+            name + ' Top-5 Accuracy': acc5,
         }
         if self.wandb: self.wandb.log(log)
 

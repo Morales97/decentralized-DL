@@ -458,7 +458,7 @@ def validate(val_loader, model, criterion, args, logger, step, epoch, ema=False)
     if not ema:
         logger.log_eval_IN(step, epoch, top1.avg, top5.avg, losses.avg, batch_time.sum)
     else:
-        logger.log_ema_acc_IN(step, epoch, top1.avg, top5.avg)
+        logger.log_acc_IN(step, epoch, top1.avg, top5.avg, name='EMA')
 
     return top1.avg
 
