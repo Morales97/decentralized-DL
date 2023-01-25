@@ -320,7 +320,7 @@ def main_worker(gpu, ngpus_per_node, args, wandb):
         step += train(train_loader, model, criterion, optimizer, ema_optimizer, epoch, device, args, logger, step, ts_start)
 
         # evaluate on validation set
-        acc1 = 0#validate(val_loader, model, criterion, args, logger, step, epoch)
+        acc1 = validate(val_loader, model, criterion, args, logger, step, epoch)
         
         scheduler.step()
         
@@ -400,7 +400,7 @@ def train(train_loader, model, criterion, optimizer, ema_optimizer, epoch, devic
             progress.display(i + 1)
             logger.log_train_IN(step + i, epoch + i/(len(train_loader)), loss.item(), log_time.avg, ts_start)
             log_time = AverageMeter('Time', ':6.3f')
-            break
+
     return i
 
 def validate(val_loader, model, criterion, args, logger, step, epoch, ema=False):
