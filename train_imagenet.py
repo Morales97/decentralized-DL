@@ -151,6 +151,7 @@ def main(args, wandb):
 
 def main_worker(gpu, ngpus_per_node, args, wandb):
     global best_acc1
+    global ema_best_acc1
     args.gpu = gpu
     logger = Logger(wandb)
 
@@ -319,7 +320,7 @@ def main_worker(gpu, ngpus_per_node, args, wandb):
         step += train(train_loader, model, criterion, optimizer, ema_optimizer, epoch, device, args, logger, step, ts_start)
 
         # evaluate on validation set
-        acc1 = validate(val_loader, model, criterion, args, logger, step, epoch)
+        acc1 = 0#validate(val_loader, model, criterion, args, logger, step, epoch)
         
         scheduler.step()
         
