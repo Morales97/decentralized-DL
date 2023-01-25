@@ -61,8 +61,9 @@ class NewOptimizerEMA(object):
         if self.eman:
             # update buffers (aka, non-learnable parameters). These are usually only BN stats
             for buffer, ema_buffer in zip(self.model.buffers(), self.ema_model.buffers()):
-                ema_buffer.mul_(_alpha)
-                ema_buffer.add_(buffer * one_minus_alpha)
+                if ema_param.dtype == torch.float32:        
+                    ema_buffer.mul_(_alpha)
+                    ema_buffer.add_(buffer * one_minus_alpha)
 
 
 class NewOptimizerEMA_IN(object):
@@ -89,8 +90,9 @@ class NewOptimizerEMA_IN(object):
         if self.eman:
             # update buffers (aka, non-learnable parameters). These are usually only BN stats
             for buffer, ema_buffer in zip(model.buffers(), ema_model.buffers()):
-                ema_buffer.mul_(_alpha)
-                ema_buffer.add_(buffer * one_minus_alpha)
+                if ema_param.dtype == torch.float32:        
+                    ema_buffer.mul_(_alpha)
+                    ema_buffer.add_(buffer * one_minus_alpha)
 
 
 ##### Update BN statistics (from SWA repo: https://github.com/timgaripov/swa/blob/411b2fcad59bec60c6c9eb1eb19ab906540e5ea2/utils.py#L74) #####
