@@ -205,6 +205,8 @@ def main_worker(gpu, ngpus_per_node, args, wandb):
     elif args.gpu is not None and torch.cuda.is_available():
         torch.cuda.set_device(args.gpu)
         model = model.cuda(args.gpu)
+        if args.ema:
+            ema_model.cuda(args.gpu)
     elif torch.backends.mps.is_available():
         device = torch.device("mps")
         model = model.to(device)
