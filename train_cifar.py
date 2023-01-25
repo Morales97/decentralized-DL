@@ -266,7 +266,7 @@ def train(args, steps, wandb):
                     logger.log_acc(step, epoch, late_ema_acc*100, 'Late EMA Accuracy') 
                     max_late_ema_acc.update(late_ema_acc)
                 # Moving Average
-                if epoch > args.epochs_swa:
+                if epoch > args.epoch_swa:
                     _, swa2_acc = evaluate_model(swa_model2, test_loader, device)
                     logger.log_acc(step, epoch, swa2_acc*100, 'MA Accuracy') 
                     max_swa2.update(swa2_acc)
