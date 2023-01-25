@@ -396,6 +396,7 @@ def train(train_loader, model, criterion, optimizer, ema_optimizer, epoch, devic
             progress.display(i + 1)
             logger.log_train_IN(step + i, epoch + i/(len(train_loader)), loss.item(), log_time.avg, ts_start)
             log_time = AverageMeter('Time', ':6.3f')
+            break
 
     return i
 
@@ -577,4 +578,4 @@ if __name__ == '__main__':
     else:
         main(args, None)
 
-# python main.py -a resnet18 /mlodata1/kosson/datasets/imagenet --expt_name=IN_solo --gpu=0
+# python train_imagenet.py -a resnet18 /mlodata1/kosson/datasets/imagenet --expt_name=IN_solo --gpu=0
