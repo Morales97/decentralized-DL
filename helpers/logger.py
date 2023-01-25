@@ -46,9 +46,9 @@ class Logger:
         }
         if self.wandb: self.wandb.log(log)
 
-    def log_eval_IN(self, epoch, acc1, acc5, test_loss, eval_time):
+    def log_eval_IN(self, step, epoch, acc1, acc5, test_loss, eval_time):
         log = {
-
+            'Iteration': step,
             'Epoch': epoch,
             'Top-1 Accuracy': acc1,
             'Top-5 Accuracy': acc5,
