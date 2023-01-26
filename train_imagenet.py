@@ -315,9 +315,11 @@ def main_worker(gpu, ngpus_per_node, args, wandb):
     for epoch in range(args.start_epoch, args.epochs):
         if args.distributed:
             train_sampler.set_epoch(epoch)
-
+        
         # train for one epoch
         step += train(train_loader, model, criterion, optimizer, ema_model, ema_optimizer, epoch, device, args, logger, step, ts_start)
+        
+        bootstrap_with_ema(model, ema_model, optimizer)
 
         # evaluate on validation set
         acc1 = validate(val_loader, model, criterion, args, logger, step, epoch)
@@ -347,6 +349,8 @@ def main_worker(gpu, ngpus_per_node, args, wandb):
     logger.log_single_acc(best_acc1, log_as='Max Top-1 Accuracy')
     logger.log_single_acc(ema_best_acc1, log_as='Max EMA Top-1 Accuracy')
 
+def bootstrap_with_ema(model, ema_model, optimizer):
+    pdb.set_trace()
 
 def train(train_loader, model, criterion, optimizer, ema_model, ema_optimizer, epoch, device, args, logger, step, ts_start):
     batch_time = AverageMeter('Time', ':6.3f')
@@ -400,6 +404,7 @@ def train(train_loader, model, criterion, optimizer, ema_model, ema_optimizer, e
             progress.display(i + 1)
             logger.log_train_IN(step + i, epoch + i/(len(train_loader)), loss.item(), log_time.avg, ts_start)
             log_time = AverageMeter('Time', ':6.3f')
+            break
 
     return i
 
