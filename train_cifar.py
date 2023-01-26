@@ -103,11 +103,11 @@ def train(args, steps, wandb):
     print('Random seed: ', args.seed)
 
     # data
-    train_loader, test_loader = get_data(args, args.batch_size[0])
+    train_loader, test_loader = get_data(args, args.batch_size[0], args.data_fraction)
     if args.data_split:
         train_loader_lengths = [len(t) for t in train_loader]
         train_loader_iter = [iter(t) for t in train_loader]
-
+    pdb.set_trace()
     # init nodes
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
     models = [get_model(args, device) for _ in range(args.n_nodes[0])]
@@ -231,7 +231,7 @@ def train(args, steps, wandb):
                 late_ema_opts[i].update()
 
         step +=1
-        epoch += args.n_nodes[phase] * batch_size / 50000
+        epoch += args.n_nodes[phase] * batch_size / len(train_loader.dataset)
         train_loss /= args.n_nodes[phase]
         logger.log_step(step, epoch, train_loss, ts_total, ts_step)
         

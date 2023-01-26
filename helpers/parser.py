@@ -90,6 +90,8 @@ def get_parser():
                         help='if False, sample with replacement from entire dataset (IID). if True, split dataset') 
     parser.add_argument('--p_label_skew', type=float, default=0,
                         help='Label skew for heterogeneity. Requires data_split True.')    
+    parser.add_argument('--data_fraction', type=float, default=-1,
+                        help='Set between 0 and 1 to use a random subset of dataset with selected fraction of samples')
 
     # evaluation
     parser.add_argument('--eval_on_average_model', type=boolfromstr, default=False,

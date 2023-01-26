@@ -22,17 +22,17 @@ def _get_mnist(config, root, n_nodes, batch_size):
         raise Exception('data split modality not supported')
 
 
-def _get_cifar(args, root, batch_size):
+def _get_cifar(args, root, batch_size, fraction):
     
     if args.p_label_skew > 0:
         raise Exception('Heterogeneous CIFAR not supported yet')
     elif args.data_split:
         return get_cifar(args, root, batch_size, iid=False)
     else:
-        return get_cifar(args, root, batch_size, iid=True)
+        return get_cifar(args, root, batch_size, iid=True, fraction=fraction)
 
 
-def get_data(args, batch_size):
+def get_data(args, batch_size, fraction=-1):
     if args.local_exec:
         root = ROOT_LOCAL
     else:
@@ -41,6 +41,6 @@ def get_data(args, batch_size):
     if args.dataset == 'mnist':
         return _get_mnist(args, root, args.n_nodes, batch_size)
     elif args.dataset in ['cifar10', 'cifar100']:
-        return _get_cifar(args, root, batch_size)
+        return _get_cifar(args, root, batch_size, fraction)
     else:
         raise Exception('Dataset not supported')
