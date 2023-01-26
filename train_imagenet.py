@@ -107,7 +107,9 @@ parser.add_argument('--ema', action='store_true',
                     help='keep an exponential moving average model')  
 parser.add_argument('--alpha', type=float, default=0.995,
                     help='EMA decaying rate')
-
+parser.add_argument('--bootstrap_with_ema', action='store_true', 
+                    help='copy EMA params to model after every epoch')
+                
 best_acc1 = 0
 ema_best_acc1 = 0
 
