@@ -318,8 +318,6 @@ def main_worker(gpu, ngpus_per_node, args, wandb):
         
         # train for one epoch
         step += train(train_loader, model, criterion, optimizer, ema_model, ema_optimizer, epoch, device, args, logger, step, ts_start)
-        
-        bootstrap_with_ema(model, ema_model, optimizer)
 
         # evaluate on validation set
         acc1 = validate(val_loader, model, criterion, args, logger, step, epoch)
@@ -335,6 +333,9 @@ def main_worker(gpu, ngpus_per_node, args, wandb):
             ema_acc1 = validate(val_loader, ema_model, criterion, args, logger, step, epoch, ema=True)
             ema_best_acc1 = max(ema_acc1, ema_best_acc1)
 
+            if args.bootstrap_with_ema:
+                model.load_state_dict(ema_model.state_dict())
+
         if not args.multiprocessing_distributed or (args.multiprocessing_distributed
                 and args.rank % ngpus_per_node == 0):
             save_checkpoint({
@@ -349,8 +350,6 @@ def main_worker(gpu, ngpus_per_node, args, wandb):
     logger.log_single_acc(best_acc1, log_as='Max Top-1 Accuracy')
     logger.log_single_acc(ema_best_acc1, log_as='Max EMA Top-1 Accuracy')
 
-def bootstrap_with_ema(model, ema_model, optimizer):
-    pdb.set_trace()
 
 def train(train_loader, model, criterion, optimizer, ema_model, ema_optimizer, epoch, device, args, logger, step, ts_start):
     batch_time = AverageMeter('Time', ':6.3f')
@@ -587,3 +586,4 @@ if __name__ == '__main__':
         main(args, None)
 
 # python train_imagenet.py -a resnet18 /mlodata1/kosson/datasets/imagenet --expt_name=IN_solo --gpu=0
+# python train_imagenet.py -a resnet18 --dummy --gpu=0
