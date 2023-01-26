@@ -107,7 +107,7 @@ def train(args, steps, wandb):
     if args.data_split:
         train_loader_lengths = [len(t) for t in train_loader]
         train_loader_iter = [iter(t) for t in train_loader]
-    pdb.set_trace()
+
     # init nodes
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
     models = [get_model(args, device) for _ in range(args.n_nodes[0])]
