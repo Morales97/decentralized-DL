@@ -11,7 +11,7 @@ def get_optimizer(args, model):
     return optimizer
 
 
-class OptimizerEMA(object):
+class Old_OptimizerEMA(object):
     '''
     Pseudo-optimizer. Performs Exponential Moving Average of model parameters
     '''
@@ -34,21 +34,25 @@ class OptimizerEMA(object):
                 ema_param.add_(param * one_minus_alpha)
 
 
-class NewOptimizerEMA(object):
+class OptimizerEMA(object):
     '''
     EMA optimizer which can optionally apply EMA to BN statistics (see EMAN paper by Cai et al)
     With eman=True, it should be exactly the same as OptimizerEMA
     '''
-    def __init__(self, model, ema_model, alpha=0.999, eman=True):
+    def __init__(self, model, ema_model, alpha=0.999, eman=True, ramp_up=True):
         self.model = model
         self.ema_model = ema_model
         self.alpha = alpha
         self.eman = eman
         self.step = 0
+        self.ramp_up = ramp_up
 
 
     def update(self):
-        _alpha = min(self.alpha, (self.step + 1)/(self.step + 10)) # ramp up EMA
+        if self.ramp_up:
+            _alpha = min(self.alpha, (self.step + 1)/(self.step + 10)) 
+        else:
+            _alpha = self.alpha
         self.step += 1
         one_minus_alpha = 1.0 - _alpha
 
@@ -65,19 +69,23 @@ class NewOptimizerEMA(object):
                     ema_buffer.add_(buffer * one_minus_alpha)
 
 
-class NewOptimizerEMA_IN(object):
+class OptimizerEMA_IN(object):
     '''
     EMA optimizer which can optionally apply EMA to BN statistics (see EMAN paper by Cai et al)
     With eman=True, it should be exactly the same as OptimizerEMA
     Don't store model, pass it as attribute
     '''
-    def __init__(self, alpha=0.999, eman=True):
+    def __init__(self, alpha=0.999, eman=True, ramp_up=True):
         self.alpha = alpha
         self.eman = eman
         self.step = 0
+        self.ramp_up = ramp_up
 
     def update(self, model, ema_model):
-        _alpha = min(self.alpha, (self.step + 1)/(self.step + 10)) # ramp up EMA
+        if self.ramp_up:
+            _alpha = min(self.alpha, (self.step + 1)/(self.step + 10)) 
+        else:
+            _alpha = self.alpha        
         self.step += 1
         one_minus_alpha = 1.0 - _alpha
 

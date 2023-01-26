@@ -58,7 +58,7 @@ def initialize_nodes_no_mom(args, models, n_nodes_new, device):
 def init_nodes_EMA(args, models, ema_models, device):
     ''' Initialize EMA models for new nodes from an All-Reduce average of previous EMA models'''
     ema_avg_model = get_average_model(args, device, ema_models)
-    new_ema_models, new_ema_opts = get_ema_models(args, models, device, ema_init=ema_avg_model)
+    new_ema_models, new_ema_opts = get_ema_models(args, models, device, ema_init=ema_avg_model, ramp_up=False)
     return new_ema_models, new_ema_opts
 
 def update_SWA(args, swa_model, models, device, n):

@@ -29,7 +29,7 @@ import wandb
 from helpers.parser import SCRATCH_DIR, SAVE_DIR, ENTITY
 import pdb
 from helpers.logger import Logger
-from helpers.optimizer import NewOptimizerEMA_IN
+from helpers.optimizer import OptimizerEMA_IN
 
 
 model_names = sorted(name for name in models.__dict__
@@ -180,7 +180,7 @@ def main_worker(gpu, ngpus_per_node, args, wandb):
         ema_model = models.__dict__[args.arch]()
         for param in ema_model.parameters():
             param.detach_()
-        ema_optimizer = NewOptimizerEMA_IN(alpha=args.alpha)
+        ema_optimizer = OptimizerEMA_IN(alpha=args.alpha)
 
     if not torch.cuda.is_available() and not torch.backends.mps.is_available():
         print('using CPU, this will be slow')
