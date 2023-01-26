@@ -100,7 +100,7 @@ def get_parser():
                         help='evaluate L2 distance of model conensus every x number of steps')
 
     # misc
-    parser.add_argument('--bootstra_with_ema', action='store_true', 
+    parser.add_argument('--bootstrap_with_ema', action='store_true', 
                         help='copy EMA params to model after every epoch')
 
     return parser 
