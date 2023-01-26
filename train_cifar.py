@@ -55,10 +55,10 @@ def initialize_nodes_no_mom(args, models, n_nodes_new, device):
 
     return new_models, new_opts
 
-def init_nodes_EMA(args, models, ema_models, device):
+def init_nodes_EMA(args, models, ema_models, device, ramp_up=False):
     ''' Initialize EMA models for new nodes from an All-Reduce average of previous EMA models'''
     ema_avg_model = get_average_model(args, device, ema_models)
-    new_ema_models, new_ema_opts = get_ema_models(args, models, device, ema_init=ema_avg_model, ramp_up=False)
+    new_ema_models, new_ema_opts = get_ema_models(args, models, device, ema_init=ema_avg_model, ramp_up=ramp_up)
     return new_ema_models, new_ema_opts
 
 def update_SWA(args, swa_model, models, device, n):
@@ -201,7 +201,7 @@ def train(args, steps, wandb):
 
                 ema_models, ema_opts = init_nodes_EMA(args, models, ema_models, device)
                 if args.late_ema_epoch > 0:
-                    late_ema_models, late_ema_opts = init_nodes_EMA(args, models, late_ema_models, device)
+                    late_ema_models, late_ema_opts = init_nodes_EMA(args, models, late_ema_models, device, ramp_up=(not late_ema_active))
 
             # optionally, update lr
             if len(args.lr) > 1:
@@ -227,7 +227,6 @@ def train(args, steps, wandb):
             ema_opts[i].update()
             if args.late_ema_epoch > 0 and epoch > args.late_ema_epoch:
                 if not late_ema_active:
-                    step_offset = step
                     late_ema_active = True
                 late_ema_opts[i].update()
 
