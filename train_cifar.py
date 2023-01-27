@@ -188,7 +188,6 @@ def train(args, steps, wandb):
             comm_matrix = get_gossip_matrix(args, phase)
             
             if len(args.batch_size) > 1:
-                assert not args.data_split, 'if data not IID, should deal with finishing epoch'
                 train_loader, _ = get_data(args, args.batch_size[phase])
                 batch_size = args.batch_size[phase]
 
@@ -361,5 +360,5 @@ if __name__ == '__main__':
 # python train_cifar.py --lr=3.2 --topology=fully_connected --dataset=cifar100 --wandb=False --local_exec=True --model_std=0.01
 # python train_cifar.py --lr=3.2 --topology ring fully_connected --local_steps 0 0 --dataset=cifar100 --wandb=False --local_exec=True --n_nodes 8 16 --start_epoch_phases 0 1 --eval_on_average_model=True --steps_eval=20 --lr 3.2 1.6 --late_ema_epoch=1
 # python train_cifar.py --lr=3.2 --topology=ring --dataset=cifar100 --eval_on_average_model=True --n_nodes=4 --save_model=True --save_interval=20
-# python train_cifar.py --lr=3.2 --topology solo solo --local_steps 0 0 --dataset=cifar100 --wandb=False --local_exec=True --n_nodes 1 1 --batch_size 1024 2048 --start_epoch_phases 0 1 --steps_eval=40 --lr 3.2 1.6
+# python train_cifar.py --lr=3.2 --topology solo solo --local_steps 0 0 --dataset=cifar100 --wandb=False --local_exec=True --n_nodes 1 1 --batch_size 1024 2048 --start_epoch_phases 0 1 --steps_eval=40 --lr 3.2 1.6 --data_split=True
 
