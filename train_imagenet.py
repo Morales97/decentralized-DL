@@ -337,7 +337,6 @@ def main_worker(gpu, ngpus_per_node, args, wandb):
 
             if args.bootstrap_with_ema:
                 model.load_state_dict(ema_model.state_dict())
-                acc_after_ema = validate(val_loader, model, criterion, args, logger, step, epoch, after_ema=True)
 
         if not args.multiprocessing_distributed or (args.multiprocessing_distributed
                 and args.rank % ngpus_per_node == 0):
@@ -409,7 +408,7 @@ def train(train_loader, model, criterion, optimizer, ema_model, ema_optimizer, e
 
     return i
 
-def validate(val_loader, model, criterion, args, logger, step, epoch, ema=False, after_ema=False):
+def validate(val_loader, model, criterion, args, logger, step, epoch, ema=False):
 
     def run_validate(loader, _model, base_progress=0):
         with torch.no_grad():
@@ -467,13 +466,10 @@ def validate(val_loader, model, criterion, args, logger, step, epoch, ema=False,
         run_validate(aux_val_loader, len(val_loader))
 
     progress.display_summary()
-    if after_ema: # NOTE temporal, check bootstrap
-        logger.log_acc_IN(step, epoch, top1.avg, top5.avg, name='Bootstrapped model')
-    else: 
-        if not ema:
-            logger.log_eval_IN(step, epoch, top1.avg, top5.avg, losses.avg, batch_time.sum)
-        else:
-            logger.log_acc_IN(step, epoch, top1.avg, top5.avg, name='EMA')
+    if not ema:
+        logger.log_eval_IN(step, epoch, top1.avg, top5.avg, losses.avg, batch_time.sum)
+    else:
+        logger.log_acc_IN(step, epoch, top1.avg, top5.avg, name='EMA')
 
     return top1.avg
 
