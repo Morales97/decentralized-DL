@@ -107,6 +107,9 @@ def train(args, steps, wandb):
     if args.data_split:
         train_loader_lengths = [len(t) for t in train_loader]
         train_loader_iter = [iter(t) for t in train_loader]
+        n_samples = np.sum([len(tl.dataset) for tl in train_loader])
+    else:
+        n_samples = len(train_loader.dataset)
 
     # init nodes
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
@@ -230,7 +233,7 @@ def train(args, steps, wandb):
                 late_ema_opts[i].update()
 
         step +=1
-        epoch += args.n_nodes[phase] * batch_size / len(train_loader.dataset)
+        epoch += args.n_nodes[phase] * batch_size / n_samples
         train_loss /= args.n_nodes[phase]
         logger.log_step(step, epoch, train_loss, ts_total, ts_step)
         
