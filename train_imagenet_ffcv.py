@@ -25,6 +25,12 @@ import torchvision.transforms as transforms
 from torch.optim.lr_scheduler import StepLR
 from torch.utils.data import Subset
 
+from ffcv.loader import Loader, OrderOption
+from ffcv.fields.decoders import \
+    RandomResizedCropRGBImageDecoder
+from ffcv.transforms import *
+import torchvision as tv
+
 import wandb
 from helpers.parser import SCRATCH_DIR, SAVE_DIR, ENTITY
 import pdb
@@ -264,49 +270,78 @@ def main_worker(gpu, ngpus_per_node, args, wandb):
             print("=> no checkpoint found at '{}'".format(args.resume))
 
 
-    # Data loading code
-    if args.dummy:
-        print("=> Dummy data is used!")
-        train_dataset = datasets.FakeData(1281167, (3, 224, 224), 1000, transforms.ToTensor())
-        val_dataset = datasets.FakeData(50000, (3, 224, 224), 1000, transforms.ToTensor())
-    else:
-        traindir = os.path.join(args.data, 'train')
-        valdir = os.path.join(args.data, 'val')
-        normalize = transforms.Normalize(mean=[0.485, 0.456, 0.406],
-                                     std=[0.229, 0.224, 0.225])
+    # # Data loading code
+    # if args.dummy:
+    #     print("=> Dummy data is used!")
+    #     train_dataset = datasets.FakeData(1281167, (3, 224, 224), 1000, transforms.ToTensor())
+    #     val_dataset = datasets.FakeData(50000, (3, 224, 224), 1000, transforms.ToTensor())
+    # else:
+    #     traindir = os.path.join(args.data, 'train')
+    #     valdir = os.path.join(args.data, 'val')
+    #     normalize = transforms.Normalize(mean=[0.485, 0.456, 0.406],
+    #                                  std=[0.229, 0.224, 0.225])
 
-        train_dataset = datasets.ImageFolder(
-            traindir,
-            transforms.Compose([
-                transforms.RandomResizedCrop(224),
-                transforms.RandomHorizontalFlip(),
-                transforms.ToTensor(),
-                normalize,
-            ]))
+    #     train_dataset = datasets.ImageFolder(
+    #         traindir,
+    #         transforms.Compose([
+    #             transforms.RandomResizedCrop(224),
+    #             transforms.RandomHorizontalFlip(),
+    #             transforms.ToTensor(),
+    #             normalize,
+    #         ]))
 
-        val_dataset = datasets.ImageFolder(
-            valdir,
-            transforms.Compose([
-                transforms.Resize(256),
-                transforms.CenterCrop(224),
-                transforms.ToTensor(),
-                normalize,
-            ]))
+    #     val_dataset = datasets.ImageFolder(
+    #         valdir,
+    #         transforms.Compose([
+    #             transforms.Resize(256),
+    #             transforms.CenterCrop(224),
+    #             transforms.ToTensor(),
+    #             normalize,
+    #         ]))
 
-    if args.distributed:
-        train_sampler = torch.utils.data.distributed.DistributedSampler(train_dataset)
-        val_sampler = torch.utils.data.distributed.DistributedSampler(val_dataset, shuffle=False, drop_last=True)
-    else:
-        train_sampler = None
-        val_sampler = None
 
-    train_loader = torch.utils.data.DataLoader(
-        train_dataset, batch_size=args.batch_size, shuffle=(train_sampler is None),
-        num_workers=args.workers, pin_memory=True, sampler=train_sampler)
+    # if args.distributed:
+    #     train_sampler = torch.utils.data.distributed.DistributedSampler(train_dataset)
+    #     val_sampler = torch.utils.data.distributed.DistributedSampler(val_dataset, shuffle=False, drop_last=True)
+    # else:
+    #     train_sampler = None
+    #     val_sampler = None
 
-    val_loader = torch.utils.data.DataLoader(
-        val_dataset, batch_size=args.batch_size, shuffle=False,
-        num_workers=args.workers, pin_memory=True, sampler=val_sampler)
+    # train_loader = torch.utils.data.DataLoader(
+    #     train_dataset, batch_size=args.batch_size, shuffle=(train_sampler is None),
+    #     num_workers=args.workers, pin_memory=True, sampler=train_sampler)
+
+    # val_loader = torch.utils.data.DataLoader(
+    #     val_dataset, batch_size=args.batch_size, shuffle=False,
+    #     num_workers=args.workers, pin_memory=True, sampler=val_sampler)
+
+    train_loader = Loader('/mlodata1/danmoral/datasets/imagenet_ffcv/train_500_0.50_90.ffcv', batch_size=args.batch_size, 
+        num_workers=args.workers, order=OrderOption.RANDOM,
+        pipelines={'image': [
+                RandomResizedCropRGBImageDecoder((224, 224)),
+                ToTensor(), 
+                # Move to GPU asynchronously as uint8:
+                ToDevice(ch.device('cuda:0')), 
+                # Automatically channels-last:
+                ToTorchImage(), 
+                Convert(ch.float16), 
+                # Standard torchvision transforms still work!
+                tv.transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
+            ]})
+
+    val_loader = Loader('/mlodata1/danmoral/datasets/imagenet_ffcv/val_500_0.50_90.ffcv', batch_size=args.batch_size, 
+        num_workers=args.workers, order=OrderOption.RANDOM,
+        pipelines={'image': [
+                RandomResizedCropRGBImageDecoder((224, 224)),
+                ToTensor(), 
+                # Move to GPU asynchronously as uint8:
+                ToDevice(ch.device('cuda:0')), 
+                # Automatically channels-last:
+                ToTorchImage(), 
+                Convert(ch.float16), 
+                # Standard torchvision transforms still work!
+                tv.transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
+            ]})
 
     if args.evaluate:
         validate(val_loader, model, criterion, args)
@@ -315,8 +350,8 @@ def main_worker(gpu, ngpus_per_node, args, wandb):
     step = 0
     ts_start = time.time()
     for epoch in range(args.start_epoch, args.epochs):
-        if args.distributed:
-            train_sampler.set_epoch(epoch)
+        # if args.distributed:
+        #     train_sampler.set_epoch(epoch)
         
         # train for one epoch
         step += train(train_loader, model, criterion, optimizer, ema_model, ema_optimizer, epoch, device, args, logger, step, ts_start)
@@ -374,8 +409,8 @@ def train(train_loader, model, criterion, optimizer, ema_model, ema_optimizer, e
         data_time.update(time.time() - end)
 
         # move data to the same device as model
-        images = images.to(device, non_blocking=True)
-        target = target.to(device, non_blocking=True)
+        # images = images.to(device, non_blocking=True)
+        # target = target.to(device, non_blocking=True)
 
         # compute output
         output = model(images)
