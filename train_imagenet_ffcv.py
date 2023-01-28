@@ -321,10 +321,10 @@ def main_worker(gpu, ngpus_per_node, args, wandb):
                 RandomResizedCropRGBImageDecoder((224, 224)),
                 ToTensor(), 
                 # Move to GPU asynchronously as uint8:
-                ToDevice(ch.device('cuda:0')), 
+                ToDevice(torch.cuda(args.gpu)), 
                 # Automatically channels-last:
                 ToTorchImage(), 
-                Convert(ch.float16), 
+                Convert(torch.float16), 
                 # Standard torchvision transforms still work!
                 tv.transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
             ]})
@@ -335,10 +335,10 @@ def main_worker(gpu, ngpus_per_node, args, wandb):
                 RandomResizedCropRGBImageDecoder((224, 224)),
                 ToTensor(), 
                 # Move to GPU asynchronously as uint8:
-                ToDevice(ch.device('cuda:0')), 
+                ToDevice(torch.device('cuda:0')), 
                 # Automatically channels-last:
                 ToTorchImage(), 
-                Convert(ch.float16), 
+                Convert(torch.float16), 
                 # Standard torchvision transforms still work!
                 tv.transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
             ]})
