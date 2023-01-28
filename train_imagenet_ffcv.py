@@ -186,6 +186,7 @@ def main_worker(gpu, ngpus_per_node, args, wandb):
     ema_model, ema_optimizer = None, None
     if args.ema:
         ema_model = models.__dict__[args.arch]()
+        ema_model.half()
         for param in ema_model.parameters():
             param.detach_()
         ema_optimizer = OptimizerEMA_IN(alpha=args.alpha)
@@ -226,6 +227,9 @@ def main_worker(gpu, ngpus_per_node, args, wandb):
             model.cuda()
         else:
             model = torch.nn.DataParallel(model).cuda()
+
+    # DM: for FFCV, need model in half precision
+    model.half()
 
     if torch.cuda.is_available():
         if args.gpu:
