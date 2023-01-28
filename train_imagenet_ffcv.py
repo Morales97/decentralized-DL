@@ -229,7 +229,7 @@ def main_worker(gpu, ngpus_per_node, args, wandb):
             model = torch.nn.DataParallel(model).cuda()
 
     # DM: for FFCV, need model in half precision
-    model.half()
+    model.half().cuda(args.gpu)
 
     if torch.cuda.is_available():
         if args.gpu:
