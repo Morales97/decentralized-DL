@@ -321,7 +321,7 @@ def main_worker(gpu, ngpus_per_node, args, wandb):
                 RandomResizedCropRGBImageDecoder((224, 224)),
                 ToTensor(), 
                 # Move to GPU asynchronously as uint8:
-                ToDevice(torch.device(args.gpu)), 
+                ToDevice(torch.device('cuda:'+str(args.gpu))), 
                 # Automatically channels-last:
                 ToTorchImage(), 
                 Convert(torch.float16), 
