@@ -418,6 +418,7 @@ def train(train_loader, model, criterion, optimizer, ema_model, ema_optimizer, e
 
         # compute output
         output = model(images)
+        pdb.set_trace()
         loss = criterion(output, target)
 
         # measure accuracy and record loss
