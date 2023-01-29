@@ -10,6 +10,8 @@ import time
 import warnings
 from enum import Enum
 
+from torch.cuda.amp import GradScaler
+from torch.cuda.amp import autocast
 import torch
 import torch.backends.cudnn as cudnn
 import torch.distributed as dist
@@ -186,7 +188,7 @@ def main_worker(gpu, ngpus_per_node, args, wandb):
     ema_model, ema_optimizer = None, None
     if args.ema:
         ema_model = models.__dict__[args.arch]()
-        ema_model.half()
+        # ema_model.half()
         for param in ema_model.parameters():
             param.detach_()
         ema_optimizer = OptimizerEMA_IN(alpha=args.alpha)
@@ -228,8 +230,9 @@ def main_worker(gpu, ngpus_per_node, args, wandb):
         else:
             model = torch.nn.DataParallel(model).cuda()
 
-    # DM: for FFCV, need model in half precision
-    model.half().cuda(args.gpu)
+    # DM: for FFCV, need to handle mixed precision
+    # model.half().cuda(args.gpu)
+    scaler = GradScaler()
 
     if torch.cuda.is_available():
         if args.gpu:
@@ -358,7 +361,7 @@ def main_worker(gpu, ngpus_per_node, args, wandb):
         #     train_sampler.set_epoch(epoch)
         
         # train for one epoch
-        step += train(train_loader, model, criterion, optimizer, ema_model, ema_optimizer, epoch, device, args, logger, step, ts_start)
+        step += train(train_loader, model, scaler, criterion, optimizer, ema_model, ema_optimizer, epoch, device, args, logger, step, ts_start)
 
         # evaluate on validation set
         acc1 = validate(val_loader, model, criterion, args, logger, step, epoch)
@@ -392,7 +395,7 @@ def main_worker(gpu, ngpus_per_node, args, wandb):
     logger.log_single_acc(ema_best_acc1, log_as='Max EMA Top-1 Accuracy')
 
 
-def train(train_loader, model, criterion, optimizer, ema_model, ema_optimizer, epoch, device, args, logger, step, ts_start):
+def train(train_loader, model, scaler, criterion, optimizer, ema_model, ema_optimizer, epoch, device, args, logger, step, ts_start):
     batch_time = AverageMeter('Time', ':6.3f')
     log_time = AverageMeter('Time', ':6.3f')    # avearge batch time between logs 
     data_time = AverageMeter('Data', ':6.3f')
@@ -417,9 +420,10 @@ def train(train_loader, model, criterion, optimizer, ema_model, ema_optimizer, e
         target = target.to(device, non_blocking=True)
 
         # compute output
-        output = model(images)
-        target = target.squeeze() # DM: for FFCV loader, which returns (B, 1) instead of (B)
-        loss = criterion(output, target)
+        with autocast():                # autocast to deal with mixed precision
+            output = model(images)
+            target = target.squeeze() # DM: for FFCV loader, which returns (B, 1) instead of (B)
+            loss = criterion(output, target)
 
         # measure accuracy and record loss
         acc1, acc5 = accuracy(output, target, topk=(1, 5))
@@ -429,8 +433,9 @@ def train(train_loader, model, criterion, optimizer, ema_model, ema_optimizer, e
 
         # compute gradient and do SGD step
         optimizer.zero_grad()
-        loss.backward()
-        optimizer.step()
+        scaler.scale(loss).backward()   # scaler to deal with mixed precision
+        scaler.scale(optimizer).step()
+        scaler.update()
         
         # update EMA
         if args.ema:
@@ -452,34 +457,35 @@ def validate(val_loader, model, criterion, args, logger, step, epoch, ema=False)
 
     def run_validate(loader, _model, base_progress=0):
         with torch.no_grad():
-            end = time.time()
-            for i, (images, target) in enumerate(loader):
-                i = base_progress + i
-                if args.gpu is not None and torch.cuda.is_available():
-                    images = images.cuda(args.gpu, non_blocking=True)
-                elif torch.backends.mps.is_available():
-                    images = images.to('mps')
-                    target = target.to('mps')
-                if torch.cuda.is_available():
-                    target = target.cuda(args.gpu, non_blocking=True)
-
-                # compute output
-                output = _model(images)
-                target = target.squeeze()
-                loss = criterion(output, target)
-
-                # measure accuracy and record loss
-                acc1, acc5 = accuracy(output, target, topk=(1, 5))
-                losses.update(loss.item(), images.size(0))
-                top1.update(acc1[0], images.size(0))
-                top5.update(acc5[0], images.size(0))
-
-                # measure elapsed time
-                batch_time.update(time.time() - end)
+            with autocast():
                 end = time.time()
+                for i, (images, target) in enumerate(loader):
+                    i = base_progress + i
+                    if args.gpu is not None and torch.cuda.is_available():
+                        images = images.cuda(args.gpu, non_blocking=True)
+                    elif torch.backends.mps.is_available():
+                        images = images.to('mps')
+                        target = target.to('mps')
+                    if torch.cuda.is_available():
+                        target = target.cuda(args.gpu, non_blocking=True)
 
-                if i % args.print_freq == 0:
-                    progress.display(i + 1)
+                    # compute output
+                    output = _model(images)
+                    target = target.squeeze()
+                    loss = criterion(output, target)
+
+                    # measure accuracy and record loss
+                    acc1, acc5 = accuracy(output, target, topk=(1, 5))
+                    losses.update(loss.item(), images.size(0))
+                    top1.update(acc1[0], images.size(0))
+                    top5.update(acc5[0], images.size(0))
+
+                    # measure elapsed time
+                    batch_time.update(time.time() - end)
+                    end = time.time()
+
+                    if i % args.print_freq == 0:
+                        progress.display(i + 1)
 
     batch_time = AverageMeter('Time', ':6.3f', Summary.NONE)
     losses = AverageMeter('Loss', ':.4e', Summary.NONE)
