@@ -465,6 +465,7 @@ def validate(val_loader, model, criterion, args, logger, step, epoch, ema=False)
 
                 # compute output
                 output = _model(images)
+                target = target.squeeze()
                 loss = criterion(output, target)
 
                 # measure accuracy and record loss
