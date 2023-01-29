@@ -30,7 +30,7 @@ from helpers.parser import SCRATCH_DIR, SAVE_DIR, ENTITY
 import pdb
 from helpers.logger import Logger
 from helpers.optimizer import OptimizerEMA_IN
-
+import numpy as np
 
 model_names = sorted(name for name in models.__dict__
     if name.islower() and not name.startswith("__")
@@ -238,7 +238,7 @@ def main_worker(gpu, ngpus_per_node, args, wandb):
                                 weight_decay=args.weight_decay)
 
     """Sets the learning rate to the initial LR decayed by 10 every 30 epochs"""
-    scheduler = StepLR(optimizer, step_size=30, gamma=0.1)
+    scheduler = StepLR(optimizer, step_size=np.floor(args.epochs/3), gamma=0.1)
     
     # optionally resume from a checkpoint
     if args.resume:

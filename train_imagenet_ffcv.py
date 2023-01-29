@@ -322,7 +322,7 @@ def main_worker(gpu, ngpus_per_node, args, wandb):
     #     val_dataset, batch_size=args.batch_size, shuffle=False,
     #     num_workers=args.workers, pin_memory=True, sampler=val_sampler)
 
-    train_loader = Loader('/mlodata1/danmoral/datasets/imagenet_ffcv/train_500_0.50_90.ffcv', batch_size=args.batch_size, 
+    train_loader = Loader('/mlodata1/danmoral/datasets/imagenet_ffcv/train_500_0_90.ffcv', batch_size=args.batch_size, 
         num_workers=args.workers, order=OrderOption.RANDOM,
         pipelines={'image': [
                 RandomResizedCropRGBImageDecoder((224, 224)),
@@ -336,7 +336,7 @@ def main_worker(gpu, ngpus_per_node, args, wandb):
                 tv.transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
             ]})
 
-    val_loader = Loader('/mlodata1/danmoral/datasets/imagenet_ffcv/val_500_0.50_90.ffcv', batch_size=args.batch_size, 
+    val_loader = Loader('/mlodata1/danmoral/datasets/imagenet_ffcv/val_500_0_90.ffcv', batch_size=args.batch_size, 
         num_workers=args.workers, order=OrderOption.RANDOM,
         pipelines={'image': [
                 RandomResizedCropRGBImageDecoder((224, 224)),
