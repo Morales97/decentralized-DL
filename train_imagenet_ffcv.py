@@ -434,7 +434,7 @@ def train(train_loader, model, scaler, criterion, optimizer, ema_model, ema_opti
         # compute gradient and do SGD step
         optimizer.zero_grad()
         scaler.scale(loss).backward()   # scaler to deal with mixed precision
-        scaler.scale(optimizer).step()
+        scaler.step(optimizer)
         scaler.update()
         
         # update EMA
