@@ -1,5 +1,0 @@
-#!/bin/sh
-python train_cifar.py --lr=3.2 --expt_name=C2.7b_600e --topology solo solo solo solo solo solo --data_split=True --batch_size=1024 --local_steps 0 0 0 0 0 0 --n_nodes 1 1 1 1 1 1 --lr 3.2 1.6 0.8 0.4 0.2 0.1 --start_epoch_phases 0 100 200 300 400 500 --epochs=600 --lr_decay 600 --dataset=cifar100 --seed=0 &
-python train_cifar.py --lr=3.2 --expt_name=C2.7b_600e --topology solo solo solo solo solo solo --data_split=True --batch_size=1024 --local_steps 0 0 0 0 0 0 --n_nodes 1 1 1 1 1 1 --lr 3.2 1.6 0.8 0.4 0.2 0.1 --start_epoch_phases 0 100 200 300 400 500 --epochs=600 --lr_decay 600 --dataset=cifar100 --seed=1 &
-python train_cifar.py --lr=3.2 --expt_name=C2.7b_600e --topology solo solo solo solo solo solo --data_split=True --batch_size=1024 --local_steps 0 0 0 0 0 0 --n_nodes 1 1 1 1 1 1 --lr 3.2 1.6 0.8 0.4 0.2 0.1 --start_epoch_phases 0 100 200 300 400 500 --epochs=600 --lr_decay 600 --dataset=cifar100 --seed=2 &
-wait
