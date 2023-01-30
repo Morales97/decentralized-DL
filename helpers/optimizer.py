@@ -130,7 +130,7 @@ def _set_momenta(module, momenta):
         module.momentum = momenta[module]
 
 
-def bn_update(loader, model, device):
+def bn_update(args, loader, model, device):
     """
         BatchNorm buffers update (if any).
         Performs 1 epochs to estimate buffers average using train dataset.
@@ -145,6 +145,8 @@ def bn_update(loader, model, device):
     model.apply(reset_bn)
     model.apply(lambda module: _get_momenta(module, momenta))
     n = 0
+    if args.data_split:
+        loader = loader[0]
     for input, _ in loader:
         input = input.to(device)
         input_var = torch.autograd.Variable(input)

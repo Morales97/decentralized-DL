@@ -327,17 +327,17 @@ def train(args, steps, wandb):
 
     # Make a full pass over EMA and SWA models to update 
     if epoch > args.epoch_swa:
-        bn_update(train_loader, swa_model, device)
+        bn_update(args, train_loader, swa_model, device)
         _, swa_acc = evaluate_model(swa_model, test_loader, device)
         logger.log_single_acc(swa_acc, log_as='SWA Acc (after BN)')
         print('SWA Final Accuracy: %.2f' % swa_acc)
 
-    bn_update(train_loader, ema_model, device)
+    bn_update(args, train_loader, ema_model, device)
     _, ema_acc = evaluate_model(ema_model, test_loader, device)
     logger.log_single_acc(ema_acc, log_as='EMA Acc (after BN)')
     print('EMA Final Accuracy: %.2f' % ema_acc)
 
-    bn_update(train_loader, swa_model2, device)
+    bn_update(args, train_loader, swa_model2, device)
     _, swa2_acc = evaluate_model(swa_model2, test_loader, device)
     logger.log_single_acc(swa2_acc, log_as='MA Acc (after BN)')
     print('MA Final Accuracy: %.2f' % ema_acc)
