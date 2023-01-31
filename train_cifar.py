@@ -192,8 +192,9 @@ def train(args, steps, wandb):
             
             if len(args.batch_size) > 1:
                 train_loader, _ = get_data(args, args.batch_size[phase])
-                train_loader_lengths = [len(train_loader[0])]
-                train_loader_iter[0] = iter(train_loader[0])
+                if args.data_split:
+                    train_loader_lengths = [len(train_loader[0])]
+                    train_loader_iter[0] = iter(train_loader[0])
                 batch_size = args.batch_size[phase]
 
             # init new nodes
