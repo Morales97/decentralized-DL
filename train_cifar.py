@@ -142,6 +142,7 @@ def train(args, steps, wandb):
     total_lr_phases = len(args.lr_decay)
     step = 0
     epoch = 0
+    prev_epoch = 1
     max_acc = AccuracyTracker()
     max_ema_acc = AccuracyTracker()
     max_late_ema_acc = AccuracyTracker()
@@ -256,7 +257,8 @@ def train(args, steps, wandb):
 
 
         # evaluate 
-        if step % args.steps_eval == 0 or epoch >= args.epochs:
+        if (not args.eval_after_epoch and step % args.steps_eval == 0) or epoch >= args.epochs or (args.eval_after_epoch and epoch > prev_epoch):
+            prev_epoch += 1
             with torch.no_grad():
                 ts_eval = time.time()
                 

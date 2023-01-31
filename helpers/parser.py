@@ -100,7 +100,8 @@ def get_parser():
                         help='evaluate every x number of steps')
     parser.add_argument('--tracking_interaval', type=int, default=50,
                         help='evaluate L2 distance of model conensus every x number of steps')
-
+    parser.add_argument('--eval_after_epoch', action='store_true',
+                        help='evaluate after each epoch or at step evaluation interval')
     return parser 
 
 def check_assertions(args):
