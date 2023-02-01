@@ -1,7 +1,7 @@
 #!/bin/sh
 
 # Pamareters
-# $1: dataset [cifar10, cifar100]
+# $1: dataset [10, 100] for [cifar10, cifar100]
 # $2: network [rn20]
 
 # train solo with B=128 and different LRs
