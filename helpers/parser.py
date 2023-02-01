@@ -30,7 +30,7 @@ def get_parser():
                         help='step interval to save checkpoint') 
                         
     # model
-    parser.add_argument('--net', type=str, default='resnet18',
+    parser.add_argument('--net', type=str, default='rn20',
                         help='choice of architecture') 
     
     # decentralized
@@ -66,7 +66,7 @@ def get_parser():
                         help='decay lr by 10 at the listed fractions of training')                                       
     parser.add_argument('--lr_warmup_epochs', type=int, default=5,
                         help='warm up learning rate in the first epochs') 
-    parser.add_argument('--alpha', type=float, default=0.995,
+    parser.add_argument('--alpha', type=float, nargs='+', default=[0.995],
                         help='EMA decaying rate')   
 
     # optimizer

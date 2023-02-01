@@ -29,7 +29,7 @@ def get_model(args, device):
 
     return model.to(device)
 
-def get_ema_models(args, models, device, ema_init=None, ramp_up=True):
+def get_ema_models(args, models, device, alpha=0.995, ema_init=None, ramp_up=True):
     ema_models = []
     ema_opts = []
     for model in models:
@@ -38,7 +38,7 @@ def get_ema_models(args, models, device, ema_init=None, ramp_up=True):
             ema_model.load_state_dict(ema_init.state_dict())
         for param in ema_model.parameters():
             param.detach_()
-        ema_opt = OptimizerEMA(model, ema_model, alpha=args.alpha, ramp_up=ramp_up)
+        ema_opt = OptimizerEMA(model, ema_model, alpha=alpha, ramp_up=ramp_up)
         ema_models.append(ema_model)
         ema_opts.append(ema_opt)
 

@@ -147,6 +147,21 @@ class AccuracyTracker(object):
     def get(self):
         return self.max_acc
 
+class MultiAccuracyTracker(object):
+    def __init__(self, keys):
+        self.max_acc = {}
+        for key in keys:
+            self.max_acc[key] = 0
+
+    def init(self, keys):
+        for key in keys:
+            self.max_acc[key] = 0
+
+    def update(self, acc, key):
+        self.max_acc[key] = max(self.max_acc[key], acc)
+
+    def get(self, key):
+        return self.max_acc[key]
 
 def save_checkpoint(state, filename, is_best=False):
     torch.save(state, filename)
