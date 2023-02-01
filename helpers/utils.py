@@ -20,8 +20,8 @@ def get_expt_name(args, warmup=False):
     
     name += '_b' + str(args.batch_size) + '_lr' + str(args.lr)
 
-    if warmup:
-        name += '_warmup'
+    # if warmup:
+    #     name += '_warmup'
     
     if args.local_steps[0] > 0:
         name += '_local' + str(args.local_steps)
