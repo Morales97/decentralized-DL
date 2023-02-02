@@ -168,10 +168,11 @@ class ResNetBase(nn.Module):
         return nn.Sequential(*layers)
 
 
-class ResNet_imagenet(ResNetBase):
+class ResNet(ResNetBase):
     def __init__(self, dataset, resnet_size):
-        super(ResNet_imagenet, self).__init__()
+        super(ResNet, self).__init__()
         self.dataset = dataset
+        self.small_input = True if 'cifar' in self.dataset else False   # CIFAR is 32x32, not 224x224
 
         # define model param.
         model_params = {
@@ -188,37 +189,24 @@ class ResNet_imagenet(ResNetBase):
         self.num_classes = self._decide_num_classes()
 
         # define layers.
+        
         self.inplanes = 64
-        self.conv1 = nn.Conv2d(
-            in_channels=3,
-            out_channels=64,
-            kernel_size=7,
-            stride=2,
-            padding=3,
-            bias=False,
-        )
+        if self.small_input:
+            self.conv1 = nn.Conv2d(3, 64, kernel_size=3, stride=1, padding=1, bias=False)   # For CIFAR
+        else:   
+            self.conv1 = nn.Conv2d(3, 64, kernel_size=7, stride=2, padding=3, bias=False)   # For ImageNet
+
         self.bn1 = nn.BatchNorm2d(num_features=64)
         self.relu = nn.ReLU(inplace=True)
-
         self.maxpool = nn.MaxPool2d(kernel_size=3, stride=2, padding=1)
 
-        self.layer1 = self._make_block(
-            block_fn=block_fn, planes=64, block_num=block_nums[0]
-        )
-        self.layer2 = self._make_block(
-            block_fn=block_fn, planes=128, block_num=block_nums[1], stride=2
-        )
-        self.layer3 = self._make_block(
-            block_fn=block_fn, planes=256, block_num=block_nums[2], stride=2
-        )
-        self.layer4 = self._make_block(
-            block_fn=block_fn, planes=512, block_num=block_nums[3], stride=2
-        )
+        self.layer1 = self._make_block(block_fn=block_fn, planes=64, block_num=block_nums[0])
+        self.layer2 = self._make_block(block_fn=block_fn, planes=128, block_num=block_nums[1], stride=2)
+        self.layer3 = self._make_block(block_fn=block_fn, planes=256, block_num=block_nums[2], stride=2)
+        self.layer4 = self._make_block(block_fn=block_fn, planes=512, block_num=block_nums[3], stride=2)
 
-        self.avgpool = nn.AvgPool2d(kernel_size=7, stride=1)
-        self.fc = nn.Linear(
-            in_features=512 * block_fn.expansion, out_features=self.num_classes
-        )
+        self.avgpool = nn.AdaptiveAvgPool2d((1, 1)) 
+        self.fc = nn.Linear(in_features=512 * block_fn.expansion, out_features=self.num_classes)
 
         # weight initialization based on layer type.
         self._weight_initialization()
@@ -227,8 +215,9 @@ class ResNet_imagenet(ResNetBase):
         x = self.conv1(x)
         x = self.bn1(x)
         x = self.relu(x)
+        if not self.small_input:
+            x = self.maxpool(x)
 
-        x = self.maxpool(x)
         x = self.layer1(x)
         x = self.layer2(x)
         x = self.layer3(x)
@@ -240,9 +229,15 @@ class ResNet_imagenet(ResNetBase):
         return x
 
 
-class ResNet_cifar(ResNetBase):
+class ResNet_20(ResNetBase):
+    '''
+    ResNet-20 is much smaller than the standard ResNet family. Differences:
+        - has 3 blocks, not 4
+        - uses 1/4 of channels in every block. [16, 32, 64] instead of [64, 128, 256, 512]
+        - since it is intended for CIFAR, conv1 has stride=1 and not stride=2; and we spare a pooling layer after conv1
+    '''
     def __init__(self, dataset, resnet_size):
-        super(ResNet_cifar, self).__init__()
+        super(ResNet_20, self).__init__()
         self.dataset = dataset
 
         # define model.
@@ -304,20 +299,20 @@ def resnet20(args):
     """
     Constructs a ResNet-20 model.
     """
-    model = ResNet_cifar(dataset=args.dataset, resnet_size=20)
-    # model = ResNet_imagenet(dataset=dataset, resnet_size=resnet_size)
+    model = ResNet_20(dataset=args.dataset, resnet_size=20)
     return model
 
 def resnet18(args):
-    return ResNet_imagenet(dataset=args.dataset, resnet_size=18)
+    return ResNet(dataset=args.dataset, resnet_size=18)
 
 def resnet50(args):
-    return ResNet_imagenet(dataset=args.dataset, resnet_size=50)
+    return ResNet(dataset=args.dataset, resnet_size=50)
 
 if __name__ == '__main__':
-    # model = ResNet_cifar(dataset='cifar10', resnet_size=20).to('cpu')
-    model = ResNet_imagenet(dataset='imagenet', resnet_size=18)
+    model = ResNet(dataset='imagenet', resnet_size=18)
     summary(model, (3, 224, 224))
+    # model = ResNet(dataset='cifar10', resnet_size=18)
+    # summary(model, (3, 32, 32))
     pdb.set_trace()
     for param in model.parameters():
         pdb.set_trace()
