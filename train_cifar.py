@@ -113,7 +113,8 @@ def train(args, steps, wandb):
 
     # init nodes
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
-    models = [get_model(args, device) for _ in range(args.n_nodes[0])]
+    n_nodes = args.n_nodes[0]
+    models = [get_model(args, device) for _ in range(n_nodes)]
     opts = [get_optimizer(args, model) for model in models]
     if args.same_init:
         for i in range(1, len(models)):
@@ -200,6 +201,7 @@ def train(args, steps, wandb):
             comm_matrix = get_gossip_matrix(args, phase)
             
             if len(args.batch_size) > 1:
+                print('batch_size updated to: ' + str(args.batch_size[phase]))
                 train_loader, _ = get_data(args, args.batch_size[phase])
                 if args.data_split:
                     train_loader_lengths = [len(train_loader[0])]
@@ -207,11 +209,13 @@ def train(args, steps, wandb):
                 batch_size = args.batch_size[phase]
 
             # init new nodes
-            if len(args.n_nodes) > 1 and args.n_nodes[phase] > args.n_nodes[phase-1]: # if n_nodes doesn't change, no need to re-init models
+            if len(args.n_nodes) > 1: 
+                n_nodes = args.n_nodes[phase]
+                print('n_nodes updated to: ' + str(n_nodes))
                 if args.init_momentum:
-                    models, opts = initialize_nodes(args, models, opts, args.n_nodes[phase], device) 
+                    models, opts = initialize_nodes(args, models, opts, n_nodes, device) 
                 else:
-                    models, opts = initialize_nodes_no_mom(args, models, args.n_nodes[phase], device)
+                    models, opts = initialize_nodes_no_mom(args, models, n_nodes, device)
 
                 ema_models, ema_opts = init_nodes_EMA(args, models, ema_models, device)  # does not support len(args.alpha) > 1
                 if args.late_ema_epoch > 0:
@@ -219,6 +223,7 @@ def train(args, steps, wandb):
 
             # optionally, update lr
             if len(args.lr) > 1:
+                print('New lr: ' + str(args.lr[phase]))
                 for opt in opts:
                     for g in opt.param_groups:
                         g['lr'] = args.lr[phase]
@@ -250,8 +255,8 @@ def train(args, steps, wandb):
                 late_ema_opts[i].update()
 
         step +=1
-        epoch += args.n_nodes[phase] * batch_size / n_samples
-        train_loss /= args.n_nodes[phase]
+        epoch += n_nodes * batch_size / n_samples
+        train_loss /= n_nodes
         logger.log_step(step, epoch, train_loss, ts_total, ts_step)
         
         # gossip
