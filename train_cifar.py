@@ -123,7 +123,7 @@ def train(args, steps, wandb):
 
     # init EMA
     if len(args.alpha) == 1:
-        ema_models, ema_opts = get_ema_models(args, models, device, args.alpha)
+        ema_models, ema_opts = get_ema_models(args, models, device, args.alpha[0])
     else:
         ema_models, ema_opts = {}, {}
         for alpha in args.alpha:
@@ -131,7 +131,7 @@ def train(args, steps, wandb):
             ema_models[alpha] = ema_model_alpha
             ema_opts[alpha] = ema_opt_alpha
     if args.late_ema_epoch > 0:
-        late_ema_models, late_ema_opts = get_ema_models(args, models, device)
+        late_ema_models, late_ema_opts = get_ema_models(args, models, device, alpha=0.995)
         late_ema_active = False   # indicate when to init step_offset
     swa_model = None
     swa_model2 = None # average every step, not every epoch (Moving Average)
