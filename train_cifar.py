@@ -395,4 +395,4 @@ if __name__ == '__main__':
 # python train_cifar.py --lr=3.2 --topology ring fully_connected dataset=cifar100 --wandb=False --local_exec=True --n_nodes 8 16 --start_epoch_phases 0 1 --eval_on_average_model=True --steps_eval=20 --lr 3.2 1.6 --late_ema_epoch=1
 # python train_cifar.py --lr=3.2 --topology=ring dataset=cifar100 --eval_on_average_model=True --n_nodes=4 --save_model=True --save_interval=20
 # python train_cifar.py --lr=3.2 --topology solo solodataset=cifar100 --wandb=False --local_exec=True --n_nodes 1 1 --batch_size 1024 2048 --start_epoch_phases 0 1 --steps_eval=40 --lr 3.2 1.6 --data_split=True
-# python train_cifar.py --wandb=False --local_exec=True --n_nodes=1 --topology=solodata_fraction=0.05 --alpha 0.999 0.995 0.98
+# python train_cifar.py --wandb=False --local_exec=True --n_nodes=1 --topology=solo data_fraction=0.05 --alpha 0.999 0.995 0.98
