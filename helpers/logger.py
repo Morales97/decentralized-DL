@@ -130,12 +130,14 @@ class Logger:
         }
         if self.wandb: self.wandb.log(log)
 
-    def log_acc(self, step, epoch, acc, name='placeholder'):
+    def log_acc(self, step, epoch, acc, loss=None, name='placeholder'):
         log = {
             'Iteration': step,
             'Epoch': epoch,
-            name: acc,
+            name + ' Accuracy': acc,
         }
+        if loss is not None:
+            log[name + ' Test loss'] =  loss
         if self.wandb: self.wandb.log(log)
 
     def log_acc_IN(self, step, epoch, acc1, acc5, name='placeholder'):
