@@ -207,7 +207,7 @@ def train(args, steps, wandb):
                 batch_size = args.batch_size[phase]
 
             # init new nodes
-            if args.n_nodes[phase] > args.n_nodes[phase-1]: # if n_nodes doesn't change, no need to re-init models
+            if len(args.n_nodes) > 1 and args.n_nodes[phase] > args.n_nodes[phase-1]: # if n_nodes doesn't change, no need to re-init models
                 if args.init_momentum:
                     models, opts = initialize_nodes(args, models, opts, args.n_nodes[phase], device) 
                 else:
