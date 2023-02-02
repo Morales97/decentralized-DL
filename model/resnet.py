@@ -308,13 +308,16 @@ def resnet20(args):
     # model = ResNet_imagenet(dataset=dataset, resnet_size=resnet_size)
     return model
 
-def resnet50():
-    return torchvision.models.resnet50()
+def resnet18(args):
+    return ResNet_imagenet(dataset=args.dataset, resnet_size=18)
+
+def resnet50(args):
+    return ResNet_imagenet(dataset=args.dataset, resnet_size=50)
 
 if __name__ == '__main__':
-    model = ResNet_cifar(dataset='cifar10', resnet_size=20).to('cpu')
-    # model = resnet50().to('cpu')
-    summary(model, (3, 32, 32))
+    # model = ResNet_cifar(dataset='cifar10', resnet_size=20).to('cpu')
+    model = ResNet_imagenet(dataset='imagenet', resnet_size=18)
+    summary(model, (3, 224, 224))
     pdb.set_trace()
     for param in model.parameters():
         pdb.set_trace()
