@@ -178,7 +178,7 @@ def train(args, steps, wandb):
             lr_decay_phase += 1
             for opt in opts:
                 for g in opt.param_groups:
-                    g['lr'] = g['lr']/10
+                    g['lr'] = g['lr']/args.lr_decay_factor
             print('lr decayed to %.4f' % g['lr'])
 
         # drop weight decay
@@ -286,7 +286,6 @@ def train(args, steps, wandb):
                     for alpha in args.alpha:
                         ema_model = get_average_model(args, device, ema_models[alpha])
                         ema_loss, ema_acc = evaluate_model(ema_model, test_loader, device)
-                        print(ema_acc)
                         logger.log_acc(step, epoch, ema_acc*100, ema_loss, name='EMA ' + str(alpha))
                         max_acc.update(ema_acc, alpha)
                         best_ema_acc = max(best_ema_acc, ema_acc)

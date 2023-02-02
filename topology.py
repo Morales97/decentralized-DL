@@ -9,7 +9,7 @@ import torch.optim as optim
 
 def get_gossip_matrix(args, phase):
     topology = args.topology[phase] if len(args.topology) > 1 else args.topology[0]
-    num_clients = args.n_nodes[phase]
+    num_clients = args.n_nodes[phase] if  len(args.n_nodes) > 1 else args.n_nodes[0]
     local_steps = args.local_steps[phase] if len(args.local_steps) > 1 else args.local_steps[0]
 
     if topology == 'solo' or num_clients == 1:

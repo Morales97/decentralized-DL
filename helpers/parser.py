@@ -63,7 +63,9 @@ def get_parser():
     parser.add_argument('--lr', type=float, nargs='+', default=[0.2],
                         help='learning rate')   
     parser.add_argument('--lr_decay', type=int, nargs='+', default=[150, 225],
-                        help='decay lr by 10 at the listed fractions of training')                                       
+                        help='decay lr by factor at the listed fractions of training')                                       
+    parser.add_argument('--lr_decay_factor', type=float, default=10,
+                        help='lr decay factor') 
     parser.add_argument('--lr_warmup_epochs', type=int, default=5,
                         help='warm up learning rate in the first epochs') 
     parser.add_argument('--alpha', type=float, nargs='+', default=[0.995],
