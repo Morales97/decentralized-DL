@@ -267,7 +267,7 @@ def train(args, steps, wandb):
             epoch_swa += 1
             swa_model, n_swa = update_SWA(args, swa_model, models, device, n_swa)
             test_loss, acc = evaluate_model(swa_model, test_loader, device)
-            logger.log_acc(step, epoch, acc*100, name='SWA Accuracy')
+            logger.log_acc(step, epoch, acc*100, name='SWA')
 
         # MA update (SWA but every step)
         if epoch > args.epoch_swa:
