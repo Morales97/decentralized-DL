@@ -223,7 +223,8 @@ def train(args, steps, wandb):
                     for g in opt.param_groups:
                         g['lr'] = args.lr[phase]
 
-            print('[Epoch %d] Changing to phase %d. Nodes: %d. Topology: %s. Local steps: %s.' % (epoch, phase, args.n_nodes[phase], args.topology[phase], args.local_steps[phase]))
+            # print('[Epoch %d] Changing to phase %d. Nodes: %d. Topology: %s. Local steps: %s.' % (epoch, phase, args.n_nodes[phase], args.topology[phase], args.local_steps[phase]))
+            print('[Epoch %d] Changing to phase %d.' % (epoch, phase))
 
         if args.model_std > 0:
             add_noise_to_models(models, args.model_std, device)
@@ -289,6 +290,7 @@ def train(args, steps, wandb):
                         logger.log_acc(step, epoch, ema_acc*100, 'EMA ' + str(alpha) +' Accuracy')
                         max_acc.update(ema_acc, alpha)
                         best_ema_acc = max(best_ema_acc, ema_acc)
+                    max_acc.update(best_ema_acc, 'EMA')
                     logger.log_acc(step, epoch, best_ema_acc*100, 'Multi-EMA Best Accuracy')
                 # Late EMA
                 if late_ema_active:
@@ -388,9 +390,9 @@ if __name__ == '__main__':
     else:
         train(args, steps, None)
 
-# python train_cifar.py --lr=3.2 --topology=ring --dataset=cifar100 --wandb=False --local_exec=True --eval_on_average_model=True
-# python train_cifar.py --lr=3.2 --topology=fully_connected --dataset=cifar100 --wandb=False --local_exec=True --model_std=0.01
-# python train_cifar.py --lr=3.2 --topology ring fully_connected --local_steps 0 0 --dataset=cifar100 --wandb=False --local_exec=True --n_nodes 8 16 --start_epoch_phases 0 1 --eval_on_average_model=True --steps_eval=20 --lr 3.2 1.6 --late_ema_epoch=1
-# python train_cifar.py --lr=3.2 --topology=ring --dataset=cifar100 --eval_on_average_model=True --n_nodes=4 --save_model=True --save_interval=20
-# python train_cifar.py --lr=3.2 --topology solo solo --local_steps 0 0 --dataset=cifar100 --wandb=False --local_exec=True --n_nodes 1 1 --batch_size 1024 2048 --start_epoch_phases 0 1 --steps_eval=40 --lr 3.2 1.6 --data_split=True
-# python train_cifar.py --wandb=False --local_exec=True --n_nodes=1 --topology=solo --data_fraction=0.05 --alpha 0.999 0.995 0.98
+# python train_cifar.py --lr=3.2 --topology=ring dataset=cifar100 --wandb=False --local_exec=True --eval_on_average_model=True
+# python train_cifar.py --lr=3.2 --topology=fully_connected dataset=cifar100 --wandb=False --local_exec=True --model_std=0.01
+# python train_cifar.py --lr=3.2 --topology ring fully_connected dataset=cifar100 --wandb=False --local_exec=True --n_nodes 8 16 --start_epoch_phases 0 1 --eval_on_average_model=True --steps_eval=20 --lr 3.2 1.6 --late_ema_epoch=1
+# python train_cifar.py --lr=3.2 --topology=ring dataset=cifar100 --eval_on_average_model=True --n_nodes=4 --save_model=True --save_interval=20
+# python train_cifar.py --lr=3.2 --topology solo solodataset=cifar100 --wandb=False --local_exec=True --n_nodes 1 1 --batch_size 1024 2048 --start_epoch_phases 0 1 --steps_eval=40 --lr 3.2 1.6 --data_split=True
+# python train_cifar.py --wandb=False --local_exec=True --n_nodes=1 --topology=solodata_fraction=0.05 --alpha 0.999 0.995 0.98

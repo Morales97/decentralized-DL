@@ -8,9 +8,9 @@ import torch.optim as optim
 
 
 def get_gossip_matrix(args, phase):
-    topology = args.topology[phase]
+    topology = args.topology[phase] if len(args.topology) > 1 else args.topology[0]
     num_clients = args.n_nodes[phase]
-    local_steps = args.local_steps[phase]
+    local_steps = args.local_steps[phase] if len(args.local_steps) > 1 else args.local_steps[0]
 
     if topology == 'solo' or num_clients == 1:
         W = np.eye(num_clients)

@@ -586,5 +586,5 @@ if __name__ == '__main__':
     else:
         main(args, None)
 
-# python train_imagenet.py -a resnet18 /mlodata1/kosson/datasets/imagenet --expt_name=IN_solo --gpu=0
+# python train_imagenet.py -a resnet18 /mlodata1/kosson/datasets/imagenet --expt_name=IN_sologpu=0
 # python train_imagenet.py -a resnet18 --dummy --gpu=0
