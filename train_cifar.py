@@ -288,13 +288,16 @@ def train(args, steps, wandb):
                     max_acc.update(ema_acc, 'EMA')
                 else:
                     best_ema_acc = 0
+                    best_ema_loss = 10
                     for alpha in args.alpha:
                         ema_model = get_average_model(args, device, ema_models[alpha])
                         ema_loss, ema_acc = evaluate_model(ema_model, test_loader, device)
                         logger.log_acc(step, epoch, ema_acc*100, ema_loss, name='EMA ' + str(alpha))
                         max_acc.update(ema_acc, alpha)
                         best_ema_acc = max(best_ema_acc, ema_acc)
+                        best_ema_loss = max(best_ema_loss, ema_loss)
                     max_acc.update(best_ema_acc, 'EMA')
+                    logger.log_acc(step, epoch, best_ema_acc*100, best_ema_loss, name='EMA')  # actually EMA = multi-EMA. to not leave EMA empty
                     logger.log_acc(step, epoch, best_ema_acc*100, name='Multi-EMA Best')
                 # Late EMA
                 if late_ema_active:
