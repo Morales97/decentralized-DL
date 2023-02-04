@@ -109,6 +109,18 @@ def update_bn(args, loader, model, device=None):
     model.train(was_training)
 
 
+class _enable_get_lr_call:
+
+    def __init__(self, o):
+        self.o = o
+
+    def __enter__(self):
+        self.o._get_lr_called_within_step = True
+        return self
+
+    def __exit__(self, type, value, traceback):
+        self.o._get_lr_called_within_step = False
+
 class LRScheduler(object):
     '''
     Copied from https://github.com/pytorch/pytorch/blob/master/torch/optim/lr_scheduler.py
@@ -237,7 +249,7 @@ class LRScheduler(object):
                 self.last_epoch += 1
                 values = self.get_lr()
             else:
-                warnings.warn(EPOCH_DEPRECATION_WARNING, UserWarning)
+                warnings.warn('EPOCH_DEPRECATION_WARNING', UserWarning)
                 self.last_epoch = epoch
                 if hasattr(self, "_get_closed_form_lr"):
                     values = self._get_closed_form_lr()
