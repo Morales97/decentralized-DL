@@ -283,7 +283,8 @@ def train(args, steps, wandb):
             if epoch > epoch_swa_budget:    # compute SWA at budget 1
                 epoch_swa_budget = 1e5 # deactivate
                 update_bn_and_eval(swa_model, train_loader, test_loader, device, logger, log_as='SWA Budget 1')
-                        
+            pdb.set_trace()
+
         # MA update (SWA but every step)
         if epoch > args.epoch_swa:
             swa_model2.update_parameters(models)
