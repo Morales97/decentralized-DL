@@ -306,10 +306,10 @@ def train(args, steps, wandb):
                     logger.log_acc(step, epoch, late_ema_acc*100, late_ema_loss, name='Late EMA') 
                     max_acc.update(late_ema_acc, 'Late EMA')
                 # Moving Average
-                # if epoch > args.epoch_swa:
-                #     swa2_loss, swa2_acc = evaluate_model(swa_model2, test_loader, device)
-                #     logger.log_acc(step, epoch, swa2_acc*100, swa2_loss, name='MA Accuracy') 
-                #     max_acc.update(swa2_acc, 'MA')
+                if epoch > args.epoch_swa:
+                    swa2_loss, swa2_acc = evaluate_model(swa_model2, test_loader, device)
+                    logger.log_acc(step, epoch, swa2_acc*100, swa2_loss, name='MA Accuracy') 
+                    max_acc.update(swa2_acc, 'MA')
 
 
                 # evaluate on averaged model
@@ -373,10 +373,10 @@ def train(args, steps, wandb):
         logger.log_single_acc(ema_acc, log_as='EMA Acc (after BN)')
         print('EMA Final Accuracy: %.2f' % ema_acc)
 
-    # bn_update(args, train_loader, swa_model2, device)
-    # _, swa2_acc = evaluate_model(swa_model2, test_loader, device)
-    # logger.log_single_acc(swa2_acc, log_as='MA Acc (after BN)')
-    # print('MA Final Accuracy: %.2f' % ema_acc)
+    bn_update(args, train_loader, swa_model2, device)
+    _, swa2_acc = evaluate_model(swa_model2, test_loader, device)
+    logger.log_single_acc(swa2_acc, log_as='MA Acc (after BN)')
+    print('MA Final Accuracy: %.2f' % ema_acc)
 
 if __name__ == '__main__':
     from helpers.parser import SCRATCH_DIR, SAVE_DIR
