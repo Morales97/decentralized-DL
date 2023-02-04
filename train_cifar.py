@@ -308,7 +308,7 @@ def train(args, steps, wandb):
                 # Moving Average
                 if epoch > args.epoch_swa:
                     swa2_loss, swa2_acc = evaluate_model(swa_model2, test_loader, device)
-                    logger.log_acc(step, epoch, swa2_acc*100, swa2_loss, name='MA Accuracy') 
+                    logger.log_acc(step, epoch, swa2_acc*100, swa2_loss, name='MA') 
                     max_acc.update(swa2_acc, 'MA')
 
 
