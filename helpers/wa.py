@@ -150,6 +150,7 @@ class LRScheduler(object):
             cls = instance_ref().__class__
             del method
 
+            from functools import wraps
             @wraps(func)
             def wrapper(*args, **kwargs):
                 instance = instance_ref()
