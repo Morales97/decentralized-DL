@@ -10,6 +10,6 @@ python train_cifar.py --n_nodes=1 --lr=0.2 --topology=solo --data_split=True --s
 # python train_cifar.py --n_nodes=1 --lr=0.1 --lr_decay 60 120 160 --epochs=200 --lr_decay_factor=5 --topology=solo --data_split=True --steps_eval=400 --dataset=cifar100 --net=rn18 &
 
 
-python train_cifar.py --wandb=False --data_fraction=0.01 --n_nodes=1 --lr=0.1 --epochs=225 --epoch_swa=3  --epoch_swa_budget=10 --swa_lr=0.05 --lr_decay=226 --topology=solo --data_split=True --steps_eval=400 --dataset=cifar100 --net=rn18 &
+python train_cifar.py --wandb=False --data_fraction=0.01 --n_nodes=1 --lr=0.1 --epochs=20 --epoch_swa=3  --epoch_swa_budget=10 --swa_lr=0.05 --lr_decay=226 --topology=solo --data_split=True --steps_eval=400 --dataset=cifar100 --net=rn18
 
 wait

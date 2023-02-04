@@ -6,7 +6,9 @@ import warnings
 
 import torch
 from torch.nn import Module
-from torch.optim.lr_scheduler import LRScheduler
+from torch.optim.optimizer import Optimizer
+import weakref
+
 
 import sys
 import os
@@ -106,6 +108,64 @@ def update_bn(args, loader, model, device=None):
         bn_module.momentum = momenta[bn_module]
     model.train(was_training)
 
+
+class LRScheduler(object):
+    '''
+    Copied from https://github.com/pytorch/pytorch/blob/master/torch/optim/lr_scheduler.py
+    because torch won't find LRScheduler (?)
+    '''
+    def __init__(self, optimizer, last_epoch=-1, verbose=False):
+
+        # Attach optimizer
+        if not isinstance(optimizer, Optimizer):
+            raise TypeError('{} is not an Optimizer'.format(
+                type(optimizer).__name__))
+        self.optimizer = optimizer
+
+        # Initialize epoch and base learning rates
+        if last_epoch == -1:
+            for group in optimizer.param_groups:
+                group.setdefault('initial_lr', group['lr'])
+        else:
+            for i, group in enumerate(optimizer.param_groups):
+                if 'initial_lr' not in group:
+                    raise KeyError("param 'initial_lr' is not specified "
+                                   "in param_groups[{}] when resuming an optimizer".format(i))
+        self.base_lrs = [group['initial_lr'] for group in optimizer.param_groups]
+        self.last_epoch = last_epoch
+
+        # Following https://github.com/pytorch/pytorch/issues/20124
+        # We would like to ensure that `lr_scheduler.step()` is called after
+        # `optimizer.step()`
+        def with_counter(method):
+            if getattr(method, '_with_counter', False):
+                # `optimizer.step()` has already been replaced, return.
+                return method
+
+            # Keep a weak reference to the optimizer instance to prevent
+            # cyclic references.
+            instance_ref = weakref.ref(method.__self__)
+            # Get the unbound method for the same purpose.
+            func = method.__func__
+            cls = instance_ref().__class__
+            del method
+
+            @wraps(func)
+            def wrapper(*args, **kwargs):
+                instance = instance_ref()
+                instance._step_count += 1
+                wrapped = func.__get__(instance, cls)
+                return wrapped(*args, **kwargs)
+
+            # Note that the returned function here is no longer a bound method,
+            # so attributes like `__func__` and `__self__` no longer exist.
+            wrapper._with_counter = True
+            return wrapper
+
+        self.optimizer.step = with_counter(self.optimizer.step)
+        self.verbose = verbose
+
+        self._initial_step()
 
 
 class SWALR(LRScheduler):
