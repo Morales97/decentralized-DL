@@ -289,7 +289,7 @@ def train(args, steps, wandb):
                 else:
                     best_ema_acc = 0
                     best_ema_loss = 10
-                    for alpha in args.alpha:
+                    for alpha in args.alpha.reverse():  # reverse to have largest alpha as ema model (report BN accuracy with it)
                         ema_model = get_average_model(args, device, ema_models[alpha])
                         ema_loss, ema_acc = evaluate_model(ema_model, test_loader, device)
                         logger.log_acc(step, epoch, ema_acc*100, ema_loss, name='EMA ' + str(alpha))
