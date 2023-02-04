@@ -282,8 +282,7 @@ def train(args, steps, wandb):
             
             if epoch > epoch_swa_budget:    # compute SWA at budget 1
                 epoch_swa_budget = 1e5 # deactivate
-                update_bn_and_eval(swa_model, train_loader, test_loader, device, logger, log_as='SWA Budget 1')
-            pdb.set_trace()
+                update_bn_and_eval(swa_model, train_loader, test_loader, device, logger, log_name='SWA Budget 1')
 
         # MA update (SWA but every step)
         if epoch > args.epoch_swa:
@@ -381,6 +380,7 @@ def train(args, steps, wandb):
     if len(args.alpha) == 1:
         update_bn_and_eval(ema_model, train_loader, test_loader, device, logger, log_name='EMA Acc (after BN)')
     update_bn_and_eval(swa_model2, train_loader, test_loader, device, logger, log_name='MA Acc (after BN)')
+    update_bn_and_eval(get_average_model(device, models), train_loader, test_loader, device, logger, log_name='Student Acc (after BN)') # TODO check if cumulative moving average BN is better than using running average
 
 if __name__ == '__main__':
     from helpers.parser import SCRATCH_DIR, SAVE_DIR
