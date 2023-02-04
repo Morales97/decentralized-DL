@@ -34,7 +34,7 @@ def eval_all_models(args, models, test_loader, device):
     acc = float(np.array(acc_workers).mean()*100)
     test_loss = np.array(loss_workers).mean()
 
-    model = get_average_model(args, device, models)
+    model = get_average_model(device, models)
     test_loss_avg, acc_avg = evaluate_model(
         model, test_loader, device)
     

@@ -105,13 +105,14 @@ def diffuse_params(W, models):
             }
         )
 
-def get_average_model(args, device, models):
+def get_average_model(device, models):
     '''Average all models (one all-reduce communication at the end to converte to one only model'''
     if len(models) == 1:
         return models[0]
 
     models_sd = [copy.deepcopy(model.state_dict()) for model in models]
-    model = get_model(args, device)
+    # model = get_model(args, device)
+    model = copy.deepcopy(models[0]).to(device)
     keys = models_sd[0].keys()
     
     weights = np.ones(len(models)) / len(models)

@@ -33,7 +33,7 @@ def worker_local_step(model, opt, train_loader_iter, ema_opt, step, device):
 
 def initialize_nodes(args, models, opts, ema_models, n_nodes_new, device):
     ''' All-reduce average all models and optimizers, and use to initialize new nodes (all of them with same params and momentum)'''
-    avg_model = get_average_model(args, device, models)
+    avg_model = get_average_model(device, models)
     new_models = [get_model(args, device) for _ in range(n_nodes_new)]
     for i in range(len(new_models)):
         new_models[i].load_state_dict(avg_model.state_dict())
@@ -43,14 +43,14 @@ def initialize_nodes(args, models, opts, ema_models, n_nodes_new, device):
     for i in range(len(new_opts)):
         new_opts[i].load_state_dict(opt_sd)
 
-    ema_avg_model = get_average_model(args, device, ema_models)
+    ema_avg_model = get_average_model(device, ema_models)
     new_ema_models, new_ema_opts = get_ema_models(args, new_models, device, ema_init=ema_avg_model)
 
     return new_models, new_opts, new_ema_models, new_ema_opts
 
 def initialize_nodes2(args, models, opts, nodes_to_add, device):
     ''' All-reduce average all models and optimizers, and use to initialize new nodes (all of them with same params and momentum)'''
-    avg_model = get_average_model(args, device, models)
+    avg_model = get_average_model(device, models)
     opt_sd = get_average_opt(opts)
     for i in range(nodes_to_add):
         new_model = get_model(args, device)
@@ -161,14 +161,14 @@ def train(args, steps, wandb):
             ts_eval = time.time()
             
             # evaluate on average of EMA models
-            ema_model = get_average_model(args, device, ema_models)
+            ema_model = get_average_model(device, ema_models)
             ema_test_loss, ema_acc = evaluate_model(ema_model, test_loader, device)
             logger.log_ema_acc(step, epoch, float(ema_acc*100))
 
             # evaluate on averaged model
             if args.eval_on_average_model:
                 ts_eval = time.time()
-                model = get_average_model(args, device, models)
+                model = get_average_model(device, models)
                 test_loss, acc = evaluate_model(model, test_loader, device)
                 logger.log_eval(step, epoch, float(acc*100), test_loss, ts_eval, ts_steps_eval)
                 print('Epoch %.3f (Step %d) -- Test accuracy: %.2f -- EMA accuracy: %.2f -- Test loss: %.3f -- Train loss: %.3f -- Time (total/last/eval): %.2f / %.2f / %.2f s' %

@@ -48,12 +48,22 @@ def get_parser():
                         help='start epoch for each training phase. If [0], only one training phase') 
     parser.add_argument('--init_momentum', type=boolfromstr, default=True,
                         help='when increasing n_nodes, whether to init momentum')
-    parser.add_argument('--epoch_swa', type=int, default=100,
-                        help='epoch when to start SWA averaging')
-    parser.add_argument('--late_ema_epoch', type=int, default=100,
-                        help='epoch when to start Late EMA') 
     parser.add_argument('--model_std', type=float, default=0,
                         help='standard deviation for noise applied to each model`s parameters')  
+
+    # model averaging
+    parser.add_argument('--epoch_swa', type=int, default=100,
+                        help='epoch when to start SWA averaging')
+    parser.add_argument('--epoch_swa_budget', type=int, default=1e5,
+                        help='epoch when to FINISH SWA averaging for budget 1')
+    parser.add_argument('--swa', action='store_true', 
+                        help='Use SWA as in Izmailov et al.')
+    parser.add_argument('--swa_lr', type=float, default=0.05,
+                        help='Final constant LR for SWA')   
+    parser.add_argument('--late_ema_epoch', type=int, default=100,
+                        help='epoch when to start Late EMA') 
+    parser.add_argument('--alpha', type=float, nargs='+', default=[0.995],
+                        help='EMA decaying rate')   
 
     # hyperparameters
     parser.add_argument('--seed', type=int, default=0,
@@ -68,8 +78,6 @@ def get_parser():
                         help='lr decay factor') 
     parser.add_argument('--lr_warmup_epochs', type=int, default=5,
                         help='warm up learning rate in the first epochs') 
-    parser.add_argument('--alpha', type=float, nargs='+', default=[0.995],
-                        help='EMA decaying rate')   
 
     # optimizer
     parser.add_argument('--opt', type=str, default='SGD',
