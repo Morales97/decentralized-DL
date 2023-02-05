@@ -58,7 +58,7 @@ def get_parser():
                         help='epoch when to FINISH SWA averaging for budget 1')
     parser.add_argument('--swa', action='store_true', 
                         help='Use SWA as in Izmailov et al.')
-    parser.add_argument('--swa_lr', type=float, default=0.05,
+    parser.add_argument('--swa_lr', type=float, default=0,
                         help='Final constant LR for SWA')   
     parser.add_argument('--late_ema_epoch', type=int, default=100,
                         help='epoch when to start Late EMA') 
