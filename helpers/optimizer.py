@@ -36,8 +36,7 @@ class Old_OptimizerEMA(object):
 
 class OptimizerEMA(object):
     '''
-    EMA optimizer which can optionally apply EMA to BN statistics (see EMAN paper by Cai et al)
-    With eman=True, it should be exactly the same as OptimizerEMA
+    EMA optimizer which can optionally apply EMA to BN statistics, with eman=True (see EMAN paper by Cai et al)
     '''
     def __init__(self, model, ema_model, alpha=0.999, eman=True, ramp_up=True):
         self.model = model

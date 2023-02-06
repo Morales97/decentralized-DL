@@ -64,7 +64,8 @@ def get_parser():
                         help='epoch when to start Late EMA') 
     parser.add_argument('--alpha', type=float, nargs='+', default=[0.995],
                         help='EMA decaying rate')   
-
+    parser.add_argument('--beta', type=float, nargs='+', default=[0.995],
+                        help='second averaging rate')
     # hyperparameters
     parser.add_argument('--seed', type=int, default=0,
                         help='random seed')

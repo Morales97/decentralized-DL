@@ -8,6 +8,8 @@ import torch
 def get_model(args, device):
     if args.net == 'convnet':
         model = ConvNet()
+    elif args.net == 'convnet_rgb':
+        model = ConvNet(in_channels=3)
     elif args.net == 'convnet_op':
         model = ConvNet_OP()
     elif args.net == 'mlp':
