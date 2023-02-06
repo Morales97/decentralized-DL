@@ -1,7 +1,7 @@
 from copy import deepcopy
 import numpy as np
 import pdb
-from data.data import get_data
+from loaders.data import get_data
 from topology import get_gossip_matrix, diffuse, get_average_model, get_average_opt
 import time
 import torch
@@ -282,5 +282,7 @@ if __name__ == '__main__':
 
 # python train_with_ema.py --wandb=False --local_exec=True --lr=0.1 --data_split=True --alpha=0.9 --beta=0
 # python train_with_ema.py --project=MLO-optimizer --expt_name=a0.9_b0 --lr=0.1 --data_split=True --alpha=0.9 --beta=0 --steps_eval=400 --epochs=100
-# python train_with_ema.py --project=MLO-optimizer --expt_name=a0.9_b0.9 --lr=0.9 --data_split=True --alpha=0.9 --beta=0.9 --steps_eval=400 --epochs=100
+# python train_with_ema.py --project=MLO-optimizer --expt_name=a0.9_b0.9 --lr=0.1 --data_split=True --alpha=0.9 --beta=0.9 --steps_eval=400 --epochs=100
 # python train_cifar.py --project=MLO-optimizer --expt_name=SGD_momentum --lr=0.1 --data_split=True --momentum=0.9 --nesterov=False --weight_decay=0 --n_nodes=1 --topology=solo --steps_eval=400 --epochs=100
+# python train_with_ema.py --project=MLO-optimizer --expt_name=a0.9_b0.9_v1 --lr=0.1 --data_split=True --alpha=0.9 --beta=0.9 --variant=1 --steps_eval=400 --epochs=100
+# python train_with_ema.py --project=MLO-optimizer --expt_name=a0.01_b0.5 --lr=0.1 --data_split=True --alpha=0.01 --beta=0.5 --steps_eval=400 --epochs=100

@@ -20,7 +20,7 @@ spec:
         fsGroup: 11169
       containers:
       - name: container-name
-        image: ic-registry.epfl.ch/mlo/dani-mlo:v4
+        image: ic-registry.epfl.ch/mlo/dani-mlo:v5
         workingDir : /mlodata1/danmoral/decentralized-DL
         command: ["/bin/bash"]
         args:
