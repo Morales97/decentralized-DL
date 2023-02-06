@@ -45,7 +45,7 @@ def train(args, steps, wandb):
     model_y.load_state_dict(model_x.state_dict())
     model_v.load_state_dict(model_x.state_dict())
     opt = CustomSGD(model_x.parameters(), model_y.parameters(), model_v.parameters(), \
-        args.lr[0], alpha=args.alpha[0], beta=args.beta[0]) # NOTE no momentum or weight decay
+        args.lr[0], alpha=args.alpha[0], beta=args.beta[0], variant=args.variant) # NOTE no momentum or weight decay
 
  
 
@@ -281,5 +281,6 @@ if __name__ == '__main__':
         train(args, steps, None)
 
 # python train_with_ema.py --wandb=False --local_exec=True --lr=0.1 --data_split=True --alpha=0.9 --beta=0
-# python train_with_ema.py --project=MLO-optimizer --experiment_name=a0.9_b0 --lr=0.1 --data_split=True --alpha=0.9 --beta=0 --steps_eval=400 --epochs=100
-# python train_with_ema.py --project=MLO-optimizer --experiment_name=a0.9_b0.9 --lr=0.9 --data_split=True --alpha=0.9 --beta=0.9 --steps_eval=400 --epochs=100
+# python train_with_ema.py --project=MLO-optimizer --expt_name=a0.9_b0 --lr=0.1 --data_split=True --alpha=0.9 --beta=0 --steps_eval=400 --epochs=100
+# python train_with_ema.py --project=MLO-optimizer --expt_name=a0.9_b0.9 --lr=0.9 --data_split=True --alpha=0.9 --beta=0.9 --steps_eval=400 --epochs=100
+# python train_cifar.py --project=MLO-optimizer --expt_name=SGD_momentum --lr=0.1 --data_split=True --momentum=0.9 --nesterov=False --weight_decay=0 --n_nodes=1 --topology=solo --steps_eval=400 --epochs=100

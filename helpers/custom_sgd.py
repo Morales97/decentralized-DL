@@ -13,7 +13,7 @@ __all__ = ['SGD', 'sgd']
 
 class CustomSGD(CustomOptimizer):
     
-    def __init__(self, params_x, params_y, params_v, lr=required, alpha=0, beta=0, momentum=0, dampening=0,
+    def __init__(self, params_x, params_y, params_v, lr=required, alpha=0, beta=0, variant=0, momentum=0, dampening=0,
                  weight_decay=0, nesterov=False, *, maximize=False, foreach: Optional[bool] = None,
                  differentiable=False):
         if lr is not required and lr < 0.0:
@@ -31,6 +31,7 @@ class CustomSGD(CustomOptimizer):
             raise ValueError("Nesterov momentum requires a momentum and zero dampening")
         self.alpha=alpha
         self.beta=beta
+        self.variant=variant
         super(CustomSGD, self).__init__(params_x, params_y, params_v, defaults)
 
     def __setstate__(self, state):
@@ -98,9 +99,17 @@ class CustomSGD(CustomOptimizer):
             #     state['momentum_buffer'] = momentum_buffer
 
         # x_{t+1} = (1-a)·x_t + a·v_{t+1}
-        for group_x, group_v in zip(self.param_groups_x, self.param_groups_v):
-            for p_x, p_v in zip(group_x['params'], group_v['params']):
-                _combine_params(p_x, p_v, self.alpha)
+        if self.variant == 0:
+            for group_x, group_v in zip(self.param_groups_x, self.param_groups_v):
+                for p_x, p_v in zip(group_x['params'], group_v['params']):
+                    _combine_params(p_x, p_v, self.alpha)
+
+        # x_{t+1} = ·x_t + a·v_{t+1}
+        elif self.variant == 1:
+            for group_x, group_v in zip(self.param_groups_x, self.param_groups_v):
+                for p_x, p_v in zip(group_x['params'], group_v['params']):
+                    for p1, p2 in zip(p_x, p_v):
+                        p1.add_(p2, alpha=self.alpha)
 
         # y_{t+1} = (1-b)·x_{t+1} + b·v_{t+1}
         for group_x, group_y, group_v in zip(self.param_groups_x, self.param_groups_y, self.param_groups_v):

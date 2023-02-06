@@ -66,6 +66,9 @@ def get_parser():
                         help='EMA decaying rate')   
     parser.add_argument('--beta', type=float, nargs='+', default=[0.995],
                         help='second averaging rate')
+    parser.add_argument('--variant', type=int, default=0,
+                        help='custom SGD variant to use')
+    
     # hyperparameters
     parser.add_argument('--seed', type=int, default=0,
                         help='random seed')
