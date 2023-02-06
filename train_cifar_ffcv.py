@@ -1,6 +1,6 @@
 import numpy as np
 import pdb
-from data.data import get_data
+from loaders.data import get_data
 from topology import get_gossip_matrix, diffuse, get_average_model, get_average_opt
 import time
 import torch

@@ -5,6 +5,7 @@ from loaders.data import get_data
 from topology import get_gossip_matrix, diffuse, get_average_model, get_average_opt
 import time
 import torch
+import torch.optim as optim
 from model.model import add_noise_to_models, get_model, get_ema_models
 import torch.nn.functional as F
 from helpers.utils import save_experiment, get_expt_name, MultiAccuracyTracker, save_checkpoint
@@ -44,8 +45,11 @@ def train(args, steps, wandb):
     model_v = get_model(args, device)
     model_y.load_state_dict(model_x.state_dict())
     model_v.load_state_dict(model_x.state_dict())
-    opt = CustomSGD(model_x.parameters(), model_y.parameters(), model_v.parameters(), \
-        args.lr[0], alpha=args.alpha[0], beta=args.beta[0], variant=args.variant) # NOTE no momentum or weight decay
+    if args.opt == 'SGD':
+        opt = optim.SGD(model_y.parameters(), lr=args.lr[0], momentum=args.momentum, nesterov=args.nesterov, weight_decay=args.wd)
+    else:
+        opt = CustomSGD(model_x.parameters(), model_y.parameters(), model_v.parameters(), \
+            args.lr[0], alpha=args.alpha[0], beta=args.beta[0], variant=args.variant) # NOTE no momentum or weight decay
 
  
 
@@ -139,10 +143,11 @@ def train(args, steps, wandb):
 
         model_y.train()
         output = model_y(input)
-        model_x.train() # running to keep BN statistis. Need to rethink this. Should BN stats be part of the optimization algo?
-        x = model_x(input)
-        model_v.train()
-        v = model_v(input)
+        if not args.opt == 'SGD':
+            model_x.train() # running to keep BN statistis. Need to rethink this. Should BN stats be part of the optimization algo?
+            _ = model_x(input)
+            model_v.train()
+            _ = model_v(input)
         opt.zero_grad()
         loss = F.cross_entropy(output, target)
         loss.backward()
@@ -210,19 +215,25 @@ def train(args, steps, wandb):
 
                 # eval model X
                 ts_eval = time.time()
-                test_loss, acc_x = evaluate_model(model_x, test_loader, device)
-                _, acc_y = evaluate_model(model_y, test_loader, device)
-                _, acc_v = evaluate_model(model_v, test_loader, device)
-                logger.log_eval(step, epoch, float(acc_x*100), test_loss, ts_eval, ts_steps_eval)
-                logger.log_acc(step, epoch, acc_x*100, name='X')
-                logger.log_acc(step, epoch, acc_y*100, name='Y')
-                logger.log_acc(step, epoch, acc_v*100, name='V')
-                print('Epoch %.3f (Step %d) -- X accuracy: %.2f -- Y accuracy: %.2f -- V accuracy: %.2f -- Test loss: %.3f -- Train loss: %.3f -- Time (total/last/eval): %.2f / %.2f / %.2f s' %
-                    (epoch, step, float(acc_x*100), float(acc_y*100), float(acc_v*100), test_loss, loss.item(), time.time() - ts_total, time.time() - ts_steps_eval, time.time() - ts_eval))
+                if args.opt == 'SGD':
+                    test_loss, acc_y = evaluate_model(model_y, test_loader, device)
+                    logger.log_eval(step, epoch, float(acc_y*100), test_loss, ts_eval, ts_steps_eval)
+                    print('Epoch %.3f (Step %d) -- Y accuracy: %.2f -- Test loss: %.3f -- Train loss: %.3f -- Time (total/last/eval): %.2f / %.2f / %.2f s' %
+                        (epoch, step, float(acc_y*100), test_loss, loss.item(), time.time() - ts_total, time.time() - ts_steps_eval, time.time() - ts_eval))
+                else:
+                    test_loss, acc_x = evaluate_model(model_x, test_loader, device)
+                    _, acc_y = evaluate_model(model_y, test_loader, device)
+                    _, acc_v = evaluate_model(model_v, test_loader, device)
+                    logger.log_eval(step, epoch, float(acc_x*100), test_loss, ts_eval, ts_steps_eval)
+                    logger.log_acc(step, epoch, acc_x*100, name='X')
+                    logger.log_acc(step, epoch, acc_y*100, name='Y')
+                    logger.log_acc(step, epoch, acc_v*100, name='V')
+                    print('Epoch %.3f (Step %d) -- X accuracy: %.2f -- Y accuracy: %.2f -- V accuracy: %.2f -- Test loss: %.3f -- Train loss: %.3f -- Time (total/last/eval): %.2f / %.2f / %.2f s' %
+                        (epoch, step, float(acc_x*100), float(acc_y*100), float(acc_v*100), test_loss, loss.item(), time.time() - ts_total, time.time() - ts_steps_eval, time.time() - ts_eval))
 
-                max_acc.update(acc_x, 'X')
+                    max_acc.update(acc_x, 'X')
+                    max_acc.update(acc_v, 'V')
                 max_acc.update(acc_y, 'Y')
-                max_acc.update(acc_v, 'V')
                 ts_steps_eval = time.time()
 
         # log consensus distance, weight norm
