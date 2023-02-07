@@ -145,6 +145,8 @@ def train(args, steps, wandb):
         late_ema_active = False   # indicate when to init step_offset
     swa_model = AveragedModel(models[0], device, use_buffers=True)
     swa_model2 = AveragedModel(models[0], device, use_buffers=True) # average every step, not every epoch (Moving Average)
+    if args.swa_per_phase:
+        swa_model3 = AveragedModel(models[0], device, use_buffers=True) # SWA for every lr phase
     swa_scheduler = SWALR(opts[0], anneal_strategy="linear", anneal_epochs=5, swa_lr=args.swa_lr)
 
     # initialize variables
@@ -168,6 +170,7 @@ def train(args, steps, wandb):
         max_acc.init(args.alpha)
     epoch_swa = args.epoch_swa # epoch to start SWA averaging (default: 100)
     epoch_swa_budget = args.epoch_swa_budget
+    epoch_swa3 = 0
 
     # TRAIN LOOP
     # for step in range(steps['total_steps']):
@@ -191,6 +194,9 @@ def train(args, steps, wandb):
                 for g in opt.param_groups:
                     g['lr'] = g['lr']/args.lr_decay_factor
             print('lr decayed to %.4f' % g['lr'])
+            if args.swa_per_phase:
+                update_bn_and_eval(swa_model3, train_loader, test_loader, device, logger, log_name='SWA phase ' + str(lr_decay_phase))
+                swa_model3 = AveragedModel(models[0], device, use_buffers=True) # restart SWA
 
         # drop weight decay
         if args.wd_drop > 0 and epoch > args.wd_drop:
@@ -284,6 +290,10 @@ def train(args, steps, wandb):
             if epoch > epoch_swa_budget:    # compute SWA at budget 1
                 epoch_swa_budget = 1e5 # deactivate
                 update_bn_and_eval(swa_model, train_loader, test_loader, device, logger, log_name='SWA Budget 1')
+
+        if args.swa_per_phase and epoch > epoch_swa3:   # TODO improve how to keep track of epoch end
+            epoch_swa3 += 1
+            swa_model3.update_parameters(models)
 
         # MA update (SWA but every step)
         if epoch > args.epoch_swa:
