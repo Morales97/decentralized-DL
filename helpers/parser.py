@@ -60,6 +60,8 @@ def get_parser():
                         help='Use SWA as in Izmailov et al.')
     parser.add_argument('--swa_lr', type=float, default=0,
                         help='Final constant LR for SWA')   
+    parser.add_argument('--swa_per_phase', action='store_true', 
+                        help='Compute SWA for each LR phase')
     parser.add_argument('--late_ema_epoch', type=int, default=100,
                         help='epoch when to start Late EMA') 
     parser.add_argument('--alpha', type=float, nargs='+', default=[0.995],
