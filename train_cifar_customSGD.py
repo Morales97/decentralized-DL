@@ -264,10 +264,29 @@ def train(args, steps, wandb):
         train_loss = 0
         ts_step = time.time()
         for i in range(len(models)):
-            if args.data_split:
-                train_loss += worker_local_step(models[i], opts[i], train_loader_iter[i], device)
-            else:
-                train_loss += worker_local_step(models[i], opts[i], iter(train_loader), device)
+            if args.opt != 'SGD':
+                input, target = next(train_loader_iter[i])
+                input = input.to(device)
+                target = target.to(device)
+
+                models[i].train()
+                output = models[i](input)
+                opt.zero_grad()
+                loss = F.cross_entropy(output, target)
+                loss.backward()
+                opt.step()
+                
+                model_x.train() # running to keep BN statistis. Need to rethink this. Should BN stats be part of the optimization algo?
+                _ = model_x(input)
+                model_v.train()
+                _ = model_v(input)
+                
+                train_loss += loss.item()
+            else:          
+                if args.data_split:
+                    train_loss += worker_local_step(models[i], opts[i], train_loader_iter[i], device)
+                else:
+                    train_loss += worker_local_step(models[i], opts[i], iter(train_loader), device)
             
             # EMA updates
             if len(args.alpha) == 1:
