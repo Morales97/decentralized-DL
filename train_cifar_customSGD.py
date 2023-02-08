@@ -356,7 +356,7 @@ def train(args, steps, wandb):
                     logger.log_acc(step, epoch, acc_y*100, name='Y')
                     logger.log_acc(step, epoch, acc_v*100, name='V')
                     print('Epoch %.3f (Step %d) -- X accuracy: %.2f -- Y accuracy: %.2f -- V accuracy: %.2f -- Test loss: %.3f -- Train loss: %.3f -- Time (total/last/eval): %.2f / %.2f / %.2f s' %
-                        (epoch, step, float(acc_x*100), float(acc_y*100), float(acc_v*100), test_loss, loss.item(), time.time() - ts_total, time.time() - ts_steps_eval, time.time() - ts_eval))
+                        (epoch, step, float(acc_x*100), float(acc_y*100), float(acc_v*100), test_loss, train_loss, time.time() - ts_total, time.time() - ts_steps_eval, time.time() - ts_eval))
                     acc=acc_y
                 else:
                     # evaluate on averaged model
@@ -437,4 +437,4 @@ if __name__ == '__main__':
     else:
         train(args, steps, None)
 
-# python train_cifar_customSGD.py --expt_name=new_a0_b1 --project=MLO-optimizer --opt=customSGD --custom_a=0 --custom_b=1 --lr=0.1 --n_nodes=1 --topology=solo --epochs=100 --lr_decay=100 --lr_warmup_epochs=0 --data_split=True --steps_eval=400
+# python train_cifar_customSGD.py --expt_name=new_a0_b1 --project=MLO-optimizer --opt=customSGD --custom_a=0 --custom_b=1 --lr=0.1 --n_nodes=1 --topology=solo --epochs=50 --lr_decay=100 --lr_warmup_epochs=0 --data_split=True --steps_eval=400 --rn18
