@@ -40,11 +40,11 @@ def train(args, steps, wandb):
 
     # init nodes
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
-    model_x = get_model(args, device)
+    model_x = None #get_model(args, device)
     model_y = get_model(args, device)
-    model_v = get_model(args, device)
-    model_y.load_state_dict(model_x.state_dict())
-    model_v.load_state_dict(model_x.state_dict())
+    model_v = None #get_model(args, device)
+    # model_y.load_state_dict(model_x.state_dict())
+    # model_v.load_state_dict(model_x.state_dict())
     if args.opt == 'SGD':
         opt = optim.SGD(model_y.parameters(), lr=args.lr[0], momentum=args.momentum, nesterov=args.nesterov, weight_decay=args.wd)
     else:
@@ -69,8 +69,6 @@ def train(args, steps, wandb):
     max_acc = MultiAccuracyTracker(['X', 'Y', 'V'])
     if len(args.alpha) > 1:
         max_acc.init(args.alpha)
-    epoch_swa = args.epoch_swa # epoch to start SWA averaging (default: 100)
-    epoch_swa_budget = args.epoch_swa_budget
 
     # TRAIN LOOP
     # for step in range(steps['total_steps']):
@@ -224,7 +222,7 @@ def train(args, steps, wandb):
                     test_loss, acc_x = evaluate_model(model_x, test_loader, device)
                     _, acc_y = evaluate_model(model_y, test_loader, device)
                     _, acc_v = evaluate_model(model_v, test_loader, device)
-                    logger.log_eval(step, epoch, float(acc_x*100), test_loss, ts_eval, ts_steps_eval)
+                    logger.log_eval(step, epoch, float(acc_y*100), test_loss, ts_eval, ts_steps_eval)
                     logger.log_acc(step, epoch, acc_x*100, name='X')
                     logger.log_acc(step, epoch, acc_y*100, name='Y')
                     logger.log_acc(step, epoch, acc_v*100, name='V')
@@ -237,7 +235,7 @@ def train(args, steps, wandb):
                 ts_steps_eval = time.time()
 
         # log consensus distance, weight norm
-        # if step % args.tracking_interaval == 0:
+        # if step % args.tracking_interval == 0:
         #     compute_model_tracking_metrics(args, logger, models, step, epoch, device)
 
         # save checkpoint

@@ -1,7 +1,7 @@
 apiVersion: run.ai/v1
 kind: RunaiJob
 metadata:
-  name: danmoral-interactive
+  name: danmoral-interactive-2
   labels:
     priorityClassName: "build" # Interactive Job if present, for Train Job REMOVE this line
     user: danmoral
@@ -20,7 +20,7 @@ spec:
         fsGroup: 11169
       containers:
       - name: container-name
-        image: ic-registry.epfl.ch/mlo/dani-mlo:v5
+        image: ic-registry.epfl.ch/mlo/dani-mlo:v6
         workingDir : /mlodata1/danmoral/decentralized-DL
         command: ["/bin/bash"]
         args:

@@ -14,6 +14,7 @@ from helpers.optimizer import get_optimizer
 from helpers.consensus import compute_node_consensus, compute_weight_distance, get_gradient_norm, compute_weight_norm
 from helpers.evaluate import eval_all_models, evaluate_model
 from helpers.wa import AveragedModel, update_bn, SWALR
+from helpers.custom_sgd import CustomSGD
 import wandb
 import os
 
@@ -123,8 +124,17 @@ def train(args, steps, wandb):
     # init nodes
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
     n_nodes = args.n_nodes[0]
-    models = [get_model(args, device) for _ in range(n_nodes)]
-    opts = [get_optimizer(args, model) for model in models]
+    if args.opt != 'SGD':   # use Custom SGD
+        models = [get_model(args, device)]  # model Y
+        model_x = get_model(args, device)
+        model_v = get_model(args, device)
+        model_x.load_state_dict(models[0].state_dict())
+        model_v.load_state_dict(models[0].state_dict())
+        opts = [CustomSGD(model_x.parameters(), models[0].parameters(), model_v.parameters(), \
+            args.lr[0], alpha=args.custom_a, beta=args.custom_b, variant=args.variant)]
+    else:
+        models = [get_model(args, device) for _ in range(n_nodes)]
+        opts = [get_optimizer(args, model) for model in models]
     if args.same_init:
         for i in range(1, len(models)):
             models[i].load_state_dict(models[0].state_dict())
@@ -337,22 +347,34 @@ def train(args, steps, wandb):
                     max_acc.update(swa2_acc, 'MA')
 
 
-                # evaluate on averaged model
-                if args.eval_on_average_model:
-                    ts_eval = time.time()
-                    model = get_average_model(device, models)
-                    test_loss, acc = evaluate_model(model, test_loader, device)
-                    logger.log_eval(step, epoch, float(acc*100), test_loss, ts_eval, ts_steps_eval)
-                    print('Epoch %.3f (Step %d) -- Test accuracy: %.2f -- EMA accuracy: %.2f -- Test loss: %.3f -- Train loss: %.3f -- Time (total/last/eval): %.2f / %.2f / %.2f s' %
-                        (epoch, step, float(acc*100), float(ema_acc*100), test_loss, train_loss, time.time() - ts_total, time.time() - ts_steps_eval, time.time() - ts_eval))
-                    
-                # evaluate on all models
+                if args.opt != 'SGD':   # custom SGD
+                    test_loss, acc_x = evaluate_model(model_x, test_loader, device)
+                    _, acc_y = evaluate_model(models[0], test_loader, device)
+                    _, acc_v = evaluate_model(model_v, test_loader, device)
+                    logger.log_eval(step, epoch, float(acc_y*100), test_loss, ts_eval, ts_steps_eval)
+                    logger.log_acc(step, epoch, acc_x*100, name='X')
+                    logger.log_acc(step, epoch, acc_y*100, name='Y')
+                    logger.log_acc(step, epoch, acc_v*100, name='V')
+                    print('Epoch %.3f (Step %d) -- X accuracy: %.2f -- Y accuracy: %.2f -- V accuracy: %.2f -- Test loss: %.3f -- Train loss: %.3f -- Time (total/last/eval): %.2f / %.2f / %.2f s' %
+                        (epoch, step, float(acc_x*100), float(acc_y*100), float(acc_v*100), test_loss, loss.item(), time.time() - ts_total, time.time() - ts_steps_eval, time.time() - ts_eval))
+                    acc=acc_y
                 else:
-                    acc, test_loss, acc_workers, loss_workers, acc_avg, test_loss_avg = eval_all_models(args, models, test_loader, device)
-                    logger.log_eval_per_node(step, epoch, acc, test_loss, acc_workers, loss_workers, acc_avg, test_loss_avg, ts_eval, ts_steps_eval)
-                    print('Epoch %.3f (Step %d) -- Test accuracy: %.2f -- EMA accuracy: %.2f -- Test loss: %.3f -- Train loss: %.3f -- Time (total/last/eval): %.2f / %.2f / %.2f s' %
-                        (epoch, step, acc, float(ema_acc*100), test_loss, train_loss, time.time() - ts_total, time.time() - ts_steps_eval, time.time() - ts_eval))
-                    acc = acc_avg
+                    # evaluate on averaged model
+                    if args.eval_on_average_model:
+                        ts_eval = time.time()
+                        model = get_average_model(device, models)
+                        test_loss, acc = evaluate_model(model, test_loader, device)
+                        logger.log_eval(step, epoch, float(acc*100), test_loss, ts_eval, ts_steps_eval)
+                        print('Epoch %.3f (Step %d) -- Test accuracy: %.2f -- EMA accuracy: %.2f -- Test loss: %.3f -- Train loss: %.3f -- Time (total/last/eval): %.2f / %.2f / %.2f s' %
+                            (epoch, step, float(acc*100), float(ema_acc*100), test_loss, train_loss, time.time() - ts_total, time.time() - ts_steps_eval, time.time() - ts_eval))
+                        
+                    # evaluate on all models
+                    else:
+                        acc, test_loss, acc_workers, loss_workers, acc_avg, test_loss_avg = eval_all_models(args, models, test_loader, device)
+                        logger.log_eval_per_node(step, epoch, acc, test_loss, acc_workers, loss_workers, acc_avg, test_loss_avg, ts_eval, ts_steps_eval)
+                        print('Epoch %.3f (Step %d) -- Test accuracy: %.2f -- EMA accuracy: %.2f -- Test loss: %.3f -- Train loss: %.3f -- Time (total/last/eval): %.2f / %.2f / %.2f s' %
+                            (epoch, step, acc, float(ema_acc*100), test_loss, train_loss, time.time() - ts_total, time.time() - ts_steps_eval, time.time() - ts_eval))
+                        acc = acc_avg
 
                 max_acc.update(acc, 'Student')
                 ts_steps_eval = time.time()
@@ -415,9 +437,4 @@ if __name__ == '__main__':
     else:
         train(args, steps, None)
 
-# python train_cifar.py --lr=3.2 --topology=ring dataset=cifar100 --wandb=False --local_exec=True --eval_on_average_model=True
-# python train_cifar.py --lr=3.2 --topology=fully_connected dataset=cifar100 --wandb=False --local_exec=True --model_std=0.01
-# python train_cifar.py --lr=3.2 --topology ring fully_connected dataset=cifar100 --wandb=False --local_exec=True --n_nodes 8 16 --start_epoch_phases 0 1 --eval_on_average_model=True --steps_eval=20 --lr 3.2 1.6 --late_ema_epoch=1
-# python train_cifar.py --lr=3.2 --topology=ring dataset=cifar100 --eval_on_average_model=True --n_nodes=4 --save_model=True --save_interval=20
-# python train_cifar.py --lr=3.2 --topology solo solodataset=cifar100 --wandb=False --local_exec=True --n_nodes 1 1 --batch_size 1024 2048 --start_epoch_phases 0 1 --steps_eval=40 --lr 3.2 1.6 --data_split=True
-# python train_cifar.py --wandb=False --local_exec=True --n_nodes=1 --topology=solo --data_fraction=0.05 --alpha 0.999 0.995 0.98
+# python train_cifar.py --expt_name=SGD --project=MLO-optimizer --opt=customSGD --lr=0.1 --n_nodes=1 --topology=solo --epochs=100 --lr_decay=100 --data_split=True --steps_eval=400

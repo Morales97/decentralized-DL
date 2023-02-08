@@ -105,11 +105,14 @@ parser.add_argument('--save_dir', type=str, default=SAVE_DIR,
 # EMA
 parser.add_argument('--ema', action='store_true',
                     help='keep an exponential moving average model')  
-parser.add_argument('--alpha', type=float, default=0.995,
+parser.add_argument('--alpha', type=float, nargs='+', default=[0.995],
                     help='EMA decaying rate')
 parser.add_argument('--bootstrap_with_ema', action='store_true', 
                     help='copy EMA params to model after every epoch')
-                
+
+parser.add_argument('--lr_decay_factor', default=10, type=float,
+                    help='lr decay factor')
+
 best_acc1 = 0
 ema_best_acc1 = 0
 
@@ -177,12 +180,16 @@ def main_worker(gpu, ngpus_per_node, args, wandb):
         print("=> creating model '{}'".format(args.arch))
         model = models.__dict__[args.arch]()
 
-    ema_model, ema_optimizer = None, None
+    ema_models, ema_optimizers = None, None
     if args.ema:
-        ema_model = models.__dict__[args.arch]()
-        for param in ema_model.parameters():
-            param.detach_()
-        ema_optimizer = OptimizerEMA_IN(alpha=args.alpha)
+        ema_models, ema_optimizers = [], []
+        for alpha in args.alpha:
+            ema_model = models.__dict__[args.arch]()
+            for param in ema_model.parameters():
+                param.detach_()
+            ema_optimizer = OptimizerEMA_IN(alpha=alpha)
+            ema_models.append(ema_model)
+            ema_optimizers.append(ema_optimizer)
 
     if not torch.cuda.is_available() and not torch.backends.mps.is_available():
         print('using CPU, this will be slow')
@@ -209,7 +216,8 @@ def main_worker(gpu, ngpus_per_node, args, wandb):
         torch.cuda.set_device(args.gpu)
         model = model.cuda(args.gpu)
         if args.ema:
-            ema_model.cuda(args.gpu)
+            for ema_model in ema_models:
+                ema_model.cuda(args.gpu)
     elif torch.backends.mps.is_available():
         device = torch.device("mps")
         model = model.to(device)
@@ -238,7 +246,7 @@ def main_worker(gpu, ngpus_per_node, args, wandb):
                                 weight_decay=args.weight_decay)
 
     """Sets the learning rate to the initial LR decayed by 10 every 30 epochs"""
-    scheduler = StepLR(optimizer, step_size=np.floor(args.epochs/3), gamma=0.1)
+    scheduler = StepLR(optimizer, step_size=np.floor(args.epochs/3), gamma=1/args.lr_decay_factor)
     
     # optionally resume from a checkpoint
     if args.resume:
@@ -319,7 +327,7 @@ def main_worker(gpu, ngpus_per_node, args, wandb):
             train_sampler.set_epoch(epoch)
         
         # train for one epoch
-        step += train(train_loader, model, criterion, optimizer, ema_model, ema_optimizer, epoch, device, args, logger, step, ts_start)
+        step += train(train_loader, model, criterion, optimizer, ema_models, ema_optimizers, epoch, device, args, logger, step, ts_start)
 
         # evaluate on validation set
         acc1 = validate(val_loader, model, criterion, args, logger, step, epoch)
@@ -332,11 +340,12 @@ def main_worker(gpu, ngpus_per_node, args, wandb):
 
         # evaluate EMA
         if args.ema:
-            ema_acc1 = validate(val_loader, ema_model, criterion, args, logger, step, epoch, ema=True)
-            ema_best_acc1 = max(ema_acc1, ema_best_acc1)
+            for i, alpha in enumerate(args.alpha):
+                ema_acc1 = validate(val_loader, ema_models[i], criterion, args, logger, step, epoch, ema=True, alpha=alpha)
+                ema_best_acc1 = max(ema_acc1, ema_best_acc1)
 
             if args.bootstrap_with_ema:
-                model.load_state_dict(ema_model.state_dict())
+                model.load_state_dict(ema_model[0].state_dict())
 
         if not args.multiprocessing_distributed or (args.multiprocessing_distributed
                 and args.rank % ngpus_per_node == 0):
@@ -353,7 +362,7 @@ def main_worker(gpu, ngpus_per_node, args, wandb):
     logger.log_single_acc(ema_best_acc1, log_as='Max EMA Top-1 Accuracy')
 
 
-def train(train_loader, model, criterion, optimizer, ema_model, ema_optimizer, epoch, device, args, logger, step, ts_start):
+def train(train_loader, model, criterion, optimizer, ema_models, ema_optimizers, epoch, device, args, logger, step, ts_start):
     batch_time = AverageMeter('Time', ':6.3f')
     log_time = AverageMeter('Time', ':6.3f')    # avearge batch time between logs 
     data_time = AverageMeter('Data', ':6.3f')
@@ -394,7 +403,8 @@ def train(train_loader, model, criterion, optimizer, ema_model, ema_optimizer, e
         
         # update EMA
         if args.ema:
-            ema_optimizer.update(model, ema_model)
+            for ema_model, ema_optimizer in zip(ema_models, ema_optimizers):
+                ema_optimizer.update(model, ema_model)
 
         # measure elapsed time
         batch_time.update(time.time() - end)
@@ -408,7 +418,7 @@ def train(train_loader, model, criterion, optimizer, ema_model, ema_optimizer, e
 
     return i
 
-def validate(val_loader, model, criterion, args, logger, step, epoch, ema=False):
+def validate(val_loader, model, criterion, args, logger, step, epoch, ema=False, alpha=None):
 
     def run_validate(loader, _model, base_progress=0):
         with torch.no_grad():
@@ -469,7 +479,7 @@ def validate(val_loader, model, criterion, args, logger, step, epoch, ema=False)
     if not ema:
         logger.log_eval_IN(step, epoch, top1.avg, top5.avg, losses.avg, batch_time.sum)
     else:
-        logger.log_acc_IN(step, epoch, top1.avg, top5.avg, name='EMA')
+        logger.log_acc_IN(step, epoch, top1.avg, top5.avg, name='EMA ' + str(alpha))
 
     return top1.avg
 

@@ -68,6 +68,10 @@ def get_parser():
                         help='EMA decaying rate')   
     parser.add_argument('--beta', type=float, nargs='+', default=[0.995],
                         help='second averaging rate')
+    parser.add_argument('--custom_a', type=float, default=0,
+                        help='coefficient for custom SGD')  
+    parser.add_argument('--custom_b', type=float, default=1,
+                        help='coefficient for custom SGD')  
     parser.add_argument('--variant', type=int, default=0,
                         help='custom SGD variant to use')
     
@@ -114,7 +118,7 @@ def get_parser():
                         help='evaluate on the average of all workers models (true), or separate and report mean accuracy (false)')
     parser.add_argument('--steps_eval', type=int, default=100,
                         help='evaluate every x number of steps')
-    parser.add_argument('--tracking_interaval', type=int, default=50,
+    parser.add_argument('--tracking_interval', type=int, default=50,
                         help='evaluate L2 distance of model conensus every x number of steps')
     parser.add_argument('--eval_after_epoch', action='store_true',
                         help='evaluate after each epoch or at step evaluation interval')

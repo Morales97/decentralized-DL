@@ -70,6 +70,7 @@ class CustomSGD(CustomOptimizer):
             for p_y, p_v in zip(group_y['params'], group_v['params']):
                 if p_y.grad is not None:
                     params_with_grad.append(p_v)
+                    # params_with_grad.append(p_y)
                     d_p_list.append(p_y.grad)
                     # if p_y.grad.is_sparse:
                     #     has_sparse_grad = True
