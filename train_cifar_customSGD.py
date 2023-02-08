@@ -271,10 +271,10 @@ def train(args, steps, wandb):
 
                 models[i].train()
                 output = models[i](input)
-                opt[0].zero_grad()
+                opts[0].zero_grad()
                 loss = F.cross_entropy(output, target)
                 loss.backward()
-                opt[0].step()
+                opts[0].step()
                 
                 model_x.train() # running to keep BN statistis. Need to rethink this. Should BN stats be part of the optimization algo?
                 _ = model_x(input)
