@@ -157,7 +157,7 @@ def train(args, steps, wandb):
     swa_model2 = AveragedModel(models[0], device, use_buffers=True) # average every step, not every epoch (Moving Average)
     if args.swa_per_phase:
         swa_model3 = AveragedModel(models[0], device, use_buffers=True) # SWA for every lr phase
-    swa_scheduler = SWALR(opts[0], anneal_strategy="linear", anneal_epochs=5, swa_lr=args.swa_lr)
+    # swa_scheduler = SWALR(opts[0], anneal_strategy="linear", anneal_epochs=5, swa_lr=args.swa_lr)
 
     # initialize variables
     comm_matrix = get_gossip_matrix(args, 0)
@@ -292,8 +292,8 @@ def train(args, steps, wandb):
         if epoch > epoch_swa:
             epoch_swa += 1
             swa_model.update_parameters(models)
-            if args.swa_lr != 0:
-                swa_scheduler.step()
+            # if args.swa_lr != 0:
+            #     swa_scheduler.step()
             test_loss, acc = evaluate_model(swa_model, test_loader, device)
             logger.log_acc(step, epoch, acc*100, name='SWA')
             
@@ -437,4 +437,4 @@ if __name__ == '__main__':
     else:
         train(args, steps, None)
 
-# python train_cifar.py --expt_name=SGD --project=MLO-optimizer --opt=customSGD --lr=0.1 --n_nodes=1 --topology=solo --epochs=100 --lr_decay=100 --data_split=True --steps_eval=400
+# python train_cifar_customSGD.py --expt_name=new_a0_b1 --project=MLO-optimizer --opt=customSGD --custom_a=0 --custom_b=1 --lr=0.1 --n_nodes=1 --topology=solo --epochs=100 --lr_decay=100 --lr_warmup_epochs=0 --data_split=True --steps_eval=400
