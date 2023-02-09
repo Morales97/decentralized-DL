@@ -103,8 +103,8 @@ def test_averaging_changes_the_module(tmpdir: pathlib.Path):
 
     input = torch.randn([4, 3])
     model.training = False
-    out_vanilla = model(input)
     avg_module = index.avg_from(0)
+    out_vanilla = model(input)
     out_avg = avg_module(input)
 
     assert not torch.allclose(out_vanilla, out_avg)
