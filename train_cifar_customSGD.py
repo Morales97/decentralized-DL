@@ -465,6 +465,6 @@ if __name__ == '__main__':
     else:
         train(args, steps, None)
 
-# python train_cifar_customSGD.py --expt_name=new_a0_b1 --project=MLO-optimizer --opt=customSGD --custom_a=0 --custom_b=1 --lr=0.1 --n_nodes=1 --topology=solo --epochs=50 --lr_decay=100 --lr_warmup_epochs=0 --data_split=True --steps_eval=400 --net=rn18
-# python train_cifar_customSGD.py --expt_name=SGD --project=MLO-optimizer --momentum=0 --nesterov=False --wd=0 --lr=0.1 --n_nodes=1 --topology=solo --epochs=50 --lr_decay=100 --lr_warmup_epochs=0 --data_split=True --steps_eval=400 --net=rn18
+# python train_cifar_customSGD.py --wandb=False --expt_name=new_a0_b1 --project=MLO-optimizer --opt=customSGD --momentum=0.9 --custom_a=0 --custom_b=1 --lr=0.1 --n_nodes=1 --topology=solo --epochs=50 --lr_decay=100 --lr_warmup_epochs=0 --data_split=True --steps_eval=400 --net=rn18
+# python train_cifar_customSGD.py --wandb=False --expt_name=SGD --project=MLO-optimizer --momentum=0 --nesterov=False --wd=0 --lr=0.1 --n_nodes=1 --topology=solo --epochs=50 --lr_decay=100 --lr_warmup_epochs=0 --data_split=True --steps_eval=400 --net=rn18
 # python train_cifar_customSGD.py --wandb=False --local_exec=True --expt_name=SGD --project=MLO-optimizer --momentum=0.9 --nesterov=True --wd=0 --lr=0.1 --n_nodes=1 --topology=solo --epochs=50 --lr_decay=100 --lr_warmup_epochs=0 --data_split=True --steps_eval=400 --net=rn18

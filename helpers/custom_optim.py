@@ -53,7 +53,7 @@ class CustomOptimizer(object):
         # DM: repeat init for each model
         self.state = defaultdict(dict)
         self.param_groups_x = []
-        self.param_groups_y = []
+        self.param_groups = []
         self.param_groups_v = []
 
         # params X
@@ -76,14 +76,14 @@ class CustomOptimizer(object):
             raise TypeError("params argument given to the optimizer should be "
                             "an iterable of Tensors or dicts, but got " +
                             torch.typename(params_y))
-        param_groups_y = list(params_y)
-        if len(param_groups_y) == 0:
+        param_groups = list(params_y)
+        if len(param_groups) == 0:
             raise ValueError("optimizer got an empty parameter list")
-        if not isinstance(param_groups_y[0], dict):
-            param_groups_y = [{'params': param_groups_y}]
+        if not isinstance(param_groups[0], dict):
+            param_groups = [{'params': param_groups}]
 
-        for param_group in param_groups_y:
-            self.add_param_group(param_group, self.param_groups_y)
+        for param_group in param_groups:
+            self.add_param_group(param_group, self.param_groups)
 
         # params V
         if isinstance(params_v, torch.Tensor):
@@ -300,7 +300,7 @@ class CustomOptimizer(object):
         if foreach:
             per_device_and_dtype_grads = defaultdict(lambda: defaultdict(list))
         with torch.autograd.profiler.record_function(self._zero_grad_profile_name):
-            for group in self.param_groups_y:   # DM: changed to zero the params in Y, the only model whose gradients are computed
+            for group in self.param_groups:   # DM: changed to zero the params in Y, the only model whose gradients are computed
                 for p in group['params']:
                     if p.grad is not None:
                         if set_to_none:
