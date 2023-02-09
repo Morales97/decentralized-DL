@@ -295,9 +295,11 @@ def train(args, steps, wandb):
             epoch_swa3 += 1
             swa_model3.update_parameters(models)
 
+
         # MA update (SWA but every step)
         if epoch > args.epoch_swa:
             swa_model2.update_parameters(models)
+
 
         # evaluate 
         if (not args.eval_after_epoch and step % args.steps_eval == 0) or epoch >= args.epochs or (args.eval_after_epoch and epoch > prev_epoch):
