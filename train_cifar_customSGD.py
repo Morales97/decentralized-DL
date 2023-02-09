@@ -280,10 +280,11 @@ def train(args, steps, wandb):
                 loss.backward()
                 opts[0].step()
                 
-                model_x.train() # running to keep BN statistis. Need to rethink this. Should BN stats be part of the optimization algo?
-                _ = model_x(input)
-                model_v.train()
-                _ = model_v(input)
+                with torch.no_grad():
+                    model_x.train() # running to keep BN statistis. Need to rethink this. Should BN stats be part of the optimization algo?
+                    _ = model_x(input)
+                    model_v.train()
+                    _ = model_v(input)
 
                 train_loss += loss.item()
             else:          
