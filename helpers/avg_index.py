@@ -59,7 +59,9 @@ class UniformAvgIndex:
 
         return [tensor.clone() for tensor in self._current_avg]
 
-    def avg_from(self, start: int, *, until: Optional[int] = None) -> list[torch.Tensor]:
+    def avg_from(
+        self, start: int, *, until: Optional[int] = None
+    ) -> list[torch.Tensor]:
         """Uniform average between `start` and `until`."""
         if until is None:
             until = self._counter
@@ -84,8 +86,15 @@ class UniformAvgIndex:
             checkpoint = self._checkpoint_dir / f"avg_{step}.pt"
             return torch.load(checkpoint)
 
+
 class ModelAvgIndex:
-    def __init__(self, module: torch.nn.Module, index: UniformAvgIndex, *, include_buffers: bool = True):
+    def __init__(
+        self,
+        module: torch.nn.Module,
+        index: UniformAvgIndex,
+        *,
+        include_buffers: bool = True,
+    ):
         self._index = index
         self._module = module
         self._include_buffers = include_buffers
@@ -94,22 +103,22 @@ class ModelAvgIndex:
         self._num_params = len(self._tensors_to_avg)
         if include_buffers:
             self._tensors_to_avg.extend(list(module.buffers()))
-    
+
     def record_step(self):
         self._index.add(tensor.float() for tensor in self._tensors_to_avg)
-    
+
     def avg_from(self, start: int, *, until: Optional[int] = None) -> torch.nn.Module:
         avg_data = self._index.avg_from(start, until=until)
 
         original_device = next(self._module.parameters()).device
         avg_module = deepcopy(self._module).to(original_device)
 
-        avg_params = avg_data[:self._num_params]
+        avg_params = avg_data[: self._num_params]
         for param, avg in zip(avg_module.parameters(), avg_params):
             param.data = avg
-        
+
         if self._include_buffers:
-            avg_buffers = avg_data[self._num_params:]
+            avg_buffers = avg_data[self._num_params :]
             for buffer, avg in zip(avg_module.buffers(), avg_buffers):
                 buffer.data = avg
 
