@@ -130,6 +130,10 @@ def train(args, steps, wandb):
         model_v = get_model(args, device)
         model_x.load_state_dict(models[0].state_dict())
         model_v.load_state_dict(models[0].state_dict())
+        for param in model_x.parameters():
+            param.detach_()
+        for param in model_v.parameters():
+            param.detach_()
         opts = [CustomSGD(model_x.parameters(), models[0].parameters(), model_v.parameters(), \
             args.lr[0], alpha=args.custom_a, beta=args.custom_b, variant=args.variant)]
     else:
@@ -457,3 +461,4 @@ if __name__ == '__main__':
         train(args, steps, None)
 
 # python train_cifar_customSGD.py --expt_name=new_a0_b1 --project=MLO-optimizer --opt=customSGD --custom_a=0 --custom_b=1 --lr=0.1 --n_nodes=1 --topology=solo --epochs=50 --lr_decay=100 --lr_warmup_epochs=0 --data_split=True --steps_eval=400 --rn18
+# python train_cifar_customSGD.py --expt_name=SGD --project=MLO-optimizer --momentum=0 --nesterov=False --wd=0 --lr=0.1 --n_nodes=1 --topology=solo --epochs=50 --lr_decay=100 --lr_warmup_epochs=0 --data_split=True --steps_eval=400 --rn18
