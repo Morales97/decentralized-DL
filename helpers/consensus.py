@@ -53,6 +53,7 @@ def get_momentum_norm(opt):
     for group in opt.param_groups:
         for p in group['params']:
             state = opt.state[p]
-            moms.append(state['momentum_buffer'])
+            if 'momentum_buffer' in state:
+                moms.append(state['momentum_buffer'])
 
     return torch.norm(torch.stack([torch.norm(m) for m in moms]))
