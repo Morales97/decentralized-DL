@@ -97,8 +97,9 @@ def compute_model_tracking_metrics(args, logger, models, step, epoch, device, mo
     logger.log_grad_norm(step, epoch, grad_norm)
 
     # momentum L2 norm
-    mom_norm = get_momentum_norm(opts[0])
-    logger.log_quantity(step, epoch, mom_norm , 'Momentum norm')
+    if opts is not None:
+        mom_norm = get_momentum_norm(opts[0])
+        logger.log_quantity(step, epoch, mom_norm , 'Momentum norm')
 
 def update_bn_and_eval(model, train_loader, test_loader, device, logger, log_name=''):
     _model = deepcopy(model)
