@@ -1,4 +1,4 @@
-
+__pycache__
 experiments_mnist/results/*
 train_job.yaml
 train_job.yaml
@@ -8,3 +8,4 @@ data/cifar-10-batches-py/*
 data/cifar-100-python/*
 */__pychache__/*
 *.pyc
+
