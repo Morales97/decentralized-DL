@@ -87,6 +87,14 @@ class Logger:
         }
         if self.wandb: self.wandb.log(log)
 
+    def log_quantity(self, step, epoch, x, name):
+        log = {
+            'Iteration': step,
+            'Epoch': epoch,
+            name: x,
+        }
+        if self.wandb: self.wandb.log(log)
+
     def log_weight_distance(self, step, epoch, weight_dist):
         self.weight_distance.append(weight_dist)
         log = {

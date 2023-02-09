@@ -9,3 +9,4 @@ data/cifar-100-python/*
 */__pychache__/*
 *.pyc
 
+*.pyc

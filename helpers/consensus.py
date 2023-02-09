@@ -48,3 +48,11 @@ def get_gradient_norm(model):
     total_norm = torch.norm(torch.stack([torch.norm(g.detach()) for g in grads]))
     return total_norm
 
+def get_momentum_norm(opt):
+    moms = []
+    for group in opt.param_groups:
+        for p in group['params']:
+            state = opt.state[p]
+            moms.append(state['momentum_buffer'])
+
+    return torch.norm(torch.stack([torch.norm(m) for m in moms]))

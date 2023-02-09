@@ -11,7 +11,7 @@ from helpers.utils import save_experiment, get_expt_name, MultiAccuracyTracker, 
 from helpers.logger import Logger
 from helpers.parser import parse_args
 from helpers.optimizer import get_optimizer
-from helpers.consensus import compute_node_consensus, compute_weight_distance, get_gradient_norm, compute_weight_norm
+from helpers.consensus import compute_node_consensus, compute_weight_distance, get_gradient_norm, compute_weight_norm, get_momentum_norm
 from helpers.evaluate import eval_all_models, evaluate_model
 from helpers.wa import AveragedModel, update_bn, SWALR
 from helpers.custom_sgd import CustomSGD
@@ -78,7 +78,7 @@ def update_SWA(args, swa_model, models, device, n):
     n += 1
     return swa_model, n
 
-def compute_model_tracking_metrics(args, logger, models, step, epoch, device, model_init=None):
+def compute_model_tracking_metrics(args, logger, models, step, epoch, device, model_init=None, opts=None):
     # consensus distance
     L2_dist = compute_node_consensus(args, device, models)
     logger.log_consensus(step, epoch, L2_dist)
@@ -95,6 +95,10 @@ def compute_model_tracking_metrics(args, logger, models, step, epoch, device, mo
     # gradient L2 norm
     grad_norm = get_gradient_norm(models[0])
     logger.log_grad_norm(step, epoch, grad_norm)
+
+    # momentum L2 norm
+    mom_norm = get_momentum_norm(opts[0])
+    logger.log_quantity(step, epoch, mom_norm , 'Momentum norm')
 
 def update_bn_and_eval(model, train_loader, test_loader, device, logger, log_name=''):
     _model = deepcopy(model)
@@ -293,6 +297,8 @@ def train(args, steps, wandb):
                 else:
                     train_loss += worker_local_step(models[i], opts[i], iter(train_loader), device)
             
+            nn = get_momentum_norm(opts[0])
+            pdb.set_trace()
             # EMA updates
             if len(args.alpha) == 1:
                 ema_opts[i].update()
@@ -405,7 +411,7 @@ def train(args, steps, wandb):
 
         # log consensus distance, weight norm
         if step % args.tracking_interval == 0:
-            compute_model_tracking_metrics(args, logger, models, step, epoch, device)
+            compute_model_tracking_metrics(args, logger, models, step, epoch, device, opts[0])
 
         # save checkpoint
         if args.save_model and step % args.save_interval == 0:
@@ -463,3 +469,4 @@ if __name__ == '__main__':
 
 # python train_cifar_customSGD.py --expt_name=new_a0_b1 --project=MLO-optimizer --opt=customSGD --custom_a=0 --custom_b=1 --lr=0.1 --n_nodes=1 --topology=solo --epochs=50 --lr_decay=100 --lr_warmup_epochs=0 --data_split=True --steps_eval=400 --net=rn18
 # python train_cifar_customSGD.py --expt_name=SGD --project=MLO-optimizer --momentum=0 --nesterov=False --wd=0 --lr=0.1 --n_nodes=1 --topology=solo --epochs=50 --lr_decay=100 --lr_warmup_epochs=0 --data_split=True --steps_eval=400 --net=rn18
+# python train_cifar_customSGD.py --wandb=False --local_exec=True --expt_name=SGD --project=MLO-optimizer --momentum=0.9 --nesterov=True --wd=0 --lr=0.1 --n_nodes=1 --topology=solo --epochs=50 --lr_decay=100 --lr_warmup_epochs=0 --data_split=True --steps_eval=400 --net=rn18
