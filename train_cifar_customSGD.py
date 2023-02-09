@@ -135,7 +135,7 @@ def train(args, steps, wandb):
         for param in model_v.parameters():
             param.detach_()
         opts = [CustomSGD(model_x.parameters(), models[0].parameters(), model_v.parameters(), \
-            args.lr[0], alpha=args.custom_a, beta=args.custom_b, variant=args.variant)]
+            args.lr[0], alpha=args.custom_a, beta=args.custom_b, variant=args.variant, weight_decay=args.wd)]
     else:
         models = [get_model(args, device) for _ in range(n_nodes)]
         opts = [get_optimizer(args, model) for model in models]
@@ -280,10 +280,11 @@ def train(args, steps, wandb):
                 loss.backward()
                 opts[0].step()
                 
-                model_x.train() # running to keep BN statistis. Need to rethink this. Should BN stats be part of the optimization algo?
-                _ = model_x(input)
-                model_v.train()
-                _ = model_v(input)
+                with torch.no_grad():
+                    model_x.train() # running to keep BN statistis. Need to rethink this. Should BN stats be part of the optimization algo?
+                    _ = model_x(input)
+                    model_v.train()
+                    _ = model_v(input)
 
                 train_loss += loss.item()
             else:          
@@ -460,5 +461,5 @@ if __name__ == '__main__':
     else:
         train(args, steps, None)
 
-# python train_cifar_customSGD.py --expt_name=new_a0_b1 --project=MLO-optimizer --opt=customSGD --custom_a=0 --custom_b=1 --lr=0.1 --n_nodes=1 --topology=solo --epochs=50 --lr_decay=100 --lr_warmup_epochs=0 --data_split=True --steps_eval=400 --rn18
-# python train_cifar_customSGD.py --expt_name=SGD --project=MLO-optimizer --momentum=0 --nesterov=False --wd=0 --lr=0.1 --n_nodes=1 --topology=solo --epochs=50 --lr_decay=100 --lr_warmup_epochs=0 --data_split=True --steps_eval=400 --rn18
+# python train_cifar_customSGD.py --expt_name=new_a0_b1 --project=MLO-optimizer --opt=customSGD --custom_a=0 --custom_b=1 --lr=0.1 --n_nodes=1 --topology=solo --epochs=50 --lr_decay=100 --lr_warmup_epochs=0 --data_split=True --steps_eval=400 --net=rn18
+# python train_cifar_customSGD.py --expt_name=SGD --project=MLO-optimizer --momentum=0 --nesterov=False --wd=0 --lr=0.1 --n_nodes=1 --topology=solo --epochs=50 --lr_decay=100 --lr_warmup_epochs=0 --data_split=True --steps_eval=400 --net=rn18
