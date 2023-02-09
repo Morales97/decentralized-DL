@@ -66,3 +66,45 @@ def test_current_avg_is_a_copy(tmpdir: pathlib.Path):
     index.add([torch.zeros(1)])
 
     assert torch.allclose(avg[0], torch.tensor(1.0))
+
+
+def test_module_does_not_crash(tmpdir: pathlib.Path):
+    model = torch.nn.Sequential(
+        torch.nn.Linear(1, 1),
+        torch.nn.BatchNorm1d(1),
+    )
+    index = avg_index.ModelAvgIndex(
+        model,
+        avg_index.UniformAvgIndex(tmpdir, checkpoint_period=1),
+        include_buffers=True,
+    )
+
+    index.record_step()
+    index.avg_from(0)
+
+
+def test_averaging_changes_the_module(tmpdir: pathlib.Path):
+    model = torch.nn.Sequential(
+        torch.nn.Linear(3, 3),
+        torch.nn.BatchNorm1d(3),
+    )
+    index = avg_index.ModelAvgIndex(
+        model,
+        avg_index.UniformAvgIndex(tmpdir, checkpoint_period=1),
+        include_buffers=True,
+    )
+
+    optimizer = torch.optim.SGD(model.parameters(), lr=0.1)
+    for _ in range(2):
+        output = model(torch.randn([4, 3]))
+        output.mean().backward()
+        optimizer.step()
+        index.record_step()
+
+    input = torch.randn([4, 3])
+    model.training = False
+    out_vanilla = model(input)
+    avg_module = index.avg_from(0)
+    out_avg = avg_module(input)
+
+    assert not torch.allclose(out_vanilla, out_avg)
