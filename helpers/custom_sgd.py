@@ -61,7 +61,7 @@ class CustomSGD(CustomOptimizer):
         # y_{t+1} = (1-b)·x_{t+1} + b·v_{t+1}
 
         # v_{t+1} = v_{t} - lr·g(y_t)
-        for group_y, group_v in zip(self.param_groups_y, self.param_groups_v):
+        for group_y, group_v in zip(self.param_groups, self.param_groups_v):
             params_with_grad = []
             d_p_list = []
             momentum_buffer_list = []
@@ -112,7 +112,7 @@ class CustomSGD(CustomOptimizer):
                         p1.add_(p2, alpha=self.alpha)
 
         # y_{t+1} = (1-b)·x_{t+1} + b·v_{t+1}
-        for group_x, group_y, group_v in zip(self.param_groups_x, self.param_groups_y, self.param_groups_v):
+        for group_x, group_y, group_v in zip(self.param_groups_x, self.param_groups, self.param_groups_v):
             for p_x, p_y, p_v in zip(group_x['params'], group_y['params'], group_v['params']):
                 _combine_params_2(p_y, p_x, p_v, self.beta)
 
