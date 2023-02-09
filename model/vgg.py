@@ -80,7 +80,7 @@ class VGG(nn.Module):
         x = self.classifier(x)
         return x
 
-def vgg16(args):
+def vgg16_C2(args):
     if args.dataset == 'cifar10':
         return VGG(n_classes=10)
     elif args.dataset == 'cifar100':

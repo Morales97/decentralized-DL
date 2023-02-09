@@ -8,9 +8,9 @@ import torch.optim as optim
 
 
 def get_gossip_matrix(args, phase):
-    topology = args.topology[phase]
-    num_clients = args.n_nodes[phase]
-    local_steps = args.local_steps[phase]
+    topology = args.topology[phase] if len(args.topology) > 1 else args.topology[0]
+    num_clients = args.n_nodes[phase] if  len(args.n_nodes) > 1 else args.n_nodes[0]
+    local_steps = args.local_steps[phase] if len(args.local_steps) > 1 else args.local_steps[0]
 
     if topology == 'solo' or num_clients == 1:
         W = np.eye(num_clients)
@@ -56,8 +56,8 @@ def get_gossip_matrix(args, phase):
 
 def diffuse(args, phase, W, models, step):
     # for post-local SGD, use fully connected in the first X epochs
-    topology = args.topology[phase]
-    local_steps = args.local_steps[phase]
+    topology = args.topology[phase] if len(args.topology) > 1 else args.topology[0]
+    local_steps = args.local_steps[phase] if len(args.local_steps) > 1 else args.local_steps[0]
 
     if topology == 'centralized':
         return
@@ -105,13 +105,14 @@ def diffuse_params(W, models):
             }
         )
 
-def get_average_model(args, device, models):
+def get_average_model(device, models):
     '''Average all models (one all-reduce communication at the end to converte to one only model'''
     if len(models) == 1:
         return models[0]
 
     models_sd = [copy.deepcopy(model.state_dict()) for model in models]
-    model = get_model(args, device)
+    # model = get_model(args, device)
+    model = copy.deepcopy(models[0]).to(device)
     keys = models_sd[0].keys()
     
     weights = np.ones(len(models)) / len(models)

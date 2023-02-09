@@ -1,8 +1,10 @@
 import json
 import pdb
+import shutil
 import time
 import numpy as np
 import os
+import torch 
 
 def get_expt_name(args, warmup=False):
     if args.topology[0] == 'centralized' or args.topology[0] == 'fully_connected':
@@ -18,8 +20,8 @@ def get_expt_name(args, warmup=False):
     
     name += '_b' + str(args.batch_size) + '_lr' + str(args.lr)
 
-    if warmup:
-        name += '_warmup'
+    # if warmup:
+    #     name += '_warmup'
     
     if args.local_steps[0] > 0:
         name += '_local' + str(args.local_steps)
@@ -133,6 +135,38 @@ def load_sweep_results(path):
     f.close()
     return dicts['steps'], dicts['accuracy'], dicts['test_loss'], dicts['train_loss']
 
+
+class AccuracyTracker(object):
+    def __init__(self):
+        self.max_acc = 0
+
+    def update(self, acc):
+        if acc > self.max_acc:
+            self.max_acc = acc
+
+    def get(self):
+        return self.max_acc
+
+class MultiAccuracyTracker(object):
+    def __init__(self, keys):
+        self.max_acc = {}
+        for key in keys:
+            self.max_acc[key] = 0
+
+    def init(self, keys):
+        for key in keys:
+            self.max_acc[key] = 0
+
+    def update(self, acc, key):
+        self.max_acc[key] = max(self.max_acc[key], acc)
+
+    def get(self, key):
+        return self.max_acc[key]
+
+def save_checkpoint(state, filename, is_best=False):
+    torch.save(state, filename)
+    if is_best:
+        shutil.copyfile(filename, 'model_best.pth.tar')
 
 if __name__ == '__main__':
     # config = {'test': 1}

@@ -1,5 +1,5 @@
 import time 
-
+# NOTE I think I don't need to define self.wandb, just import wandb
 class Logger:
     def __init__(self, wandb):
         self.wandb = wandb
@@ -22,6 +22,16 @@ class Logger:
         }
         if self.wandb: self.wandb.log(log)
 
+    def log_train_IN(self, step, epoch, train_loss, time_batch, ts_start):
+        log = {
+            'Train Loss': train_loss,
+            'Iteration': step,
+            'Epoch': epoch,
+            'Total time': time.time() - ts_start,
+            'Time/step': time_batch,
+        }
+        if self.wandb: self.wandb.log(log) 
+
     def log_eval(self, step, epoch, acc, test_loss, ts_eval, ts_steps_eval):
         self.accuracies.append(acc)
         self.test_losses.append(test_loss)
@@ -29,9 +39,21 @@ class Logger:
             'Iteration': step,
             'Epoch': epoch,
             'Test Accuracy': acc,
+            'Test Accuracy [avg model]': acc/100,   # NOTE /100 to make it consistent with value in log_eval_per_node()
             'Test Loss': test_loss,
             'Time/eval': time.time() - ts_eval,
             'Time since last eval': time.time() - ts_steps_eval
+        }
+        if self.wandb: self.wandb.log(log)
+
+    def log_eval_IN(self, step, epoch, acc1, acc5, test_loss, eval_time):
+        log = {
+            'Iteration': step,
+            'Epoch': epoch,
+            'Top-1 Accuracy': acc1,
+            'Top-5 Accuracy': acc5,
+            'Test Loss': test_loss,
+            'Time/eval': eval_time,
         }
         if self.wandb: self.wandb.log(log)
 
@@ -107,20 +129,31 @@ class Logger:
             'Weight distance Layer 0': wd_l0,
         }
         if self.wandb: self.wandb.log(log)
-    
-    def log_max_acc(self, max_acc):
-        if max_acc < 1:
-            max_acc *= 100
-        log = {
-            'Max Accuracy': max_acc,
-        }
-        if self.wandb: self.wandb.log(log)
 
-    def log_ema_acc(self, step, epoch, ema_acc):
+    def log_acc(self, step, epoch, acc, loss=None, name='placeholder'):
         log = {
             'Iteration': step,
             'Epoch': epoch,
-            'EMA Accuracy': ema_acc,
+            name + ' Accuracy': acc,
+        }
+        if loss is not None:
+            log[name + ' Test loss'] =  loss
+        if self.wandb: self.wandb.log(log)
+
+    def log_acc_IN(self, step, epoch, acc1, acc5, name='placeholder'):
+        log = {
+            'Iteration': step,
+            'Epoch': epoch,
+            name + ' Top-1 Accuracy': acc1,
+            name + ' Top-5 Accuracy': acc5,
+        }
+        if self.wandb: self.wandb.log(log)
+
+    def log_single_acc(self, acc, log_as='placeholder'):
+        if acc < 1:
+            acc *= 100
+        log = {
+            log_as: acc,
         }
         if self.wandb: self.wandb.log(log)
 

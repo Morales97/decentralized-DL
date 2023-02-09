@@ -4,6 +4,7 @@ import math
 from torchsummary import summary
 import torch.nn as nn
 import torch.nn.init as init
+import pdb
 
 __all__ = [
     'VGG', 'vgg11', 'vgg11_bn', 'vgg13', 'vgg13_bn', 'vgg16', 'vgg16_bn',
@@ -27,7 +28,17 @@ class VGG(nn.Module):
             nn.ReLU(True),
             nn.Linear(512, n_classes),
         )
-         # Initialize weights
+        # self.avgpool = nn.AdaptiveAvgPool2d((7, 7))   # original VGG has a humongous linear layer (116M params, making the total 134M). And actually the features are upsampled from 512 to 4096, I think just by concatenation, so it doesn't add much
+        # self.classifier = nn.Sequential(
+        #     nn.Linear(512 * 7 * 7, 4096),
+        #     nn.ReLU(True),
+        #     nn.Dropout(),
+        #     nn.Linear(4096, 4096),
+        #     nn.ReLU(True),
+        #     nn.Dropout(),
+        #     nn.Linear(4096, n_classes),
+        # )
+        # Initialize weights
         for m in self.modules():
             if isinstance(m, nn.Conv2d):
                 n = m.kernel_size[0] * m.kernel_size[1] * m.out_channels
@@ -37,6 +48,7 @@ class VGG(nn.Module):
 
     def forward(self, x):
         x = self.features(x)
+        # x = self.avgpool(x)
         x = x.view(x.size(0), -1)
         x = self.classifier(x)
         return x
@@ -93,15 +105,19 @@ def vgg13_bn():
     return VGG(make_layers(cfg['B'], batch_norm=True))
 
 
-def vgg16():
+def vgg16(args):
     """VGG 16-layer model (configuration "D")"""
-    return VGG(make_layers(cfg['D']))
+    if args.dataset == 'cifar10':
+        return VGG(make_layers(cfg['D']), 10)
+    if args.dataset == 'cifar100':
+        return VGG(make_layers(cfg['D']), 100)
 
-
-def vgg16_bn():
+def vgg16_bn(args):
     """VGG 16-layer model (configuration "D") with batch normalization"""
-    return VGG(make_layers(cfg['D'], batch_norm=True))
-
+    if args.dataset == 'cifar10':
+        return VGG(make_layers(cfg['D'], batch_norm=True), 10)
+    if args.dataset == 'cifar100':
+        return VGG(make_layers(cfg['D'], batch_norm=True), 100)
 
 def vgg19():
     """VGG 19-layer model (configuration "E")"""
@@ -113,7 +129,9 @@ def vgg19_bn():
     return VGG(make_layers(cfg['E'], batch_norm=True))
 
 if __name__ == '__main__':
-    model = vgg11()
+    # model = vgg11()
+    model = VGG(make_layers(cfg['D']), 100)
     summary(model, (3, 32, 32))
+    pdb.set_trace()
 
 
