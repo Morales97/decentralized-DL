@@ -70,16 +70,15 @@ class CustomSGD(CustomOptimizer):
             for p_y, p_v in zip(group_y['params'], group_v['params']):
                 if p_y.grad is not None:
                     params_with_grad.append(p_v)
-                    # params_with_grad.append(p_y)
                     d_p_list.append(p_y.grad)
-                    # if p_y.grad.is_sparse:
-                    #     has_sparse_grad = True
+                    if p_y.grad.is_sparse:
+                        has_sparse_grad = True
 
-                    # state = self.state[p_y]
-                    # if 'momentum_buffer' not in state:
-                    #     momentum_buffer_list.append(None)
-                    # else:
-                    #     momentum_buffer_list.append(state['momentum_buffer'])
+                    state = self.state[p_y]
+                    if 'momentum_buffer' not in state:
+                        momentum_buffer_list.append(None)
+                    else:
+                        momentum_buffer_list.append(state['momentum_buffer'])
 
             
             sgd(params_with_grad,
@@ -94,10 +93,10 @@ class CustomSGD(CustomOptimizer):
                 has_sparse_grad=has_sparse_grad,
                 foreach=group_y['foreach'])
 
-            # # update momentum_buffers in state
-            # for p, momentum_buffer in zip(params_with_grad, momentum_buffer_list):
-            #     state = self.state[p]
-            #     state['momentum_buffer'] = momentum_buffer
+            # update momentum_buffers in state
+            for p, momentum_buffer in zip(params_with_grad, momentum_buffer_list):
+                state = self.state[p]
+                state['momentum_buffer'] = momentum_buffer
 
         # x_{t+1} = (1-a)·x_t + a·v_{t+1}
         if self.variant == 0:
