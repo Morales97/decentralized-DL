@@ -297,8 +297,6 @@ def train(args, steps, wandb):
                 else:
                     train_loss += worker_local_step(models[i], opts[i], iter(train_loader), device)
             
-            nn = get_momentum_norm(opts[0])
-            pdb.set_trace()
             # EMA updates
             if len(args.alpha) == 1:
                 ema_opts[i].update()
