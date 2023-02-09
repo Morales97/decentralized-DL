@@ -88,7 +88,7 @@ def get_exp_idxs(start, min, ckpt_list):
         idxs.append(min_idx)
     return idxs
 
-def exponential_search(end, start, min=0, accs={}, test=True):
+def exponential_search(train_loader, test_loader, end, start, min=0, accs={}, test=True):
     '''
     recursively search optimal averaging window in log(n) time
     args:
@@ -99,8 +99,6 @@ def exponential_search(end, start, min=0, accs={}, test=True):
 
         accs: previously computed accuracies.
     '''
-    # get loaders
-    train_loader, test_loader = None, None          # TODO
     if not test:                                    # TODO remove after checking correct behavior
         ckpt_list = []                              # TODO get ckpt_list
     else:
@@ -123,7 +121,8 @@ def exponential_search(end, start, min=0, accs={}, test=True):
     
     # get indexes to search
     search_idxs = get_exp_idxs(start, min, ckpt_list)
-    print(search_idxs)
+    if test: print(search_idxs)
+    
     for i, idx in enumerate(search_idxs):
         if ckpt_list[idx] not in accs.keys():
             if not test:                             # TODO remove after checking correct behavior
