@@ -409,7 +409,7 @@ def train(args, steps, wandb):
 
         # log consensus distance, weight norm
         if step % args.tracking_interval == 0:
-            compute_model_tracking_metrics(args, logger, models, step, epoch, device, opts[0])
+            compute_model_tracking_metrics(args, logger, models, step, epoch, device, opts=opts)
 
         # save checkpoint
         if args.save_model and step % args.save_interval == 0:
