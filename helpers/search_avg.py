@@ -177,10 +177,13 @@ if __name__ == '__main__':
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
     save_dir = os.path.join(args.save_dir, args.expt_name)
     step = 38800 # TODO search in save_dir and get latest index_{step}.pt
+    state_dir = os.path.join(save_dir, f'index_{step}.pt')
 
     index = ModelAvgIndex(
             get_model(args, device),              # NOTE only supported with solo mode now.
-            UniformAvgIndex('.').load_state_dict(os.path.join(save_dir, f'index_{step}.pt')),
+            UniformAvgIndex('.').load_state_dict(state_dir=state_dir),
             include_buffers=True,
         )
     pdb.set_trace()
+
+# python helpers/search_avg.py 

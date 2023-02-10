@@ -108,7 +108,7 @@ def get_parser():
     # data
     parser.add_argument('--dataset', type=str, default='cifar10',
                         help='') 
-    parser.add_argument('--data_split', type=boolfromstr, default=False,
+    parser.add_argument('--data_split', type=boolfromstr, default=True,
                         help='if False, sample with replacement from entire dataset (IID). if True, split dataset') 
     parser.add_argument('--p_label_skew', type=float, default=0,
                         help='Label skew for heterogeneity. Requires --data_split True.')    
