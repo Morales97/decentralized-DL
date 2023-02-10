@@ -153,7 +153,7 @@ def train(args, steps, wandb):
     if args.model_avg:
         index = ModelAvgIndex(
             models[0],              # NOTE only supported with solo mode now.
-            UniformAvgIndex(os.join(args.save_dir, args.expt_name), checkpoint_period=400),
+            UniformAvgIndex(os.join(args.save_dir, args.expt_name), checkpoint_period=3),
             include_buffers=True,
         )
 
@@ -312,6 +312,7 @@ def train(args, steps, wandb):
         # index model average
         if args.model_avg:
             index.record_step()
+            pdb.set_trace()
 
         # evaluate 
         if (not args.eval_after_epoch and step % args.steps_eval == 0) or epoch >= args.epochs or (args.eval_after_epoch and epoch > prev_epoch):
