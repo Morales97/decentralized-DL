@@ -131,7 +131,8 @@ def exponential_search(index, train_loader, test_loader, end, start, min=0, accs
 
     # eval start model
     if not test:                                    # TODO remove after checking correct behavior
-        _, acc = eval_avg_model(start, end, train_loader, test_loader)
+        model = index.avg_from(start)
+        _, acc = eval_avg_model(model, train_loader, test_loader)
     else:
         acc = score(avl_ckpts.index(start))
         print('score %.8f at step %d' % (acc, start))
@@ -189,6 +190,6 @@ if __name__ == '__main__':
             include_buffers=True,
         )
     pdb.set_trace()
-    exponential_search(index, train_loader, test_loader, end=step, start=400, test=False)
+    exponential_search(index, train_loader, test_loader, end=step, start=38400, test=False)
 
 # python helpers/search_avg.py 
