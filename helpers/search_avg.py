@@ -194,12 +194,13 @@ if __name__ == '__main__':
 
     # compute all accuracies in advance and store
     accs = {}
-    for i in range(1, 3): #38400//400):
+    for i in range(1, 38400//400):
         model = index.avg_from(i*400, until=38400)
         _, acc = eval_avg_model(model, train_loader, test_loader)
         accs[i*400] = acc
+        print(f'Step {i*400}, acc: {acc}')
     torch.save(accs, os.path.join(save_dir, 'accs_computed.pt'))
-    pdb.set_trace()
-    exponential_search(index, train_loader, test_loader, end=38400, start=38000, test=False)
+    
+    exponential_search(index, train_loader, test_loader, end=38400, start=38000, accs=accs, test=False)
 
 # python helpers/search_avg.py 
