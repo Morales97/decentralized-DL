@@ -189,7 +189,7 @@ if __name__ == '__main__':
             uniform_index,
             include_buffers=True,
         )
-    pdb.set_trace()
+
     exponential_search(index, train_loader, test_loader, end=step, start=38400, test=False)
 
 # python helpers/search_avg.py 

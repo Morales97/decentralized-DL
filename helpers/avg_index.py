@@ -7,7 +7,7 @@ from copy import deepcopy
 import pathlib
 import pdb
 from typing import Iterable, Optional, Union
-
+import os.path as osp
 import torch
 
 
@@ -86,7 +86,7 @@ class UniformAvgIndex:
         if step == self._counter:
             return self.current_avg()
         else:
-            checkpoint = self._checkpoint_dir / f"avg_{step}.pt"
+            checkpoint = osp.join(self._checkpoint_dir, f"avg_{step}.pt")
             return torch.load(checkpoint)
 
     def state_dict(self):
@@ -109,6 +109,7 @@ class UniformAvgIndex:
         self._current_avg = state['current_avg']
         self._counter = state['counter']
         self._available_checkpoints = state['available_checkpoints']
+
 
     def save_dict(self):
         torch.save(
