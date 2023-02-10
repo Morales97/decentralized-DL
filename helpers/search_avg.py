@@ -145,13 +145,14 @@ def exponential_search(index, train_loader, test_loader, end, start, min=0, accs
     else:
         # search_idxs = get_exp_idxs(start, min, avl_ckpts) * 1000
         search_idxs = get_exp_idxs_set(start, min, 1000)
-    if test: print(search_idxs)
+    print(f'Searching in {search_idxs}')
 
     for i, idx in enumerate(search_idxs):
         if idx not in accs.keys():
             if not test:                             # TODO remove after checking correct behavior
                 model = index.avg_from(idx)
                 _, acc = eval_avg_model(model, end, train_loader, test_loader)
+                print(f'Acc: {acc} at step {idx}')
             else:
                 acc = score(idx//1000)
                 print('score %.8f at step %d' % (acc, idx))
@@ -188,5 +189,6 @@ if __name__ == '__main__':
             include_buffers=True,
         )
     pdb.set_trace()
+    exponential_search(index, train_loader, test_loader, end=step, start=400, test=False)
 
 # python helpers/search_avg.py 
