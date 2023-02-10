@@ -6,7 +6,5 @@ data/cifar-10-batches-py/*
 *.yaml
 *.gz
 data/cifar-100-python/*
-*/__pychache__/*
-*.pyc
-
-*.pyc
+.pytest_cache
+.DS_Store
