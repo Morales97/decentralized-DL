@@ -10,10 +10,8 @@ import adaptive_evaluation
 
 def test_loading(model, test_loader):
     out = adaptive_evaluation.evaluate_classifier(model, test_loader)
-    assert "cross_entropy" in out
-    assert "accuracy" in out
-    assert isinstance(out["cross_entropy"], torch.distributions.Distribution)
-    assert isinstance(out["accuracy"], torch.distributions.Distribution)
+    assert isinstance(out.cross_entropy, torch.distributions.Normal)
+    assert isinstance(out.accuracy, torch.distributions.Normal)
 
 
 def test_adaptivity(model, test_loader):
@@ -21,8 +19,8 @@ def test_adaptivity(model, test_loader):
     out = adaptive_evaluation.evaluate_classifier(
         model, test_loader, loss_tolerance=loss_tolerance
     )
-    assert out["cross_entropy"].stddev < loss_tolerance
-    assert out["num_examples_evaluated"] < 10000
+    assert out.cross_entropy.stddev < loss_tolerance
+    assert out.num_examples_evaluated < 10000
 
 
 @pytest.fixture
