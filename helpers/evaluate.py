@@ -39,3 +39,4 @@ def eval_all_models(args, models, test_loader, device):
         model, test_loader, device)
     
     return acc, test_loss, acc_workers, loss_workers, acc_avg, test_loss_avg
+

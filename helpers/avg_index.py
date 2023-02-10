@@ -86,6 +86,36 @@ class UniformAvgIndex:
             checkpoint = self._checkpoint_dir / f"avg_{step}.pt"
             return torch.load(checkpoint)
 
+    def state_dict(self):
+        return {
+            'checkpoint_dir': self._checkpoint_dir,
+            'checkpoint_period': self._checkpoint_period,
+            'current_avg': self._current_avg,
+            'counter': self._counter,
+            'available_checkpoints': self._available_checkpoints
+        }
+    
+    def load_state_dict(
+        self, state: Optional[dict] = None,
+        state_dir: Optional[str] = None
+    ):
+        if state_dir is not None:
+            state = torch.load(state_dir)
+        self._checkpoint_dir = state['checkpoint_dir']
+        self._checkpoint_period = state['checkpoint_period']
+        self._current_avg = state['current_avg']
+        self._counter = state['counter']
+        self._available_checkpoints = state['available_checkpoints']
+
+    def save_dict(self):
+        torch.save(
+            self.state_dict(),
+            self._checkpoint_dir / f"index_{self._counter}.pt",
+        )
+
+
+
+
 
 class ModelAvgIndex:
     def __init__(

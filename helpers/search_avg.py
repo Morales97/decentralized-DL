@@ -3,6 +3,14 @@ import torch.nn.functional as F
 import numpy as np
 import pdb
 
+import sys
+import os
+sys.path.insert(0, os.path.join(sys.path[0], '..'))
+from helpers.parser import parse_args
+from loaders.data import get_data
+from helpers.avg_index import UniformAvgIndex, ModelAvgIndex
+from model.model import get_model
+
 @torch.no_grad()
 def update_bn(loader, model, device=None):
     '''
@@ -160,3 +168,19 @@ def exponential_search(index, train_loader, test_loader, end, start, min=0, accs
     if best_key == avl_ckpts[0]:                    # TODO check logic
         return best_acc, 0
     return exponential_search(index, train_loader, test_loader, end, search_idxs[i-2], min=search_idxs[i], accs=accs)
+
+if __name__ == '__main__':
+    args = parse_args()
+
+    train_loader, test_loader = get_data(args, args.batch_size[0], args.data_fraction)
+    train_loader = train_loader[0]
+    device = 'cuda' if torch.cuda.is_available() else 'cpu'
+    save_dir = os.path.join(args.save_dir, args.expt_name)
+    step = 38800 # TODO search in save_dir and get latest index_{step}.pt
+
+    index = ModelAvgIndex(
+            get_model(args, device),              # NOTE only supported with solo mode now.
+            UniformAvgIndex('.').load_state_dict(os.path.join(save_dir, f'index_{step}.pt')),
+            include_buffers=True,
+        )
+    pdb.set_trace()
