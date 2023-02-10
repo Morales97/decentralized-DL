@@ -142,7 +142,7 @@ def exponential_search(index, train_loader, test_loader, end, start, min=0, accs
     
     # get indexes to search
     if not test:
-        search_idxs = get_exp_idxs_set(start, min, index._index.checkpoint_period)
+        search_idxs = get_exp_idxs_set(start, min, index._index._checkpoint_period)
     else:
         # search_idxs = get_exp_idxs(start, min, avl_ckpts) * 1000
         search_idxs = get_exp_idxs_set(start, min, 1000)
