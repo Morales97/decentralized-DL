@@ -131,7 +131,7 @@ def exponential_search(index, train_loader, test_loader, end, start, min=0, accs
 
     # eval start model
     if not test:                                    # TODO remove after checking correct behavior
-        model = index.avg_from(start)
+        model = index.avg_from(start, end)
         _, acc = eval_avg_model(model, train_loader, test_loader)
     else:
         acc = score(avl_ckpts.index(start))
@@ -151,7 +151,7 @@ def exponential_search(index, train_loader, test_loader, end, start, min=0, accs
     for i, idx in enumerate(search_idxs):
         if idx not in accs.keys():
             if not test:                             # TODO remove after checking correct behavior
-                model = index.avg_from(idx)
+                model = index.avg_from(idx, end)
                 _, acc = eval_avg_model(model, train_loader, test_loader)
                 print(f'Acc: {acc} at step {idx}')
             else:
@@ -190,6 +190,6 @@ if __name__ == '__main__':
             include_buffers=True,
         )
 
-    exponential_search(index, train_loader, test_loader, end=step, start=38400, test=False)
+    exponential_search(index, train_loader, test_loader, end=38400, start=38000, test=False)
 
 # python helpers/search_avg.py 
