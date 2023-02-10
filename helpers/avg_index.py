@@ -25,7 +25,9 @@ class UniformAvgIndex:
 
     @property
     def available_checkpoints(self) -> set[int]:
-        return set(self._available_checkpoints)
+        checkpoints = set(self._available_checkpoints)
+        checkpoints.add(self._counter)
+        return checkpoints
 
     def add(self, tensors: Iterable[torch.Tensor]):
         """Add a new data point (e.g. model parameters) to the index."""
@@ -79,10 +81,10 @@ class UniformAvgIndex:
         return window_avg
 
     def _load_checkpoint(self, step: int):
+        assert step in self.available_checkpoints
         if step == self._counter:
             return self.current_avg()
         else:
-            assert step in self._available_checkpoints
             checkpoint = self._checkpoint_dir / f"avg_{step}.pt"
             return torch.load(checkpoint)
 

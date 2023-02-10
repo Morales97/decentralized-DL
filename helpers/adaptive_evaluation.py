@@ -1,8 +1,16 @@
+from dataclasses import dataclass
 from typing import Optional
 
 import torch
 import torch.utils.data
 from running_mean_and_var import RunningMeanAndVar
+
+
+@dataclass(frozen=True)
+class ClassifierMetrics:
+    cross_entropy: torch.distributions.Normal
+    accuracy: torch.distributions.Normal
+    num_examples_evaluated: int
 
 
 @torch.no_grad()
@@ -12,7 +20,7 @@ def evaluate_classifier(
     *,
     loss_tolerance: Optional[float] = None,
     accuracy_tolerance: Optional[float] = None,
-):
+) -> ClassifierMetrics:
     """Evaluate a model on a data loader.
 
     Quits if the standard deviation of the empirical mean estimate is lower then `loss_tolerance`
@@ -20,6 +28,11 @@ def evaluate_classifier(
 
     The caller is responsible for putting the model into .eval() mode if this is desired."""
     device = next(model.parameters()).device
+
+    if not isinstance(data_loader.sampler, torch.utils.data.RandomSampler):
+        raise DeterministicDataloaderException(
+            "`evaluate_classifier` requires randomized loaders."
+        )
 
     count = 0
     loss_var = RunningMeanAndVar()
@@ -50,8 +63,14 @@ def evaluate_classifier(
         ):
             break
 
-    return {
-        "cross_entropy": loss_var.empirical_mean_distribution,
-        "accuracy": acc_var.empirical_mean_distribution,
-        "num_examples_evaluated": count,
-    }
+    return ClassifierMetrics(
+        cross_entropy=loss_var.empirical_mean_distribution,
+        accuracy=acc_var.empirical_mean_distribution,
+        num_examples_evaluated=count,
+    )
+
+
+class DeterministicDataloaderException(ValueError):
+    """Raised when evaluate_classifier is called with a non-shuffled dataloader."""
+
+    pass

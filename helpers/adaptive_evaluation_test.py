@@ -10,10 +10,8 @@ import adaptive_evaluation
 
 def test_loading(model, test_loader):
     out = adaptive_evaluation.evaluate_classifier(model, test_loader)
-    assert "cross_entropy" in out
-    assert "accuracy" in out
-    assert isinstance(out["cross_entropy"], torch.distributions.Distribution)
-    assert isinstance(out["accuracy"], torch.distributions.Distribution)
+    assert isinstance(out.cross_entropy, torch.distributions.Normal)
+    assert isinstance(out.accuracy, torch.distributions.Normal)
 
 
 def test_adaptivity(model, test_loader):
@@ -21,8 +19,8 @@ def test_adaptivity(model, test_loader):
     out = adaptive_evaluation.evaluate_classifier(
         model, test_loader, loss_tolerance=loss_tolerance
     )
-    assert out["cross_entropy"].stddev < loss_tolerance
-    assert out["num_examples_evaluated"] < 10000
+    assert out.cross_entropy.stddev < loss_tolerance
+    assert out.num_examples_evaluated < 10000
 
 
 @pytest.fixture
@@ -50,6 +48,36 @@ def test_loader():
         dataset,
         batch_size=1000,
         shuffle=True,
+        drop_last=False,
+        num_workers=2,
+    )
+
+
+def test_throws_error_with_deterministic_dataloader(model, test_loader_nonrandom):
+    with pytest.raises(adaptive_evaluation.DeterministicDataloaderException):
+        adaptive_evaluation.evaluate_classifier(model, test_loader_nonrandom)
+
+
+@pytest.fixture
+def test_loader_nonrandom():
+    data_mean = (0.4914, 0.4822, 0.4465)
+    data_stddev = (0.2023, 0.1994, 0.2010)
+    transform = torchvision.transforms.Compose(
+        [
+            torchvision.transforms.ToTensor(),
+            torchvision.transforms.Normalize(data_mean, data_stddev),
+        ]
+    )
+    dataset = torchvision.datasets.CIFAR10(
+        root="data",
+        train=False,
+        download=True,
+        transform=transform,
+    )
+    return torch.utils.data.DataLoader(
+        dataset,
+        batch_size=1000,
+        shuffle=False,
         drop_last=False,
         num_workers=2,
     )
