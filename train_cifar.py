@@ -14,6 +14,7 @@ from helpers.optimizer import get_optimizer
 from helpers.consensus import compute_node_consensus, compute_weight_distance, get_gradient_norm, compute_weight_norm
 from helpers.evaluate import eval_all_models, evaluate_model
 from helpers.wa import AveragedModel, update_bn, SWALR
+from helpers.avg_index import UniformAvgIndex, ModelAvgIndex
 import wandb
 import os
 
@@ -131,7 +132,7 @@ def train(args, steps, wandb):
     init_model = get_model(args, device)
     init_model.load_state_dict(models[0].state_dict())
 
-    # init EMA
+    # init model averaging
     if len(args.alpha) == 1:
         ema_models, ema_opts = get_ema_models(args, models, device, args.alpha[0])
     else:
@@ -148,6 +149,14 @@ def train(args, steps, wandb):
     if args.swa_per_phase:
         swa_model3 = AveragedModel(models[0], device, use_buffers=True) # SWA for every lr phase
     swa_scheduler = SWALR(opts[0], anneal_strategy="linear", anneal_epochs=5, swa_lr=args.swa_lr)
+
+    if args.model_avg:
+        index = ModelAvgIndex(
+            models[0],              # NOTE only supported with solo mode now.
+            UniformAvgIndex(os.join(args.save_dir, args.expt_name), checkpoint_period=400),
+            include_buffers=True,
+        )
+
 
     # initialize variables
     comm_matrix = get_gossip_matrix(args, 0)
@@ -300,6 +309,9 @@ def train(args, steps, wandb):
         if epoch > args.epoch_swa:
             swa_model2.update_parameters(models)
 
+        # index model average
+        if args.model_avg:
+            index.record_step()
 
         # evaluate 
         if (not args.eval_after_epoch and step % args.steps_eval == 0) or epoch >= args.epochs or (args.eval_after_epoch and epoch > prev_epoch):

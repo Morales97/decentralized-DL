@@ -74,7 +74,9 @@ def get_parser():
                         help='coefficient for custom SGD')  
     parser.add_argument('--variant', type=int, default=0,
                         help='custom SGD variant to use')
-    
+    parser.add_argument('--model_avg', action='store_true', 
+                        help='Save checkpoints of running model average')
+
     # hyperparameters
     parser.add_argument('--seed', type=int, default=0,
                         help='random seed')
