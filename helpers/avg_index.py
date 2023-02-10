@@ -7,24 +7,50 @@ import pathlib
 from copy import deepcopy
 from dataclasses import dataclass
 import uuid
-from typing import Iterable, Optional, Union
+from typing import Iterable, Optional, Union, Protocol
 
 import torch
 
 
-class UniformAvgIndex:
+class AvgIndex(Protocol):
+    available_checkpoints: set[int]
+
+    def add(self, tensors: Iterable[torch.Tensor]) -> None:
+        ...
+
+    def store_checkpoint(self) -> None:
+        ...
+
+    def current_avg(self) -> list[torch.Tensor]:
+        ...
+
+    def avg_from(
+        self, start: int, *, until: Optional[int] = None
+    ) -> list[torch.Tensor]:
+        ...
+
+    def state_dict(self):
+        ...
+
+    def load_state_dict(
+        self, state: Optional[dict] = None, state_dir: Optional[str] = None
+    ):
+        ...
+
+
+class UniformAvgIndex(AvgIndex):
     def __init__(
         self,
         checkpoint_dir: Union[pathlib.Path, str],
         *,
         checkpoint_period: Optional[int] = None,
     ):
+        self._available_checkpoints: set[int] = set()
         self._checkpoint_dir = pathlib.Path(checkpoint_dir)
         self._checkpoint_period = checkpoint_period
-        self._current_avg: Optional[list[torch.Tensor]] = None
         self._counter: int = 0
+        self._current_avg: Optional[list[torch.Tensor]] = None
         self._uuid: str = uuid.uuid4().hex
-        self._available_checkpoints: set[int] = set()
 
     @property
     def available_checkpoints(self) -> set[int]:
@@ -36,7 +62,7 @@ class UniformAvgIndex:
         """Add a new data point (e.g. model parameters) to the index."""
         if self._current_avg is None:
             self._counter = 1
-            self._current_avg = clone_tensors(tensors)
+            self._current_avg = _clone_tensors(tensors)
             return
 
         self._counter += 1
@@ -62,7 +88,7 @@ class UniformAvgIndex:
         if self._current_avg is None:
             raise RuntimeError("No data added yet.")
 
-        return clone_tensors(self._current_avg)
+        return _clone_tensors(self._current_avg)
 
     def avg_from(
         self, start: int, *, until: Optional[int] = None
@@ -83,21 +109,14 @@ class UniformAvgIndex:
 
         return window_avg
 
-    def _load_checkpoint(self, step: int):
-        assert step in self.available_checkpoints
-        if step == self._counter:
-            return self.current_avg()
-        else:
-            checkpoint = self._checkpoint_dir / f"avg_{self._uuid}_{step}.pt"
-            return torch.load(checkpoint)
-
     def state_dict(self):
         return {
+            "available_checkpoints": self._available_checkpoints,
             "checkpoint_dir": self._checkpoint_dir,
             "checkpoint_period": self._checkpoint_period,
-            "current_avg": self._current_avg,
             "counter": self._counter,
-            "available_checkpoints": self._available_checkpoints,
+            "current_avg": self._current_avg,
+            "uuid": self._uuid,
         }
 
     def load_state_dict(
@@ -106,17 +125,26 @@ class UniformAvgIndex:
         if state_dir is not None:
             state = torch.load(state_dir)
         assert state is not None
+        self._available_checkpoints = state["available_checkpoints"]
         self._checkpoint_dir = state["checkpoint_dir"]
         self._checkpoint_period = state["checkpoint_period"]
-        self._current_avg = state["current_avg"]
         self._counter = state["counter"]
-        self._available_checkpoints = state["available_checkpoints"]
+        self._current_avg = state["current_avg"]
+        self._uuid = state["uuid"]
 
     def save_dict(self):
         torch.save(
             self.state_dict(),
             self._checkpoint_dir / f"index_{self._counter}.pt",
         )
+
+    def _load_checkpoint(self, step: int):
+        assert step in self.available_checkpoints
+        if step == self._counter:
+            return self.current_avg()
+        else:
+            checkpoint = self._checkpoint_dir / f"avg_{self._uuid}_{step}.pt"
+            return torch.load(checkpoint)
 
 
 @dataclass(frozen=True)
@@ -125,27 +153,33 @@ class TAvgCheckpoint:
     t: list[torch.Tensor]
 
 
-class TriangleAvgIndex(UniformAvgIndex):
+class TriangleAvgIndex(AvgIndex):
     def __init__(
         self,
         checkpoint_dir: Union[pathlib.Path, str],
         *,
         checkpoint_period: Optional[int] = None,
     ):
+        self._available_checkpoints: set[int] = set()
         self._checkpoint_dir = pathlib.Path(checkpoint_dir)
         self._checkpoint_period = checkpoint_period
+        self._counter: int = 0
         self._current_avg: Optional[list[torch.Tensor]] = None
         self._current_t_avg: Optional[list[torch.Tensor]] = None
-        self._counter: int = 0
         self._uuid: str = uuid.uuid4().hex
-        self._available_checkpoints: set[int] = set()
+
+    @property
+    def available_checkpoints(self) -> set[int]:
+        checkpoints = set(self._available_checkpoints)
+        checkpoints.add(self._counter)
+        return checkpoints
 
     def add(self, tensors: Iterable[torch.Tensor]):
         """Add a new data point (e.g. model parameters) to the index."""
         if self._current_avg is None or self._current_t_avg is None:
             self._counter = 1
-            self._current_avg = clone_tensors(tensors)
-            self._current_t_avg = clone_tensors(tensors)
+            self._current_avg = _clone_tensors(tensors)
+            self._current_t_avg = _clone_tensors(tensors)
             return
 
         # Update uniform average
@@ -178,7 +212,7 @@ class TriangleAvgIndex(UniformAvgIndex):
         if self._current_t_avg is None:
             raise RuntimeError("No data added yet.")
 
-        return clone_tensors(self._current_t_avg)
+        return _clone_tensors(self._current_t_avg)
 
     def avg_from(
         self, start: int, *, until: Optional[int] = None
@@ -211,21 +245,46 @@ class TriangleAvgIndex(UniformAvgIndex):
 
         return window_avg
 
+    def state_dict(self):
+        return {
+            "available_checkpoints": self._available_checkpoints,
+            "checkpoint_dir": self._checkpoint_dir,
+            "checkpoint_period": self._checkpoint_period,
+            "counter": self._counter,
+            "current_t_avg": self._current_t_avg,
+            "current_avg": self._current_avg,
+            "uuid": self._uuid,
+        }
+
+    def load_state_dict(
+        self, state: Optional[dict] = None, state_dir: Optional[str] = None
+    ):
+        if state_dir is not None:
+            state = torch.load(state_dir)
+        assert state is not None
+        self._available_checkpoints = state["available_checkpoints"]
+        self._checkpoint_dir = state["checkpoint_dir"]
+        self._checkpoint_period = state["checkpoint_period"]
+        self._counter = state["counter"]
+        self._current_avg = state["current_avg"]
+        self._current_t_avg = state["current_t_avg"]
+        self._uuid = state["uuid"]
+
     def _load_checkpoint(self, step: int) -> TAvgCheckpoint:
         assert step in self.available_checkpoints
         assert self._current_avg is not None
         assert self._current_t_avg is not None
         if step == self._counter:
             return TAvgCheckpoint(
-                uniform=clone_tensors(self._current_avg),
-                t=clone_tensors(self._current_t_avg),
+                uniform=_clone_tensors(self._current_avg),
+                t=_clone_tensors(self._current_t_avg),
             )
         else:
             checkpoint = self._checkpoint_dir / f"avg_{self._uuid}_{step}.pt"
             return torch.load(checkpoint)
 
 
-def clone_tensors(tensors: Iterable[torch.Tensor]) -> list[torch.Tensor]:
+def _clone_tensors(tensors: Iterable[torch.Tensor]) -> list[torch.Tensor]:
     return [tensor.detach().clone() for tensor in tensors]
 
 
