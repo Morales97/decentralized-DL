@@ -179,9 +179,12 @@ if __name__ == '__main__':
     step = 38800 # TODO search in save_dir and get latest index_{step}.pt
     state_dir = os.path.join(save_dir, f'index_{step}.pt')
 
+    uniform_index = UniformAvgIndex('.')
+    uniform_index.load_state_dict(state_dir=state_dir)
+
     index = ModelAvgIndex(
             get_model(args, device),              # NOTE only supported with solo mode now.
-            UniformAvgIndex('.').load_state_dict(state_dir=state_dir),
+            uniform_index,
             include_buffers=True,
         )
     pdb.set_trace()
