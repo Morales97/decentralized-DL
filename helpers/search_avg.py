@@ -151,7 +151,7 @@ def exponential_search(index, train_loader, test_loader, end, start, min=0, accs
         if idx not in accs.keys():
             if not test:                             # TODO remove after checking correct behavior
                 model = index.avg_from(idx)
-                _, acc = eval_avg_model(model, end, train_loader, test_loader)
+                _, acc = eval_avg_model(model, train_loader, test_loader)
                 print(f'Acc: {acc} at step {idx}')
             else:
                 acc = score(idx//1000)
