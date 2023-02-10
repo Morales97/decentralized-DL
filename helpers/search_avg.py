@@ -39,17 +39,14 @@ def update_bn(loader, model, device=None):
     model.train(was_training)
 
 
-def eval_avg_model(start, end, train_loader, test_loader):
+def eval_avg_model(model, train_loader, test_loader):
     '''
     Get model average between [start, end]
     Update BN stats on train data
     Evaluate on test data
     '''
-    print('Evaluating average model from %d to %d...' % (start, end))
+    # print('Evaluating average model from %d to %d...' % (start, end))
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
-
-    # get average model
-    model = None # TODO
     model.to(device)
 
     # update BN stats
@@ -72,10 +69,10 @@ def eval_avg_model(start, end, train_loader, test_loader):
 
     return loss, acc
 
-def get_exp_idxs(start, min, ckpt_list):
+def get_exp_idxs(start, min, avl_ckpts):
     ''' get indices exponentially spaced'''
-    start_idx = ckpt_list.index(start)
-    min_idx = ckpt_list.index(min)
+    start_idx = avl_ckpts.index(start)
+    min_idx = avl_ckpts.index(min)
     idxs = []
 
     for i in range(int(np.log2(start_idx))+1):
@@ -87,7 +84,23 @@ def get_exp_idxs(start, min, ckpt_list):
         idxs.append(min_idx)
     return idxs
 
-def exponential_search(train_loader, test_loader, end, start, min=0, accs={}, test=True):
+def get_exp_idxs_set(start, min, ckpt_period):
+    ''' get indices exponentially spaced'''
+    start_idx = start // ckpt_period
+    min_idx = min // ckpt_period  
+    idxs = []
+
+    for i in range(int(np.log2(start_idx))+1):
+        if start_idx - 2**i <= min_idx:  
+            break
+        idxs.append((start_idx - 2**i) * ckpt_period)
+
+    if min_idx not in idxs:
+        idxs.append(min_idx * ckpt_period)
+    return idxs
+
+
+def exponential_search(index, train_loader, test_loader, end, start, min=0, accs={}, test=True):
     '''
     recursively search optimal averaging window in log(n) time
     args:
@@ -99,46 +112,51 @@ def exponential_search(train_loader, test_loader, end, start, min=0, accs={}, te
         accs: previously computed accuracies.
     '''
     if not test:                                    # TODO remove after checking correct behavior
-        ckpt_list = []                              # TODO get ckpt_list
+        avl_ckpts = index._index.available_checkpoints
     else:
-        ckpt_list = [1000*i for i in range(50)]
+        avl_ckpts = [1000*i for i in range(50)]
         score = lambda x: 1/((x-20)**2+1e-6)
 
     accs = accs
-    assert start in ckpt_list, 'non-existing start checkpoint'
-    assert end in ckpt_list, 'non-existing end checkpoint'
+    assert start in avl_ckpts, 'non-existing start checkpoint'
+    assert end in avl_ckpts, 'non-existing end checkpoint'
 
     # eval start model
     if not test:                                    # TODO remove after checking correct behavior
         _, acc = eval_avg_model(start, end, train_loader, test_loader)
     else:
-        acc = score(ckpt_list.index(start))
+        acc = score(avl_ckpts.index(start))
         print('score %.8f at step %d' % (acc, start))
     accs[start] = acc
     best_acc = acc
     best_key = start
     
     # get indexes to search
-    search_idxs = get_exp_idxs(start, min, ckpt_list)
+    if not test:
+        search_idxs = get_exp_idxs_set(start, min, index._index.checkpoint_period)
+    else:
+        # search_idxs = get_exp_idxs(start, min, avl_ckpts) * 1000
+        search_idxs = get_exp_idxs_set(start, min, 1000)
     if test: print(search_idxs)
-    
-    for i, idx in enumerate(search_idxs):
-        if ckpt_list[idx] not in accs.keys():
-            if not test:                             # TODO remove after checking correct behavior
-                _, acc = eval_avg_model(ckpt_list[idx], end, train_loader, test_loader)
-            else:
-                acc = score(idx)
-                print('score %.8f at step %d' % (acc, ckpt_list[idx]))
 
-            accs[ckpt_list[idx]] = acc
-        if accs[ckpt_list[idx]] < best_acc:
+    for i, idx in enumerate(search_idxs):
+        if idx not in accs.keys():
+            if not test:                             # TODO remove after checking correct behavior
+                model = index.avg_from(idx)
+                _, acc = eval_avg_model(model, end, train_loader, test_loader)
+            else:
+                acc = score(idx//1000)
+                print('score %.8f at step %d' % (acc, idx))
+
+            accs[idx] = acc
+        if accs[idx] < best_acc:
             break
         else:
             best_acc = acc
-            best_key = ckpt_list[idx]
+            best_key = idx
 
     if best_key == start:
         return best_acc, start
-    if best_key == ckpt_list[0]:
-        return best_acc, ckpt_list[0]
-    return exponential_search(end, ckpt_list[search_idxs[i-2]], min=ckpt_list[search_idxs[i]], accs=accs)
+    if best_key == avl_ckpts[0]:                    # TODO check logic
+        return best_acc, 0
+    return exponential_search(index, train_loader, test_loader, end, search_idxs[i-2], min=search_idxs[i], accs=accs)

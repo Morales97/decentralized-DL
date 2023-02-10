@@ -156,7 +156,7 @@ def train(args, steps, wandb):
             os.makedirs(save_dir)
         index = ModelAvgIndex(
             models[0],              # NOTE only supported with solo mode now.
-            UniformAvgIndex(save_dir, checkpoint_period=3),
+            UniformAvgIndex(save_dir, checkpoint_period=args.steps_eval),
             include_buffers=True,
         )
 
@@ -315,7 +315,6 @@ def train(args, steps, wandb):
         # index model average
         if args.model_avg:
             index.record_step()
-            pdb.set_trace()
 
         # evaluate 
         if (not args.eval_after_epoch and step % args.steps_eval == 0) or epoch >= args.epochs or (args.eval_after_epoch and epoch > prev_epoch):
@@ -439,4 +438,4 @@ if __name__ == '__main__':
 # python train_cifar.py --lr=3.2 --topology=ring dataset=cifar100 --eval_on_average_model=True --n_nodes=4 --save_model=True --save_interval=20
 # python train_cifar.py --lr=3.2 --topology solo solodataset=cifar100 --wandb=False --local_exec=True --n_nodes 1 1 --batch_size 1024 2048 --start_epoch_phases 0 1 --steps_eval=40 --lr 3.2 1.6 --data_split=True
 # python train_cifar.py --wandb=False --local_exec=True --n_nodes=1 --topology=solo --data_fraction=0.05 --alpha 0.999 0.995 0.98
-# python train_cifar.py --wandb=False --n_nodes=1 --topology=solo --data_fraction=0.05 --model_avg
+# python train_cifar.py --n_nodes=1 --topology=solo --model_avg --alpha 0.999 0.995 0.98 --steps_eval=400 --epochs=100 --lr_decay 40 80
