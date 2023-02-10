@@ -165,13 +165,15 @@ def exponential_search(index, train_loader, test_loader, end, start, min=0, accs
             best_acc = acc
             best_key = idx
 
+    pdb.set_trace()
     if best_key == start:
         return best_acc, start
-    if best_key == avl_ckpts[0]:                    # TODO check logic
+    if best_key == min(avl_ckpts):                    # TODO check logic
         return best_acc, 0
     return exponential_search(index, train_loader, test_loader, end, search_idxs[i-2], min=search_idxs[i], accs=accs)
 
 if __name__ == '__main__':
+    ''' For debugging purposes '''
     args = parse_args()
 
     train_loader, test_loader = get_data(args, args.batch_size[0], args.data_fraction)
@@ -190,6 +192,14 @@ if __name__ == '__main__':
             include_buffers=True,
         )
 
+    # compute all accuracies in advance and store
+    accs = {}
+    for i in range(1, 3): #38400//400):
+        model = index.avg_from(i*400, until=38400)
+        _, acc = eval_avg_model(model, train_loader, test_loader)
+        accs[i*400] = acc
+    torch.save(accs, os.path.join(save_dir, 'accs_computed.pt'))
+    pdb.set_trace()
     exponential_search(index, train_loader, test_loader, end=38400, start=38000, test=False)
 
 # python helpers/search_avg.py 
