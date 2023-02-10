@@ -151,9 +151,12 @@ def train(args, steps, wandb):
     swa_scheduler = SWALR(opts[0], anneal_strategy="linear", anneal_epochs=5, swa_lr=args.swa_lr)
 
     if args.model_avg:
+        save_dir = os.path.join(args.save_dir, args.expt_name)
+        if not os.path.exists(save_dir):
+            os.makedirs(save_dir)
         index = ModelAvgIndex(
             models[0],              # NOTE only supported with solo mode now.
-            UniformAvgIndex(os.path.join(args.save_dir, args.expt_name), checkpoint_period=3),
+            UniformAvgIndex(save_dir, checkpoint_period=3),
             include_buffers=True,
         )
 
