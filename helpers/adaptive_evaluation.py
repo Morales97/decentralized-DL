@@ -5,6 +5,12 @@ import torch.utils.data
 from running_mean_and_var import RunningMeanAndVar
 
 
+class DeterministicDataloaderException(ValueError):
+    """Raised when evaluate_classifier is called with a non-shuffled dataloader."""
+
+    pass
+
+
 @torch.no_grad()
 def evaluate_classifier(
     model: torch.nn.Module,
@@ -20,6 +26,11 @@ def evaluate_classifier(
 
     The caller is responsible for putting the model into .eval() mode if this is desired."""
     device = next(model.parameters()).device
+
+    if not isinstance(data_loader.sampler, torch.utils.data.RandomSampler):
+        raise DeterministicDataloaderException(
+            "`evaluate_classifier` requires randomized loaders."
+        )
 
     count = 0
     loss_var = RunningMeanAndVar()
