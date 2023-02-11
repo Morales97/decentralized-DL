@@ -184,7 +184,8 @@ if __name__ == '__main__':
     state_dir = os.path.join(save_dir, f'index_{step}.pt')
 
     uniform_index = UniformAvgIndex('.')
-    uniform_index.load_state_dict(state_dir=state_dir)
+    state_dict = torch.load(state_dir)
+    uniform_index.load_state_dict(state_dict)
 
     index = ModelAvgIndex(
             get_model(args, device),              # NOTE only supported with solo mode now.
