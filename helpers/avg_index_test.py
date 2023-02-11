@@ -108,3 +108,18 @@ def test_averaging_changes_the_module(tmpdir: pathlib.Path):
     out_avg = avg_module(input)
 
     assert not torch.allclose(out_vanilla, out_avg)
+
+
+def test_t_avg(tmpdir: pathlib.Path):
+
+    index1 = avg_index.TriangleAvgIndex(tmpdir, checkpoint_period=1)
+    for i in range(10):
+        index1.add([torch.tensor(i + 1).float()])
+
+    index2 = avg_index.TriangleAvgIndex(tmpdir, checkpoint_period=1)
+    for i in range(5, 10):
+        index2.add([torch.tensor(i + 1).float()])
+
+    assert torch.allclose(index2.avg_from(0)[0], torch.tensor(8.6666667))
+    assert torch.allclose(index1.avg_from(0, until=5)[0], torch.tensor(3.6666667))
+    assert torch.allclose(index1.avg_from(5, until=10)[0], torch.tensor(8.6666667))
