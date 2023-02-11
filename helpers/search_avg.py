@@ -131,7 +131,8 @@ def exponential_search(index, train_loader, test_loader, end, start, min=0, accs
 
     # eval start model
     if not test:                                    # TODO remove after checking correct behavior
-        _, acc = eval_avg_model(start, end, train_loader, test_loader)
+        model = index.avg_from(start, until=end)
+        _, acc = eval_avg_model(model, train_loader, test_loader)
     else:
         acc = score(avl_ckpts.index(start))
         print('score %.8f at step %d' % (acc, start))
@@ -141,17 +142,18 @@ def exponential_search(index, train_loader, test_loader, end, start, min=0, accs
     
     # get indexes to search
     if not test:
-        search_idxs = get_exp_idxs_set(start, min, index._index.checkpoint_period)
+        search_idxs = get_exp_idxs_set(start, min, index._index._checkpoint_period)
     else:
         # search_idxs = get_exp_idxs(start, min, avl_ckpts) * 1000
         search_idxs = get_exp_idxs_set(start, min, 1000)
-    if test: print(search_idxs)
+    print(f'Searching in {search_idxs}')
 
     for i, idx in enumerate(search_idxs):
         if idx not in accs.keys():
             if not test:                             # TODO remove after checking correct behavior
-                model = index.avg_from(idx)
-                _, acc = eval_avg_model(model, end, train_loader, test_loader)
+                model = index.avg_from(idx, until=end)
+                _, acc = eval_avg_model(model, train_loader, test_loader)
+                print(f'Acc: {acc} at step {idx}')
             else:
                 acc = score(idx//1000)
                 print('score %.8f at step %d' % (acc, idx))
@@ -163,13 +165,15 @@ def exponential_search(index, train_loader, test_loader, end, start, min=0, accs
             best_acc = acc
             best_key = idx
 
+    pdb.set_trace()
     if best_key == start:
         return best_acc, start
-    if best_key == avl_ckpts[0]:                    # TODO check logic
+    if best_key == min(avl_ckpts):                    # TODO check logic
         return best_acc, 0
     return exponential_search(index, train_loader, test_loader, end, search_idxs[i-2], min=search_idxs[i], accs=accs)
 
 if __name__ == '__main__':
+    ''' For debugging purposes '''
     args = parse_args()
 
     train_loader, test_loader = get_data(args, args.batch_size[0], args.data_fraction)
@@ -179,11 +183,25 @@ if __name__ == '__main__':
     step = 38800 # TODO search in save_dir and get latest index_{step}.pt
     state_dir = os.path.join(save_dir, f'index_{step}.pt')
 
+    uniform_index = UniformAvgIndex('.')
+    state_dict = torch.load(state_dir)
+    uniform_index.load_state_dict(state_dict)
+
     index = ModelAvgIndex(
             get_model(args, device),              # NOTE only supported with solo mode now.
-            UniformAvgIndex('.').load_state_dict(state_dir=state_dir),
+            uniform_index,
             include_buffers=True,
         )
-    pdb.set_trace()
+
+    # compute all accuracies in advance and store
+    accs = {}
+    for i in range(1, 38400//400):
+        model = index.avg_from(i*400, until=38400)
+        _, acc = eval_avg_model(model, train_loader, test_loader)
+        accs[i*400] = acc
+        print(f'Step {i*400}, acc: {acc}')
+    torch.save(accs, os.path.join(save_dir, 'accs_computed.pt'))
+    
+    exponential_search(index, train_loader, test_loader, end=38400, start=38000, accs=accs, test=False)
 
 # python helpers/search_avg.py 

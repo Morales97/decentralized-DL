@@ -10,7 +10,8 @@ import uuid
 from typing import Iterable, Optional, Union, Protocol
 
 import torch
-
+import pdb 
+import os.path as osp
 
 class AvgIndex(Protocol):
     available_checkpoints: set[int]
@@ -33,7 +34,7 @@ class AvgIndex(Protocol):
         ...
 
     def load_state_dict(
-        self, state: Optional[dict] = None, state_dir: Optional[str] = None
+        self, state: Optional[dict] = None
     ):
         ...
 
@@ -120,23 +121,14 @@ class UniformAvgIndex(AvgIndex):
         }
 
     def load_state_dict(
-        self, state: Optional[dict] = None, state_dir: Optional[str] = None
+        self, state: Optional[dict] = None
     ):
-        if state_dir is not None:
-            state = torch.load(state_dir)
-        assert state is not None
         self._available_checkpoints = state["available_checkpoints"]
         self._checkpoint_dir = state["checkpoint_dir"]
         self._checkpoint_period = state["checkpoint_period"]
         self._counter = state["counter"]
         self._current_avg = state["current_avg"]
         self._uuid = state["uuid"]
-
-    def save_dict(self):
-        torch.save(
-            self.state_dict(),
-            self._checkpoint_dir / f"index_{self._counter}.pt",
-        )
 
     def _load_checkpoint(self, step: int):
         assert step in self.available_checkpoints
@@ -257,11 +249,8 @@ class TriangleAvgIndex(AvgIndex):
         }
 
     def load_state_dict(
-        self, state: Optional[dict] = None, state_dir: Optional[str] = None
+        self, state: Optional[dict] = None
     ):
-        if state_dir is not None:
-            state = torch.load(state_dir)
-        assert state is not None
         self._available_checkpoints = state["available_checkpoints"]
         self._checkpoint_dir = state["checkpoint_dir"]
         self._checkpoint_period = state["checkpoint_period"]
