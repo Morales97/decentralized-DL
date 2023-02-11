@@ -308,6 +308,9 @@ def resnet18(args):
 def resnet50(args):
     return ResNet(dataset=args.dataset, resnet_size=50)
 
+def resnet50_in(args):
+    return torchvision.models.resnet50(weights=torchvision.models.ResNet50_Weights.IMAGENET1K_V2)
+
 if __name__ == '__main__':
     model = ResNet(dataset='imagenet', resnet_size=18)
     summary(model, (3, 224, 224))
