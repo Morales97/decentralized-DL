@@ -272,15 +272,16 @@ def train(args, steps, wandb):
                 train_loss += worker_local_step(models[i], opts[i], iter(train_loader), device)
             
             # EMA updates
-            if len(args.alpha) == 1:
-                ema_opts[i].update()
-            else:
-                for alpha in args.alpha:
-                    ema_opts[alpha][i].update()
-            if args.late_ema_epoch > 0 and epoch > args.late_ema_epoch:
-                if not late_ema_active:
-                    late_ema_active = True
-                late_ema_opts[i].update()
+            if len(args.alpha) > 0 and step % args.ema_interval == 0:
+                if len(args.alpha) == 1:
+                    ema_opts[i].update()
+                else:
+                    for alpha in args.alpha:
+                        ema_opts[alpha][i].update()
+                if args.late_ema_epoch > 0 and epoch > args.late_ema_epoch:
+                    if not late_ema_active:
+                        late_ema_active = True
+                    late_ema_opts[i].update()
 
         step +=1
         epoch += n_nodes * batch_size / n_samples
@@ -294,7 +295,7 @@ def train(args, steps, wandb):
         if epoch > epoch_swa:
             epoch_swa += 1
             swa_model.update_parameters(models)
-            if args.swa_lr != 0:
+            if args.swa_lr > 0:
                 swa_scheduler.step()
             test_loss, acc = evaluate_model(swa_model, test_loader, device)
             logger.log_acc(step, epoch, acc*100, name='SWA')
@@ -415,7 +416,8 @@ def train(args, steps, wandb):
 
     # save avg_index
     if args.avg_index:
-        torch.save(index_save_dir, index.state_dict())
+        torch.save(index.state_dict(), os.path.join(index_save_dir, f'index_{index._index._uuid}_{step}.pt'))
+
 
 
 if __name__ == '__main__':

@@ -52,22 +52,22 @@ def get_parser():
                         help='standard deviation for noise applied to each model`s parameters')  
 
     # model averaging
+    parser.add_argument('--alpha', type=float, nargs='+', default=[0.995],
+                        help='EMA decay. Can specify many to keep multiple EMAs')   
+    parser.add_argument('--ema_interval', type=int, default=1,
+                        help='period of steps to perform EMA update')                    
     parser.add_argument('--epoch_swa', type=int, default=100,
                         help='epoch when to start SWA averaging')
     parser.add_argument('--epoch_swa_budget', type=int, default=1e5,
                         help='epoch when to FINISH SWA averaging for budget 1')
     parser.add_argument('--swa', action='store_true', 
                         help='Use SWA as in Izmailov et al.')
-    parser.add_argument('--swa_lr', type=float, default=0,
-                        help='Final constant LR for SWA')   
+    parser.add_argument('--swa_lr', type=float, default=-1,
+                        help='Final constant LR for SWA. If -1, do not use SWA scheduler')   
     parser.add_argument('--swa_per_phase', action='store_true', 
                         help='Compute SWA for each LR phase')
     parser.add_argument('--late_ema_epoch', type=int, default=100,
                         help='epoch when to start Late EMA') 
-    parser.add_argument('--alpha', type=float, nargs='+', default=[0.995],
-                        help='EMA decaying rate')   
-    parser.add_argument('--beta', type=float, nargs='+', default=[0.995],
-                        help='second averaging rate')
     parser.add_argument('--custom_a', type=float, default=0,
                         help='coefficient for custom SGD')  
     parser.add_argument('--custom_b', type=float, default=1,
