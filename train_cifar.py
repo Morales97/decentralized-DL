@@ -150,13 +150,13 @@ def train(args, steps, wandb):
         swa_model3 = AveragedModel(models[0], device, use_buffers=True) # SWA for every lr phase
     swa_scheduler = SWALR(opts[0], anneal_strategy="linear", anneal_epochs=5, swa_lr=args.swa_lr)
 
-    if args.model_avg:
-        save_dir = os.path.join(args.save_dir, args.expt_name)
-        if not os.path.exists(save_dir):
-            os.makedirs(save_dir)
+    if args.avg_index:
+        index_save_dir = os.path.join(args.save_dir, args.expt_name)
+        if not os.path.exists(index_save_dir):
+            os.makedirs(index_save_dir)
         index = ModelAvgIndex(
             models[0],              # NOTE only supported with solo mode now.
-            UniformAvgIndex(save_dir, checkpoint_period=args.steps_eval),
+            UniformAvgIndex(index_save_dir, checkpoint_period=args.steps_eval),
             include_buffers=True,
         )
 
@@ -313,7 +313,7 @@ def train(args, steps, wandb):
             swa_model2.update_parameters(models)
 
         # index model average
-        if args.model_avg:
+        if args.avg_index:
             index.record_step()
 
         # evaluate 
@@ -413,6 +413,11 @@ def train(args, steps, wandb):
     update_bn_and_eval(swa_model2, train_loader, test_loader, device, logger, log_name='MA Acc (after BN)')
     update_bn_and_eval(get_average_model(device, models), train_loader, test_loader, device, logger, log_name='Student Acc (after BN)') # TODO check if cumulative moving average BN is better than using running average
 
+    # save avg_index
+    if args.avg_index:
+        torch.save(index_save_dir, index.state_dict())
+
+
 if __name__ == '__main__':
     from helpers.parser import SCRATCH_DIR, SAVE_DIR
     args = parse_args()
@@ -438,4 +443,4 @@ if __name__ == '__main__':
 # python train_cifar.py --lr=3.2 --topology=ring dataset=cifar100 --eval_on_average_model=True --n_nodes=4 --save_model=True --save_interval=20
 # python train_cifar.py --lr=3.2 --topology solo solodataset=cifar100 --wandb=False --local_exec=True --n_nodes 1 1 --batch_size 1024 2048 --start_epoch_phases 0 1 --steps_eval=40 --lr 3.2 1.6 --data_split=True
 # python train_cifar.py --wandb=False --local_exec=True --n_nodes=1 --topology=solo --data_fraction=0.05 --alpha 0.999 0.995 0.98
-# python train_cifar.py --n_nodes=1 --topology=solo --model_avg --alpha 0.999 0.995 0.98 --steps_eval=400 --epochs=100 --lr_decay 40 80
+# python train_cifar.py --n_nodes=1 --topology=solo --avg_index --alpha 0.999 0.995 0.98 --steps_eval=400 --epochs=100 --lr_decay 40 80

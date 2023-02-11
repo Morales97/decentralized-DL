@@ -30,11 +30,11 @@ class AvgIndex(Protocol):
     ) -> list[torch.Tensor]:
         ...
 
-    def state_dict(self):
+    def state_dict(self) -> dict:
         ...
 
     def load_state_dict(
-        self, state: Optional[dict] = None
+        self, state: dict
     ):
         ...
 
@@ -110,7 +110,7 @@ class UniformAvgIndex(AvgIndex):
 
         return window_avg
 
-    def state_dict(self):
+    def state_dict(self) -> dict:
         return {
             "available_checkpoints": self._available_checkpoints,
             "checkpoint_dir": self._checkpoint_dir,
@@ -120,9 +120,7 @@ class UniformAvgIndex(AvgIndex):
             "uuid": self._uuid,
         }
 
-    def load_state_dict(
-        self, state: Optional[dict] = None
-    ):
+    def load_state_dict(self, state: dict):
         self._available_checkpoints = state["available_checkpoints"]
         self._checkpoint_dir = state["checkpoint_dir"]
         self._checkpoint_period = state["checkpoint_period"]
@@ -237,7 +235,7 @@ class TriangleAvgIndex(AvgIndex):
 
         return window_avg
 
-    def state_dict(self):
+    def state_dict(self) -> dict:
         return {
             "available_checkpoints": self._available_checkpoints,
             "checkpoint_dir": self._checkpoint_dir,
@@ -248,9 +246,7 @@ class TriangleAvgIndex(AvgIndex):
             "uuid": self._uuid,
         }
 
-    def load_state_dict(
-        self, state: Optional[dict] = None
-    ):
+    def load_state_dict(self, state: dict):
         self._available_checkpoints = state["available_checkpoints"]
         self._checkpoint_dir = state["checkpoint_dir"]
         self._checkpoint_period = state["checkpoint_period"]
@@ -281,7 +277,7 @@ class ModelAvgIndex:
     def __init__(
         self,
         module: torch.nn.Module,
-        index: UniformAvgIndex,
+        index: Union[UniformAvgIndex, TriangleAvgIndex],
         *,
         include_buffers: bool = True,
     ):
@@ -313,3 +309,9 @@ class ModelAvgIndex:
                 buffer.data = avg
 
         return avg_module
+
+    def state_dict(self):
+        return self._index.state_dict()
+
+    def load_state_dict(self, state_dict: dict):
+        self._index.load_state_dict(state_dict)
