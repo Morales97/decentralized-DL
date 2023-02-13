@@ -90,6 +90,10 @@ def get_parser():
                         help='lr decay factor') 
     parser.add_argument('--lr_warmup_epochs', type=int, default=5,
                         help='warm up learning rate in the first epochs') 
+    parser.add_argument('--lr_linear_decay_epochs', type=int, default=0,
+                        help='decay learning rate linearly insted of step') 
+    parser.add_argument('--lr_scheduler', action='store_true', 
+                        help='to use torch´s lr scheduler instead of manual')
 
     # optimizer
     parser.add_argument('--opt', type=str, default='SGD',

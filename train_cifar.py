@@ -15,10 +15,11 @@ from helpers.consensus import compute_node_consensus, compute_weight_distance, g
 from helpers.evaluate import eval_all_models, evaluate_model
 from helpers.wa import AveragedModel, update_bn, SWALR
 from helpers.avg_index import UniformAvgIndex, ModelAvgIndex
+from helpers.lr_scheduler import get_lr_schedulers
 import wandb
 import os
 
-def worker_local_step(model, opt, train_loader_iter, device):
+def worker_local_step(model, opt, scheduler, train_loader_iter, device):
     input, target = next(train_loader_iter)
     input = input.to(device)
     target = target.to(device)
@@ -29,6 +30,8 @@ def worker_local_step(model, opt, train_loader_iter, device):
     loss = F.cross_entropy(output, target)
     loss.backward()
     opt.step()
+    scheduler.step()
+    print(scheduler.optimizer.param_groups[0]['lr'])
 
     return loss.item()
 
@@ -106,7 +109,7 @@ def update_bn_and_eval(model, train_loader, test_loader, device, logger, log_nam
 ########################################################################################
 
 
-def train(args, steps, wandb):
+def train(args, wandb):
 
     torch.manual_seed(args.seed)
     np.random.seed(args.seed)
@@ -120,12 +123,14 @@ def train(args, steps, wandb):
         n_samples = np.sum([len(tl.dataset) for tl in train_loader])
     else:
         n_samples = len(train_loader.dataset)
+    warmup_steps = n_samples / (args.n_nodes[0] * args.batch_size[0]) * args.lr_warmup_epochs
 
     # init nodes
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
     n_nodes = args.n_nodes[0]
     models = [get_model(args, device) for _ in range(n_nodes)]
     opts = [get_optimizer(args, model) for model in models]
+    schedulers = get_lr_schedulers(args, n_samples, opts)
     if args.same_init:
         for i in range(1, len(models)):
             models[i].load_state_dict(models[0].state_dict())
@@ -193,8 +198,8 @@ def train(args, steps, wandb):
                     train_loader_iter[i] = iter(train_loader[i])
 
         # lr warmup
-        if step < steps['warmup_steps']:
-            lr = args.lr[0] * (step+1) / steps['warmup_steps']
+        if step < warmup_steps and not args.lr_scheduler:
+            lr = args.lr[0] * (step+1) / warmup_steps
             for opt in opts:
                 for g in opt.param_groups:
                     g['lr'] = lr
@@ -202,26 +207,14 @@ def train(args, steps, wandb):
         # lr decay
         if lr_decay_phase < total_lr_phases and epoch > args.lr_decay[lr_decay_phase]:
             lr_decay_phase += 1
-            for opt in opts:
-                for g in opt.param_groups:
-                    g['lr'] = g['lr']/args.lr_decay_factor
-            print('lr decayed to %.4f' % g['lr'])
+            if not args.lr_scheduler:
+                for opt in opts:
+                    for g in opt.param_groups:
+                        g['lr'] = g['lr']/args.lr_decay_factor
+                print('lr decayed to %.4f' % g['lr'])
             if args.swa_per_phase:
                 update_bn_and_eval(swa_model3, train_loader, test_loader, device, logger, log_name='SWA phase ' + str(lr_decay_phase))
                 swa_model3 = AveragedModel(models[0], device, use_buffers=True) # restart SWA
-
-        # drop weight decay
-        if args.wd_drop > 0 and epoch > args.wd_drop:
-            for opt in opts:
-                for g in opt.param_groups:
-                    g['weight_decay'] = 0     
-
-        # drop momentum
-        if args.momentum_drop > 0 and epoch > args.momentum_drop:
-            for opt in opts:
-                for g in opt.param_groups:
-                    g['momentum'] = 0  
-                    g['nesterov'] = False
 
         # advance to the next training phase
         if phase+1 < total_phases and epoch > args.start_epoch_phases[phase+1]:
@@ -267,9 +260,9 @@ def train(args, steps, wandb):
         ts_step = time.time()
         for i in range(len(models)):
             if args.data_split:
-                train_loss += worker_local_step(models[i], opts[i], train_loader_iter[i], device)
+                train_loss += worker_local_step(models[i], opts[i], schedulers[i], train_loader_iter[i], device)
             else:
-                train_loss += worker_local_step(models[i], opts[i], iter(train_loader), device)
+                train_loss += worker_local_step(models[i], opts[i], schedulers[i], iter(train_loader), device)
             
             # EMA updates
             if len(args.alpha) > 0 and step % args.ema_interval == 0:
@@ -427,17 +420,13 @@ if __name__ == '__main__':
 
     if not args.expt_name:
         args.expt_name = get_expt_name(args)
-    
-    steps = {
-        'warmup_steps': 50000 / (args.n_nodes[0] * args.batch_size[0]) * args.lr_warmup_epochs,    # NOTE using n_nodes[0] to compute warmup epochs. Assuming warmup occurs in the first phase
-    }
 
     if args.wandb:
         wandb.init(name=args.expt_name, dir=args.save_dir, config=args, project=args.project, entity=args.entity)
-        train(args, steps, wandb)
+        train(args, wandb)
         wandb.finish()
     else:
-        train(args, steps, None)
+        train(args, None)
 
 # python train_cifar.py --lr=3.2 --topology=ring dataset=cifar100 --wandb=False --local_exec=True --eval_on_average_model=True
 # python train_cifar.py --lr=3.2 --topology=fully_connected dataset=cifar100 --wandb=False --local_exec=True --model_std=0.01
@@ -446,3 +435,4 @@ if __name__ == '__main__':
 # python train_cifar.py --lr=3.2 --topology solo solodataset=cifar100 --wandb=False --local_exec=True --n_nodes 1 1 --batch_size 1024 2048 --start_epoch_phases 0 1 --steps_eval=40 --lr 3.2 1.6 --data_split=True
 # python train_cifar.py --wandb=False --local_exec=True --n_nodes=1 --topology=solo --data_fraction=0.05 --alpha 0.999 0.995 0.98
 # python train_cifar.py --n_nodes=1 --topology=solo --avg_index --alpha 0.999 0.995 0.98 --steps_eval=400 --epochs=100 --lr_decay 40 80
+# python train_cifar.py --wandb=False --local_exec=True --n_nodes=1 --topology=solo --data_fraction=0.005 --data_split=False --lr_decay 10 20 --lr_linear_decay_epochs 5 --lr_scheduler 
