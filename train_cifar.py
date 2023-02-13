@@ -31,7 +31,6 @@ def worker_local_step(model, opt, scheduler, train_loader_iter, device):
     loss.backward()
     opt.step()
     scheduler.step()
-    print(scheduler.optimizer.param_groups[0]['lr'])
 
     return loss.item()
 
