@@ -123,3 +123,30 @@ def test_t_avg(tmpdir: pathlib.Path):
     assert torch.allclose(index2.avg_from(0)[0], torch.tensor(8.6666667))
     assert torch.allclose(index1.avg_from(0, until=5)[0], torch.tensor(3.6666667))
     assert torch.allclose(index1.avg_from(5, until=10)[0], torch.tensor(8.6666667))
+
+def test_state_dict(tmpdir: pathlib.Path):
+    model = torch.nn.Sequential(
+        torch.nn.Linear(3, 3),
+        torch.nn.BatchNorm1d(3),
+    )
+    u_index = avg_index.UniformAvgIndex(tmpdir, checkpoint_period=1)
+    u_index._available_checkpoints = set([0, 1, 2])
+    u_index._counter = 4
+    u_index._current_avg = list(model.parameters())
+
+    sd = u_index.state_dict()
+    assert sd['available_checkpoints'] == u_index._available_checkpoints
+    assert sd['checkpoint_dir'] == u_index._checkpoint_dir
+    assert sd['checkpoint_period'] == u_index._checkpoint_period
+    assert sd['counter'] == u_index._counter
+    assert sd['current_avg'] == u_index._current_avg
+    assert sd['uuid'] == u_index._uuid
+
+    new_u_index = avg_index.UniformAvgIndex(tmpdir, checkpoint_period=10)
+    new_u_index.load_state_dict(sd)
+    assert sd['available_checkpoints'] == new_u_index._available_checkpoints
+    assert sd['checkpoint_dir'] == new_u_index._checkpoint_dir
+    assert sd['checkpoint_period'] == new_u_index._checkpoint_period
+    assert sd['counter'] == new_u_index._counter
+    assert sd['current_avg'] == new_u_index._current_avg
+    assert sd['uuid'] == new_u_index._uuid

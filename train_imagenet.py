@@ -176,7 +176,8 @@ def main_worker(gpu, ngpus_per_node, args, wandb):
     if args.pretrained:
         print("=> using pre-trained model '{}'".format(args.arch))
         # model = models.__dict__[args.arch](pretrained=True)
-        model = models.resnet50(weights=models.ResNet50_Weights.IMAGENET1K_V2)
+        model = models.resnet50(weights=models.ResNet50_Weights.IMAGENET1K_V1) # acc@1 75%
+        # model = models.resnet50(weights=models.ResNet50_Weights.IMAGENET1K_V2) # acc@1 80%
     else:
         print("=> creating model '{}'".format(args.arch))
         model = models.__dict__[args.arch]()
@@ -600,5 +601,4 @@ if __name__ == '__main__':
 # python train_imagenet.py -a resnet18 /mlodata1/kosson/datasets/imagenet --expt_name=IN_solo --gpu=0
 # python train_imagenet.py -a resnet18 --dummy --gpu=0
 # python train_imagenet.py --pretrained --evaluate /mlodata1/kosson/datasets/imagenet
-# python train_imagenet.py -a resnet50 --pretrained --epochs=10 --lr=0.1 --ema --alpha=0.9995 --gpu=0 --expt_name=RN50_V2_lr0.1
-# python train_imagenet.py -a resnet50 --pretrained --epochs=10 --lr=0.5 --ema --alpha=0.9995 --gpu=0 --expt_name=RN50_V2_lr0.5
+# python train_imagenet.py -a resnet50 --pretrained --epochs=10 --lr=0.01 --ema --alpha=0.9995 --gpu=0 --expt_name=RN50_V2_lr0.01 /mlodata1/kosson/datasets/imagenet
