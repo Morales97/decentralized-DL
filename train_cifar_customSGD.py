@@ -100,7 +100,7 @@ def compute_model_tracking_metrics(args, logger, models, step, epoch, device, mo
     logger.log_grad_norm(step, epoch, grad_norm)
 
     # momentum L2 norm
-    if opts is not None:
+    if opts is not None and args.opt == 'SGD':
         mom_norm = get_momentum_norm(opts[0])
         logger.log_quantity(step, epoch, mom_norm , 'Momentum norm')
 
@@ -288,10 +288,7 @@ def train(args, steps, wandb):
                 loss = F.cross_entropy(output, target)
                 loss.backward()
                 # ts_opt_step = time.time()
-                if args.variant == 2:
-                    opts[0].step_variant_2()
-                else:
-                    opts[0].step()
+                opts[0].step(variant=args.variant)
                 # opts[0].step_old()
                 # print(f'Optimizer step time [s]: {time.time() - ts_opt_step}')
 

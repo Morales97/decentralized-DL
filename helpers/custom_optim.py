@@ -319,7 +319,7 @@ class CustomOptimizer(object):
                     for grads in per_dtype_grads.values():
                         torch._foreach_zero_(grads)
 
-    def step(self, closure):
+    def step(self, closure, variant):
         r"""Performs a single optimization step (parameter update).
 
         Args:

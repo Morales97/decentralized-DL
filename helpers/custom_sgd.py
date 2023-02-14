@@ -120,7 +120,10 @@ class CustomSGD(CustomOptimizer):
         return loss
 
     @_use_grad_for_differentiable
-    def step(self, closure=None):       
+    def step(self, closure=None, variant=0):  
+        if variant == 2:
+            return self.step_variant_2()     
+            
         loss = None
         if closure is not None:
             with torch.enable_grad():
