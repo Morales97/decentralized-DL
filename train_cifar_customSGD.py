@@ -299,8 +299,9 @@ def train(args, steps, wandb):
                 with torch.no_grad():
                     model_x.train() # running to keep BN statistis. Need to rethink this. Should BN stats be part of the optimization algo?
                     _ = model_x(input)
-                    model_v.train()
-                    _ = model_v(input)
+                    if args.variant != 2:
+                        model_v.train()
+                        _ = model_v(input)
 
                 train_loss += loss.item()
                 # print(f'Forward and optimization [s]: {time.time() - ts_optimizer}')
@@ -389,13 +390,15 @@ def train(args, steps, wandb):
 
 
                 if args.opt != 'SGD':   # custom SGD
+                    acc_x, acc_y, acc_v = 0, 0, 0
                     test_loss, acc_x = evaluate_model(model_x, test_loader, device)
                     _, acc_y = evaluate_model(models[0], test_loader, device)
-                    _, acc_v = evaluate_model(model_v, test_loader, device)
                     logger.log_eval(step, epoch, float(acc_y*100), test_loss, ts_eval, ts_steps_eval)
                     logger.log_acc(step, epoch, acc_x*100, name='X')
                     logger.log_acc(step, epoch, acc_y*100, name='Y')
-                    logger.log_acc(step, epoch, acc_v*100, name='V')
+                    if args.variant != 2:
+                        _, acc_v = evaluate_model(model_v, test_loader, device)
+                        logger.log_acc(step, epoch, acc_v*100, name='V')
                     print('Epoch %.3f (Step %d) -- X accuracy: %.2f -- Y accuracy: %.2f -- V accuracy: %.2f -- Test loss: %.3f -- Train loss: %.3f -- Time (total/last/eval): %.2f / %.2f / %.2f s' %
                         (epoch, step, float(acc_x*100), float(acc_y*100), float(acc_v*100), test_loss, train_loss, time.time() - ts_total, time.time() - ts_steps_eval, time.time() - ts_eval))
                     acc=acc_y
