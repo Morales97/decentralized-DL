@@ -43,7 +43,7 @@ class CustomSGD(CustomOptimizer):
             group.setdefault('differentiable', False)
 
     @_use_grad_for_differentiable
-    def step(self, closure=None):
+    def step_old(self, closure=None):       # NOTE DM: original implementation
         """Performs a single optimization step.
 
         Args:
@@ -94,9 +94,9 @@ class CustomSGD(CustomOptimizer):
                 foreach=group_y['foreach'])
 
             # update momentum_buffers in state
-            for p, momentum_buffer in zip(params_with_grad, momentum_buffer_list):
-                state = self.state[p]
-                state['momentum_buffer'] = momentum_buffer
+            # for p, momentum_buffer in zip(params_with_grad, momentum_buffer_list):
+            #     state = self.state[p]
+            #     state['momentum_buffer'] = momentum_buffer
 
         # x_{t+1} = (1-a)·x_t + a·v_{t+1}
         if self.variant == 0:
@@ -118,6 +118,72 @@ class CustomSGD(CustomOptimizer):
 
 
         return loss
+
+    @_use_grad_for_differentiable
+    def step(self, closure=None):       
+        loss = None
+        if closure is not None:
+            with torch.enable_grad():
+                loss = closure()
+
+        # DM: Implementing the following algorithm
+        # v_{t+1} = v_{t} - lr·g(y_t)
+        # x_{t+1} = (1-a)·x_t + a·v_{t+1}
+        # y_{t+1} = (1-b)·x_{t+1} + b·v_{t+1}
+
+        for group_x, group_y, group_v in zip(self.param_groups_x, self.param_groups, self.param_groups_v):
+
+            # NOTE not checking if p_y.grad is None. Assuming all parameters have require_grad=True
+            #for p_x, p_y, p_v in zip(group_x['params'], group_y['params'], group_v['params']):
+                # if p_y.grad is not None:
+                #     params_with_grad.append(p_v)
+                #     d_p_list.append(p_y.grad)
+                #     if p_y.grad.is_sparse:
+                #         has_sparse_grad = True
+
+                #     state = self.state[p_y]
+                #     if 'momentum_buffer' not in state:
+                #         momentum_buffer_list.append(None)
+                #     else:
+                #         momentum_buffer_list.append(state['momentum_buffer'])
+
+            _single_tensor_sgd_custom(group_x['params'],
+                group_y['params'],
+                group_v['params'],
+                weight_decay=group_y['weight_decay'],
+                lr=group_y['lr'],
+                alpha=self.alpha,
+                beta=self.beta)
+
+            # update momentum_buffers in state
+            # for p, momentum_buffer in zip(params_with_grad, momentum_buffer_list):
+            #     state = self.state[p]
+            #     state['momentum_buffer'] = momentum_buffer
+
+        return loss
+
+    @_use_grad_for_differentiable
+    def step_variant_2(self, closure=None):       
+        loss = None
+        if closure is not None:
+            with torch.enable_grad():
+                loss = closure()
+
+        # DM: Implementing the following algorithm
+        # y_{t+1} = (1-b)·x_{t+1} + b·y_{t+1} + lr·g(y_t)
+        # x_{t+1} = (1-a)·x_t + a·y_{t+1}
+
+        for group_x, group_y in zip(self.param_groups_x, self.param_groups):
+            _single_tensor_sgd_custom_2(group_x['params'],
+                group_y['params'],
+                weight_decay=group_y['weight_decay'],
+                lr=group_y['lr'],
+                alpha=self.alpha,
+                beta=self.beta)
+
+        return loss
+
+
 
 
 
@@ -196,6 +262,60 @@ def _single_tensor_sgd(params: List[Tensor],
                 d_p = buf
 
         param.add_(d_p, alpha=-lr)
+
+
+def _single_tensor_sgd_custom(params_x: List[Tensor],     # NOTE DM, custom SGD
+                            params_y: List[Tensor],
+                            params_v: List[Tensor],
+                            weight_decay: float,
+                            lr: float,
+                            alpha: float,
+                            beta: float):
+
+    # for i, param in enumerate(params):
+    for param_x, param_y, param_v in zip(params_x, params_y, params_v):
+        # d_p = d_p_list[i] if not maximize else -d_p_list[i]
+        d_p = param_y.grad
+        
+        if weight_decay != 0:
+            d_p = d_p.add(param_y, alpha=weight_decay)
+
+        # if momentum != 0:
+        #     buf = momentum_buffer_list[i]
+
+        #     if buf is None:
+        #         buf = torch.clone(d_p).detach()
+        #         momentum_buffer_list[i] = buf
+        #     else:
+        #         buf.mul_(momentum).add_(d_p, alpha=1 - dampening)
+
+        #     if nesterov:
+        #         d_p = d_p.add(buf, alpha=momentum)
+        #     else:
+        #         d_p = buf
+        
+        param_v.add_(d_p, alpha=-lr)                                        # v_{t+1} = v_{t} - lr·g(y_t)
+        param_x.mul_(1-alpha).add_(param_v, alpha=alpha)                    # x_{t+1} = (1-a)·x_t + a·v_{t+1}
+        param_y.data = param_x.mul_(1-beta).add_(param_v, alpha=beta).data  # y_{t+1} = (1-b)·x_{t+1} + b·v_{t+1}
+
+def _single_tensor_sgd_custom_2(params_x: List[Tensor],     # NOTE DM, custom SGD, variant 2
+                            params_y: List[Tensor],
+                            weight_decay: float,
+                            lr: float,
+                            alpha: float,
+                            beta: float):
+
+    # for i, param in enumerate(params):
+    for param_x, param_y in zip(params_x, params_y):
+        # d_p = d_p_list[i] if not maximize else -d_p_list[i]
+        d_p = param_y.grad
+        
+        if weight_decay != 0:
+            d_p = d_p.add(param_y, alpha=weight_decay)
+        
+        param_y.mul_(beta).add_(param_x, alpha=1-beta).add_(d_p, alpha=-lr) # y_{t+1} = (1-b)·x_{t+1} + b·y_{t+1} + lr·g(y_t)
+        param_x.mul_(1-alpha).add_(param_y, alpha=alpha)                    # x_{t+1} = (1-a)·x_t + a·y_{t+1}
+
 
 # DM: for example, x_{t+1} = (1-a)·x_t + a·v_{t+1}
 def _combine_params(params_1: List[Tensor],

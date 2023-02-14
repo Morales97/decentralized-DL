@@ -23,13 +23,16 @@ def worker_local_step(model, opt, train_loader_iter, device):
     input = input.to(device)
     target = target.to(device)
 
+    # ts_optimization = time.time()
     model.train()
     output = model(input)
     opt.zero_grad()
     loss = F.cross_entropy(output, target)
     loss.backward()
+    # ts_opt_step = time.time()
     opt.step()
-
+    # print(f'Optimizer step time {time.time() - ts_opt_step}')
+    # print(f'Forward and optimmization time {time.time() - ts_optimization}')
     return loss.item()
 
 
@@ -278,12 +281,20 @@ def train(args, steps, wandb):
                 input = input.to(device)
                 target = target.to(device)
 
+                # ts_optimizer = time.time()
                 models[i].train()
                 output = models[i](input)
                 opts[0].zero_grad()
                 loss = F.cross_entropy(output, target)
                 loss.backward()
-                opts[0].step()
+                # ts_opt_step = time.time()
+                if args.variant == 2:
+                    opts[0].step_variant_2()
+                else:
+                    opts[0].step()
+                # opts[0].step_old()
+                # print(f'Optimizer step time [s]: {time.time() - ts_opt_step}')
+
                 
                 with torch.no_grad():
                     model_x.train() # running to keep BN statistis. Need to rethink this. Should BN stats be part of the optimization algo?
@@ -292,6 +303,7 @@ def train(args, steps, wandb):
                     _ = model_v(input)
 
                 train_loss += loss.item()
+                # print(f'Forward and optimization [s]: {time.time() - ts_optimizer}')
             else:          
                 if args.data_split:
                     train_loss += worker_local_step(models[i], opts[i], train_loader_iter[i], device)
@@ -469,6 +481,6 @@ if __name__ == '__main__':
     else:
         train(args, steps, None)
 
-# python train_cifar_customSGD.py --wandb=False --expt_name=new_a0_b1 --project=MLO-optimizer --opt=customSGD --momentum=0.9 --custom_a=0 --custom_b=1 --lr=0.1 --n_nodes=1 --topology=solo --epochs=50 --lr_decay=100 --lr_warmup_epochs=0 --data_split=True --steps_eval=400 --net=rn18
+# python train_cifar_customSGD.py --wandb=False --expt_name=new_a0_b1 --project=MLO-optimizer --opt=customSGD --momentum=0.9 --custom_a=0.1 --custom_b=0.5 --lr=0.1 --n_nodes=1 --topology=solo --epochs=50 --lr_decay=100 --lr_warmup_epochs=0 --data_split=True --steps_eval=400 --net=rn18
 # python train_cifar_customSGD.py --wandb=False --expt_name=SGD --project=MLO-optimizer --momentum=0 --nesterov=False --wd=0 --lr=0.1 --n_nodes=1 --topology=solo --epochs=50 --lr_decay=100 --lr_warmup_epochs=0 --data_split=True --steps_eval=400 --net=rn18
 # python train_cifar_customSGD.py --wandb=False --local_exec=True --expt_name=SGD --project=MLO-optimizer --momentum=0.9 --nesterov=True --wd=0 --lr=0.1 --n_nodes=1 --topology=solo --epochs=50 --lr_decay=100 --lr_warmup_epochs=0 --data_split=True --steps_eval=400 --net=rn18

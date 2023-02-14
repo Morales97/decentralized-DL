@@ -174,10 +174,14 @@ def main_worker(gpu, ngpus_per_node, args, wandb):
                                 world_size=args.world_size, rank=args.rank)
     # create model
     if args.pretrained:
+        if args.arch == 'resnet152':
+            model = models.resnet152(weights=models.ResNet152_Weights.IMAGENET1K_V1) # acc@1 78.3%
+            # model = models.resnet152(weights=models.ResNet152_Weights.IMAGENET1K_V1) # acc@1 82.2%
+        else:
+            # model = models.__dict__[args.arch](pretrained=True)
+            model = models.resnet50(weights=models.ResNet50_Weights.IMAGENET1K_V1) # acc@1 76.1%
+            # model = models.resnet50(weights=models.ResNet50_Weights.IMAGENET1K_V2) # acc@1 80.8%
         print("=> using pre-trained model '{}'".format(args.arch))
-        # model = models.__dict__[args.arch](pretrained=True)
-        model = models.resnet50(weights=models.ResNet50_Weights.IMAGENET1K_V1) # acc@1 75%
-        # model = models.resnet50(weights=models.ResNet50_Weights.IMAGENET1K_V2) # acc@1 80%
     else:
         print("=> creating model '{}'".format(args.arch))
         model = models.__dict__[args.arch]()
