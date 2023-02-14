@@ -23,7 +23,7 @@ def worker_local_step(model, opt, scheduler, train_loader_iter, device):
     input, target = next(train_loader_iter)
     input = input.to(device)
     target = target.to(device)
-
+    
     model.train()
     output = model(input)
     opt.zero_grad()
@@ -31,7 +31,6 @@ def worker_local_step(model, opt, scheduler, train_loader_iter, device):
     loss.backward()
     opt.step()
     scheduler.step()
-
     return loss.item()
 
 
@@ -129,7 +128,7 @@ def train(args, wandb):
     n_nodes = args.n_nodes[0]
     models = [get_model(args, device) for _ in range(n_nodes)]
     opts = [get_optimizer(args, model) for model in models]
-    schedulers = get_lr_schedulers(args, n_samples, opts)
+    schedulers = get_lr_schedulers(args, n_samples, opts)   
     if args.same_init:
         for i in range(1, len(models)):
             models[i].load_state_dict(models[0].state_dict())
@@ -415,7 +414,7 @@ def train(args, wandb):
 if __name__ == '__main__':
     from helpers.parser import SCRATCH_DIR, SAVE_DIR
     args = parse_args()
-    os.environ['WANDB_CACHE_DIR'] = SCRATCH_DIR # NOTE this should be a directory periodically deleted. Otherwise, delete manually
+    #os.environ['WANDB_CACHE_DIR'] = SCRATCH_DIR # NOTE this should be a directory periodically deleted. Otherwise, delete manually
 
     if not args.expt_name:
         args.expt_name = get_expt_name(args)
@@ -435,3 +434,6 @@ if __name__ == '__main__':
 # python train_cifar.py --wandb=False --local_exec=True --n_nodes=1 --topology=solo --data_fraction=0.05 --alpha 0.999 0.995 0.98
 # python train_cifar.py --n_nodes=1 --topology=solo --avg_index --alpha 0.999 0.995 0.98 --steps_eval=400 --epochs=100 --lr_decay 40 80
 # python train_cifar.py --wandb=False --local_exec=True --n_nodes=1 --topology=solo --data_fraction=0.005 --data_split=False --lr_decay 10 20 --lr_linear_decay_epochs 5 --lr_scheduler 
+
+# MNIST
+# python train_cifar.py --expt_name=MNIST_lr0.001 --local_exec=True --n_nodes=1 --topology=solo --dataset=mnist --lr_warmup_epochs=0 --epochs=10 --net=log_reg --lr=0.001

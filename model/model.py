@@ -1,4 +1,4 @@
-from model.convnet import ConvNet, ConvNet_OP, MLP
+from model.convnet import ConvNet, ConvNet_OP, MLP, LogisticRegression
 from model.resnet import resnet20, resnet18, resnet50
 from model.vgg import vgg16_C2
 from model.vgg2 import vgg11, vgg11_bn, vgg16, vgg16_bn
@@ -14,6 +14,8 @@ def get_model(args, device):
         model = ConvNet_OP()
     elif args.net == 'mlp':
         model = MLP()
+    elif args.net == 'log_reg':
+        model = LogisticRegression()
     elif args.net == 'rn20':
         model = resnet20(args)
     elif args.net == 'rn18':

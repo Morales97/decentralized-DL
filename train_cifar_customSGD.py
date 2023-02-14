@@ -288,7 +288,7 @@ def train(args, steps, wandb):
                 loss = F.cross_entropy(output, target)
                 loss.backward()
                 # ts_opt_step = time.time()
-                opts[0].step(variant=args.variant)
+                opts[0].step()
                 # opts[0].step_old()
                 # print(f'Optimizer step time [s]: {time.time() - ts_opt_step}')
 

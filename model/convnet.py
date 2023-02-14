@@ -70,6 +70,17 @@ class MLP(nn.Module):
         output = F.log_softmax(x, dim=1)
         return output
 
+class LogisticRegression(nn.Module):
+    def __init__(self, input_dim=784, output_dim=10):
+        super(LogisticRegression, self).__init__()
+        self.linear = nn.Linear(input_dim, output_dim)
+        
+    def forward(self, x):
+        x = torch.flatten(x, 1)
+        x = self.linear(x)    # no activation function, softmax is embedded in CELoss
+        output = F.log_softmax(x, dim=1)
+        return output
+    
 
 
 

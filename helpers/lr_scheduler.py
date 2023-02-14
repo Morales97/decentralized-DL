@@ -5,6 +5,7 @@ import pdb
 
 def get_lr_schedulers(args, n_samples, opts):
     ''' WARNING only to be used with fixed batch size and n_nodes (i.e., fixed number of steps per epoch'''
+
     schedulers = []
     gamma = 1 / args.lr_decay_factor
     steps_per_epoch = np.ceil(n_samples / (args.n_nodes[0] * args.batch_size[0]))
@@ -12,6 +13,11 @@ def get_lr_schedulers(args, n_samples, opts):
     phases_steps_1 = [steps_per_epoch * phase for phase in args.lr_decay]                   # to use in SequentialLR
     phases_steps_2 = [steps_per_epoch * phase - warmup_steps for phase in args.lr_decay]    # to use in MultiStepLR
     
+    if not args.lr_scheduler:
+        for opt in opts:
+            schedulers.append(lrs.ConstantLR(opt, 1, total_iters=0))        # NOTE to not interfere with outside tuning of LR
+        return schedulers
+
     # warmup + (linear decay + constant) x times
     if args.lr_linear_decay_epochs > 0:
         lr_factors = [gamma**i for i in range(len(phases_steps_1)+1)]
