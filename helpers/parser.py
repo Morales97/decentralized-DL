@@ -145,6 +145,7 @@ def parse_args():
     parser = get_parser()
     args = parser.parse_args()
     check_assertions(args)
+    pdb.set_trace()
     return args
 
 def get_default_args():
