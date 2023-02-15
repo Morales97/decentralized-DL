@@ -10,11 +10,11 @@ import torch.nn.functional as F
 from helpers.utils import save_experiment, get_expt_name, MultiAccuracyTracker, save_checkpoint
 from helpers.logger import Logger
 from helpers.parser import parse_args
-from helpers.optimizer import get_optimizer
+from optimizer.optimizer import get_optimizer
 from helpers.consensus import compute_node_consensus, compute_weight_distance, get_gradient_norm, compute_weight_norm, get_momentum_norm
 from helpers.evaluate import eval_all_models, evaluate_model
 from helpers.wa import AveragedModel, update_bn, SWALR
-from helpers.custom_sgd import CustomSGD
+from optimizer.custom_sgd import CustomSGD
 import wandb
 import os
 
@@ -23,13 +23,16 @@ def worker_local_step(model, opt, train_loader_iter, device):
     input = input.to(device)
     target = target.to(device)
 
+    # ts_optimization = time.time()
     model.train()
     output = model(input)
     opt.zero_grad()
     loss = F.cross_entropy(output, target)
     loss.backward()
+    # ts_opt_step = time.time()
     opt.step()
-
+    # print(f'Optimizer step time {time.time() - ts_opt_step}')
+    # print(f'Forward and optimmization time {time.time() - ts_optimization}')
     return loss.item()
 
 
@@ -97,7 +100,7 @@ def compute_model_tracking_metrics(args, logger, models, step, epoch, device, mo
     logger.log_grad_norm(step, epoch, grad_norm)
 
     # momentum L2 norm
-    if opts is not None:
+    if opts is not None and args.opt == 'SGD':
         mom_norm = get_momentum_norm(opts[0])
         logger.log_quantity(step, epoch, mom_norm , 'Momentum norm')
 
@@ -278,20 +281,27 @@ def train(args, steps, wandb):
                 input = input.to(device)
                 target = target.to(device)
 
+                # ts_optimizer = time.time()
                 models[i].train()
                 output = models[i](input)
                 opts[0].zero_grad()
                 loss = F.cross_entropy(output, target)
                 loss.backward()
+                # ts_opt_step = time.time()
                 opts[0].step()
+                # opts[0].step_old()
+                # print(f'Optimizer step time [s]: {time.time() - ts_opt_step}')
+
                 
                 with torch.no_grad():
                     model_x.train() # running to keep BN statistis. Need to rethink this. Should BN stats be part of the optimization algo?
                     _ = model_x(input)
-                    model_v.train()
-                    _ = model_v(input)
+                    if args.variant != 2:
+                        model_v.train()
+                        _ = model_v(input)
 
                 train_loss += loss.item()
+                # print(f'Forward and optimization [s]: {time.time() - ts_optimizer}')
             else:          
                 if args.data_split:
                     train_loss += worker_local_step(models[i], opts[i], train_loader_iter[i], device)
@@ -377,13 +387,15 @@ def train(args, steps, wandb):
 
 
                 if args.opt != 'SGD':   # custom SGD
+                    acc_x, acc_y, acc_v = 0, 0, 0
                     test_loss, acc_x = evaluate_model(model_x, test_loader, device)
                     _, acc_y = evaluate_model(models[0], test_loader, device)
-                    _, acc_v = evaluate_model(model_v, test_loader, device)
                     logger.log_eval(step, epoch, float(acc_y*100), test_loss, ts_eval, ts_steps_eval)
                     logger.log_acc(step, epoch, acc_x*100, name='X')
                     logger.log_acc(step, epoch, acc_y*100, name='Y')
-                    logger.log_acc(step, epoch, acc_v*100, name='V')
+                    if args.variant != 2:
+                        _, acc_v = evaluate_model(model_v, test_loader, device)
+                        logger.log_acc(step, epoch, acc_v*100, name='V')
                     print('Epoch %.3f (Step %d) -- X accuracy: %.2f -- Y accuracy: %.2f -- V accuracy: %.2f -- Test loss: %.3f -- Train loss: %.3f -- Time (total/last/eval): %.2f / %.2f / %.2f s' %
                         (epoch, step, float(acc_x*100), float(acc_y*100), float(acc_v*100), test_loss, train_loss, time.time() - ts_total, time.time() - ts_steps_eval, time.time() - ts_eval))
                     acc=acc_y
@@ -469,6 +481,6 @@ if __name__ == '__main__':
     else:
         train(args, steps, None)
 
-# python train_cifar_customSGD.py --wandb=False --expt_name=new_a0_b1 --project=MLO-optimizer --opt=customSGD --momentum=0.9 --custom_a=0 --custom_b=1 --lr=0.1 --n_nodes=1 --topology=solo --epochs=50 --lr_decay=100 --lr_warmup_epochs=0 --data_split=True --steps_eval=400 --net=rn18
+# python train_cifar_customSGD.py --wandb=False --expt_name=new_a0_b1 --project=MLO-optimizer --opt=customSGD --momentum=0.9 --custom_a=0.1 --custom_b=0.5 --lr=0.1 --n_nodes=1 --topology=solo --epochs=50 --lr_decay=100 --lr_warmup_epochs=0 --data_split=True --steps_eval=400 --net=rn18
 # python train_cifar_customSGD.py --wandb=False --expt_name=SGD --project=MLO-optimizer --momentum=0 --nesterov=False --wd=0 --lr=0.1 --n_nodes=1 --topology=solo --epochs=50 --lr_decay=100 --lr_warmup_epochs=0 --data_split=True --steps_eval=400 --net=rn18
 # python train_cifar_customSGD.py --wandb=False --local_exec=True --expt_name=SGD --project=MLO-optimizer --momentum=0.9 --nesterov=True --wd=0 --lr=0.1 --n_nodes=1 --topology=solo --epochs=50 --lr_decay=100 --lr_warmup_epochs=0 --data_split=True --steps_eval=400 --net=rn18

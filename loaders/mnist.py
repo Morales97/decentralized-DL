@@ -5,7 +5,7 @@ import pdb
 from torchvision import datasets, transforms
 import torch
 import torch.utils.data as data
-
+import matplotlib.pyplot as plt
 
 def get_mnist_test(root, batch_size):
 
@@ -126,3 +126,84 @@ def get_heterogeneous_mnist(root, n_nodes, batch_size, p):
     test_loader = get_mnist_test(root, 32)
 
     return train_loader, test_loader
+
+
+def viz_weights(X, save=False, epoch=0):
+    ''' Visualize weights for the 10 classes in a MNIST logistic regression (colorcoded as heatmaps) '''
+    assert X.flatten().size == 784*10
+    
+    plt.subplots(2,5, figsize=(14,6))
+    for i in range(10):
+        l1 = plt.subplot(2, 5, i + 1)
+        l1.imshow(X[i, :].reshape(28, 28), interpolation='nearest',cmap=plt.cm.RdBu)
+        l1.set_xticks(())
+        l1.set_yticks(())
+        l1.set_xlabel('Class %i' % i)
+    plt.suptitle(f'Epoch {np.round(epoch,2)}')
+
+    if save:
+        plt.savefig(f'viz/tmp/{np.round(epoch, 3)}.jpg', bbox_inches='tight')
+        plt.clf()
+        plt.cla()
+        plt.close()
+    else:
+        plt.show()
+
+
+def viz_weights_and_ema(X, X_ema, save=False, epoch=0):
+    ''' Visualize weights for the 10 classes in a MNIST logistic regression (colorcoded as heatmaps) '''
+    assert X.flatten().size == 784*10
+    
+    # normalize to [0,1]
+    vmin = min(np.min(X), np.min(X_ema))
+    vmax = max(np.max(X), np.max(X_ema))
+    X -= vmin
+    X /= (vmax-vmin)
+    X_ema -= vmin
+    X_ema /= (vmax-vmin)
+
+    plt.subplots(4,5, figsize=(24,12))
+    for i in range(10):
+        l1 = plt.subplot(4, 5, i + 1)
+        l2 = plt.subplot(4, 5, i + 11)
+        l1.imshow(X[i, :].reshape(28, 28), interpolation='nearest',cmap=plt.cm.RdBu)
+        l2.imshow(X_ema[i, :].reshape(28, 28), interpolation='nearest',cmap=plt.cm.RdBu)
+        l1.set_xticks(())
+        l1.set_yticks(())
+        l2.set_xticks(())
+        l2.set_yticks(())
+        l1.set_xlabel('Class %i' % i)
+        l2.set_xlabel('Class %i - EMA' % i)
+    #plt.suptitle('Image of the 784 weights for each 10 trained classifiers')
+    plt.suptitle(f'Epoch {np.round(epoch,2)}')
+    if save:
+        plt.tight_layout()
+        plt.savefig(f'viz/tmp/{np.round(epoch, 3)}.jpg',bbox_inches='tight')
+        plt.clf()
+        plt.cla()
+        plt.close()
+    else:
+        plt.show()
+
+
+import glob
+from PIL import Image
+
+def recursive_glob(rootdir=".", suffix=""):
+    return [
+        os.path.join(looproot, filename)
+        for looproot, _, filenames in os.walk(rootdir)
+        for filename in filenames
+        if filename.endswith(suffix)
+    ]
+def make_gif(frame_folder):
+    files = recursive_glob(frame_folder, '.jpg')
+    files.sort()
+    frames = [Image.open(image) for image in files]
+
+    frame_one = frames[0]
+    frame_one.save("viz/tmp/my_awesome.gif", format="GIF", append_images=frames,
+               save_all=True, duration=400, loop=0)
+    
+if __name__ == "__main__":
+    make_gif("viz/tmp")

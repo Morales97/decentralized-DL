@@ -29,7 +29,7 @@ import wandb
 from helpers.parser import SCRATCH_DIR, SAVE_DIR, ENTITY
 import pdb
 from helpers.logger import Logger
-from helpers.optimizer import OptimizerEMA_IN
+from optimizer.optimizer import OptimizerEMA_IN
 import numpy as np
 
 model_names = sorted(name for name in models.__dict__
@@ -174,8 +174,14 @@ def main_worker(gpu, ngpus_per_node, args, wandb):
                                 world_size=args.world_size, rank=args.rank)
     # create model
     if args.pretrained:
+        if args.arch == 'resnet152':
+            model = models.resnet152(weights=models.ResNet152_Weights.IMAGENET1K_V1) # acc@1 78.3%
+            # model = models.resnet152(weights=models.ResNet152_Weights.IMAGENET1K_V1) # acc@1 82.2%
+        else:
+            # model = models.__dict__[args.arch](pretrained=True)
+            model = models.resnet50(weights=models.ResNet50_Weights.IMAGENET1K_V1) # acc@1 76.1%
+            # model = models.resnet50(weights=models.ResNet50_Weights.IMAGENET1K_V2) # acc@1 80.8%
         print("=> using pre-trained model '{}'".format(args.arch))
-        model = models.__dict__[args.arch](pretrained=True)
     else:
         print("=> creating model '{}'".format(args.arch))
         model = models.__dict__[args.arch]()
@@ -317,7 +323,7 @@ def main_worker(gpu, ngpus_per_node, args, wandb):
         num_workers=args.workers, pin_memory=True, sampler=val_sampler)
 
     if args.evaluate:
-        validate(val_loader, model, criterion, args)
+        validate(val_loader, model, criterion, args, logger, 0, 0)
         return
 
     step = 0
@@ -596,5 +602,7 @@ if __name__ == '__main__':
     else:
         main(args, None)
 
-# python train_imagenet.py -a resnet18 /mlodata1/kosson/datasets/imagenet --expt_name=IN_sologpu=0
+# python train_imagenet.py -a resnet18 /mlodata1/kosson/datasets/imagenet --expt_name=IN_solo --gpu=0
 # python train_imagenet.py -a resnet18 --dummy --gpu=0
+# python train_imagenet.py --pretrained --evaluate /mlodata1/kosson/datasets/imagenet
+# python train_imagenet.py -a resnet50 --pretrained --epochs=10 --lr=0.01 --ema --alpha=0.9995 --gpu=0 --expt_name=RN50_V2_lr0.01 /mlodata1/kosson/datasets/imagenet

@@ -57,3 +57,30 @@ def get_momentum_norm(opt):
                 moms.append(state['momentum_buffer'])
 
     return torch.norm(torch.stack([torch.norm(m) for m in moms]))
+
+def get_grad_stats(opt):
+    '''
+    Did not observe anything meaningful in the stats of gradient. Mean is always around 0 and grad**2 is always close to 0
+    (Pdb) np.histogram(means)
+    (array([    2,     9,    94, 31910,  2726,    59,    18,     6,     1,
+           1]), array([-6.3870696e-04, -4.7865612e-04, -3.1860528e-04, -1.5855445e-04,
+        1.4963792e-06,  1.6154721e-04,  3.2159805e-04,  4.8164889e-04,
+        6.4169971e-04,  8.0175058e-04,  9.6180139e-04], dtype=float32))
+    (Pdb) np.histogram(vars)
+    (array([34788,    22,     8,     3,     3,     1,     0,     0,     0,
+           1]), array([6.8967710e-21, 9.2506189e-06, 1.8501238e-05, 2.7751857e-05,
+       3.7002475e-05, 4.6253095e-05, 5.5503715e-05, 6.4754335e-05,
+       7.4004951e-05, 8.3255574e-05, 9.2506190e-05], dtype=float32))
+    '''
+    means = []
+    vars = []
+    for group in opt.param_groups:
+        for p in group['params']:
+            state = opt.state[p]
+            if 'exp_avg' in state:
+                means.append(state['exp_avg'].flatten())
+            if 'exp_avg_sq' in state:
+                vars.append(state['exp_avg_sq'].flatten())
+    means = torch.cat(means)
+    vars = torch.cat(vars)
+    pdb.set_trace()

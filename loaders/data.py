@@ -10,16 +10,14 @@ from loaders.cifar import get_cifar
 ROOT_LOCAL = './data'
 ROOT_CLUSTER = '/mloraw1/danmoral/data'
 
-def _get_mnist(config, root, n_nodes, batch_size):
+def _get_mnist(args, root, n_nodes, batch_size):
 
-    if config['p_label_skew'] > 0:
-        return get_heterogeneous_mnist(root, n_nodes, batch_size, config['p_label_skew'])
-    if config['data_split'] == 'yes':
+    if args.p_label_skew > 0:
+        return get_heterogeneous_mnist(root, n_nodes, batch_size, args.p_label_skew)
+    if args.data_split:
         return get_mnist_split(root, n_nodes, batch_size)
-    elif config['data_split'] == 'no':
-        return get_mnist_iid(root, batch_size)
     else:
-        raise Exception('data split modality not supported')
+        return get_mnist_iid(root, batch_size)
 
 
 def _get_cifar(args, root, batch_size, fraction):
@@ -39,7 +37,7 @@ def get_data(args, batch_size, fraction=-1):
         root = ROOT_CLUSTER
 
     if args.dataset == 'mnist':
-        return _get_mnist(args, root, args.n_nodes, batch_size)
+        return _get_mnist(args, root, args.n_nodes[0], batch_size)
     elif args.dataset in ['cifar10', 'cifar100']:
         return _get_cifar(args, root, batch_size, fraction)
     else:
