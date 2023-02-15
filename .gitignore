@@ -8,3 +8,5 @@ data/cifar-10-batches-py/*
 data/cifar-100-python/*
 .pytest_cache
 .DS_Store
+*.jpg
+*.gif

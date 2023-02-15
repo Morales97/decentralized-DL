@@ -42,7 +42,7 @@ def get_parser():
                         help='topology of gossip matrix. see topology.py for options') 
     parser.add_argument('--local_steps', type=int, nargs='+', default=[0],
                         help='number of local steps inbetween each gossip') 
-    parser.add_argument('--epochs', type=int, default=300,
+    parser.add_argument('--epochs', type=float, default=300,
                         help='number epochs to train for') 
     parser.add_argument('--start_epoch_phases', type=int, nargs='+', default=[0],
                         help='start epoch for each training phase. If [0], only one training phase') 
@@ -118,6 +118,8 @@ def get_parser():
                         help='Label skew for heterogeneity. Requires --data_split True.')    
     parser.add_argument('--data_fraction', type=float, default=-1,
                         help='Set between 0 and 1 to use a random subset of dataset with selected fraction of samples')
+    parser.add_argument('--viz_weights', action='store_true',
+                        help='For Logistic regression, viz weights for each class')
 
     # evaluation
     parser.add_argument('--eval_on_average_model', type=boolfromstr, default=False,

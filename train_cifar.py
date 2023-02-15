@@ -2,6 +2,7 @@ from copy import deepcopy
 import numpy as np
 import pdb
 from loaders.data import get_data
+from loaders.mnist import viz_weights, viz_weights_and_ema
 from topology import get_gossip_matrix, diffuse, get_average_model, get_average_opt
 import time
 import torch
@@ -11,7 +12,7 @@ from helpers.utils import save_experiment, get_expt_name, MultiAccuracyTracker, 
 from helpers.logger import Logger
 from helpers.parser import parse_args
 from helpers.optimizer import get_optimizer
-from helpers.consensus import compute_node_consensus, compute_weight_distance, get_gradient_norm, compute_weight_norm
+from helpers.consensus import compute_node_consensus, compute_weight_distance, get_momentum_norm, get_gradient_norm, compute_weight_norm
 from helpers.evaluate import eval_all_models, evaluate_model
 from helpers.wa import AveragedModel, update_bn, SWALR
 from helpers.avg_index import UniformAvgIndex, ModelAvgIndex
@@ -79,7 +80,7 @@ def update_SWA(args, swa_model, models, device, n):
     n += 1
     return swa_model, n
 
-def compute_model_tracking_metrics(args, logger, models, step, epoch, device, model_init=None):
+def compute_model_tracking_metrics(args, logger, models, ema_models, opts, step, epoch, device, model_init=None):
     # consensus distance
     L2_dist = compute_node_consensus(args, device, models)
     logger.log_consensus(step, epoch, L2_dist)
@@ -96,6 +97,20 @@ def compute_model_tracking_metrics(args, logger, models, step, epoch, device, mo
     # gradient L2 norm
     grad_norm = get_gradient_norm(models[0])
     logger.log_grad_norm(step, epoch, grad_norm)
+
+    # EMA weight L2 norm
+    ema_model = list(ema_models.values())[0][0]  # norm of EMA model of node[0] with alpha[0] 
+    L2_norm_ema = compute_weight_norm(ema_model)
+    logger.log_quantity(step, epoch, L2_norm_ema, name='EMA Weight L2 norm')
+
+    # student to EMA weight L2 distance
+    L2_dist_ema = compute_weight_distance(models[0], ema_model)
+    logger.log_quantity(step, epoch, L2_dist_ema, name='Student-EMA L2 distance')
+
+    # Momentum L2 norm
+    if args.momentum > 0:
+        mom_norm = get_momentum_norm(opts[0])
+        logger.log_quantity(step, epoch, mom_norm , 'Momentum norm')
 
 def update_bn_and_eval(model, train_loader, test_loader, device, logger, log_name=''):
     _model = deepcopy(model)
@@ -162,7 +177,6 @@ def train(args, wandb):
             UniformAvgIndex(index_save_dir, checkpoint_period=args.steps_eval),
             include_buffers=True,
         )
-
 
     # initialize variables
     comm_matrix = get_gossip_matrix(args, 0)
@@ -365,10 +379,12 @@ def train(args, wandb):
 
                 max_acc.update(acc, 'Student')
                 ts_steps_eval = time.time()
+                if args.viz_weights:
+                    viz_weights_and_ema(models[0].linear.weight.detach().numpy(), ema_models[args.alpha[0]][0].linear.weight.detach().numpy(), save=True, epoch=epoch)
 
         # log consensus distance, weight norm
         if step % args.tracking_interval == 0:
-            compute_model_tracking_metrics(args, logger, models, step, epoch, device)
+            compute_model_tracking_metrics(args, logger, models, ema_models, opts, step, epoch, device)
 
         # save checkpoint
         if args.save_model and step % args.save_interval == 0:
@@ -409,7 +425,10 @@ def train(args, wandb):
     if args.avg_index:
         torch.save(index.state_dict(), os.path.join(index_save_dir, f'index_{index._index._uuid}_{step}.pt'))
 
-
+    if args.viz_weights:
+        # viz_weights(models[0].linear.weight.detach().numpy())
+        # viz_weights(ema_models[args.alpha[0]][0].linear.weight.detach().numpy())
+        viz_weights_and_ema(models[0].linear.weight.detach().numpy(), ema_models[args.alpha[0]][0].linear.weight.detach().numpy())
 
 if __name__ == '__main__':
     from helpers.parser import SCRATCH_DIR, SAVE_DIR
@@ -437,3 +456,7 @@ if __name__ == '__main__':
 
 # MNIST
 # python train_cifar.py --expt_name=MNIST_lr0.001 --local_exec=True --n_nodes=1 --topology=solo --dataset=mnist --lr_warmup_epochs=0 --epochs=10 --net=log_reg --lr=0.001
+# python train_cifar.py --expt_name=MNIST_lr1 --local_exec=True --n_nodes=1 --topology=solo --dataset=mnist --lr_warmup_epochs=0 --epochs=10 --net=log_reg --lr=1 --alpha 0.999 0.95 0.98 0.99 0.995
+# python train_cifar.py --expt_name=MNIST_lr1_decay --local_exec=True --n_nodes=1 --topology=solo --dataset=mnist --lr_warmup_epochs=0 --epochs=15 --lr_decay 5 10 --net=log_reg --lr=1 --alpha 0.999 0.95 0.98 0.99 0.995 
+
+# python train_cifar.py --wandb=False --local_exec=True --n_nodes=1 --topology=solo --dataset=mnist --lr_warmup_epochs=0 --epochs=1 --net=log_reg --lr=0.1 --viz_weights

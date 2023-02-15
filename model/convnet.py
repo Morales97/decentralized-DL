@@ -74,7 +74,12 @@ class LogisticRegression(nn.Module):
     def __init__(self, input_dim=784, output_dim=10):
         super(LogisticRegression, self).__init__()
         self.linear = nn.Linear(input_dim, output_dim)
+        self._init_zeros()
         
+    def _init_zeros(self):
+        self.linear.weight.data.zero_()
+        self.linear.bias.data.zero_()
+
     def forward(self, x):
         x = torch.flatten(x, 1)
         x = self.linear(x)    # no activation function, softmax is embedded in CELoss

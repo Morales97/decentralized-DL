@@ -1,10 +1,16 @@
 import torch.optim as optim
 import torch
 import pdb
+import os
+import sys
+sys.path.insert(0, os.path.join(sys.path[0], '..'))
+from helpers.sgd_grad_stats import SGD_GradStats
 
 def get_optimizer(args, model):
     if args.opt == 'SGD':
         optimizer = optim.SGD(model.parameters(), lr=args.lr[0], momentum=args.momentum, nesterov=args.nesterov, weight_decay=args.wd)
+    elif args.opt == 'SGD_GradStats':
+        optimizer = SGD_GradStats(model.parameters(), lr=args.lr[0], momentum=args.momentum, nesterov=args.nesterov, weight_decay=args.wd)
     else:
         raise Exception('Optimizer not supported')
     
