@@ -84,7 +84,7 @@ def compute_model_tracking_metrics(args, logger, models, ema_models, opts, step,
     logger.log_grad_norm(step, epoch, grad_norm)
 
     # EMA weight L2 norm
-    ema_model = list(ema_models.values())[0][-1]  # norm of EMA model of node[0] with alpha[-1] 
+    ema_model = ema_models[args.alpha[-1]][0]  # norm of EMA model of node[0] with alpha[-1] 
     L2_norm_ema = compute_weight_norm(ema_model)
     logger.log_quantity(step, epoch, L2_norm_ema, name='EMA Weight L2 norm')
 
@@ -297,7 +297,7 @@ def train(args, wandb):
         
         # EMA train log
         if args.log_train_ema:
-            ema_model = get_average_model(args, ema_models)
+            ema_model = get_average_model(device, ema_models[args.alpha[-1]])   
             with torch.no_grad():
                 output = ema_model(input)
                 ema_loss = F.cross_entropy(output, target)
@@ -475,4 +475,5 @@ if __name__ == '__main__':
 # python train_cifar.py --wandb=False --local_exec=True --n_nodes=1 --topology=solo --dataset=mnist --lr_warmup_epochs=0 --epochs=1 --net=log_reg --lr=0.1 --viz_weights
 
 # MNIST DSGD
-# python train_cifar.py --expt_name=MNIST_lr1_ring --local_exec=True --n_nodes=8 --topology=ring --batch_size=32 --dataset=mnist --lr_warmup_epochs=0 --epochs=15 --lr_decay 5 10 --net=log_reg --lr=1 --alpha 0.999 0.95 0.98 0.99 0.995
+# python train_cifar.py --expt_name=MNIST_lr1_ring --local_exec=True --n_nodes=8 --topology=ring --batch_size=32 --log_train_ema --dataset=mnist --lr_warmup_epochs=0 --epochs=15 --lr_decay 5 10 --lr_decay_factor=5 --net=log_reg --lr=1 --alpha 0.999 0.95 0.98 0.99 0.995
+# python train_cifar.py --expt_name=MNIST_lr1_ring_decay2 --local_exec=True --n_nodes=8 --topology=ring --batch_size=32 --log_train_ema --dataset=mnist --lr_warmup_epochs=0 --epochs=30 --lr_decay 5 10 15 20 25 --lr_decay_factor=2 --net=log_reg --lr=1 --alpha 0.999 0.95 0.98 0.99 0.995

@@ -78,6 +78,7 @@ def get_parser():
                         help='Save checkpoints of running model average')
     parser.add_argument('--log_train_ema', action='store_true', 
                         help='log EMA train accuracy and loss')
+
     # hyperparameters
     parser.add_argument('--seed', type=int, default=0,
                         help='random seed')
