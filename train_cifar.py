@@ -99,7 +99,7 @@ def compute_model_tracking_metrics(args, logger, models, ema_models, opts, step,
     logger.log_grad_norm(step, epoch, grad_norm)
 
     # EMA weight L2 norm
-    ema_model = list(ema_models.values())[0][0]  # norm of EMA model of node[0] with alpha[0] 
+    ema_model = list(ema_models.values())[0][-1]  # norm of EMA model of node[0] with alpha[-1] 
     L2_norm_ema = compute_weight_norm(ema_model)
     logger.log_quantity(step, epoch, L2_norm_ema, name='EMA Weight L2 norm')
 
