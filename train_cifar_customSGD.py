@@ -10,11 +10,11 @@ import torch.nn.functional as F
 from helpers.utils import save_experiment, get_expt_name, MultiAccuracyTracker, save_checkpoint
 from helpers.logger import Logger
 from helpers.parser import parse_args
-from helpers.optimizer import get_optimizer
+from optimizer.optimizer import get_optimizer
 from helpers.consensus import compute_node_consensus, compute_weight_distance, get_gradient_norm, compute_weight_norm, get_momentum_norm
 from helpers.evaluate import eval_all_models, evaluate_model
 from helpers.wa import AveragedModel, update_bn, SWALR
-from helpers.custom_sgd import CustomSGD
+from optimizer.custom_sgd import CustomSGD
 import wandb
 import os
 

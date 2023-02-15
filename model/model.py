@@ -2,7 +2,7 @@ from model.convnet import ConvNet, ConvNet_OP, MLP, LogisticRegression
 from model.resnet import resnet20, resnet18, resnet50
 from model.vgg import vgg16_C2
 from model.vgg2 import vgg11, vgg11_bn, vgg16, vgg16_bn
-from helpers.optimizer import OptimizerEMA
+from optimizer.optimizer import OptimizerEMA
 import torch 
 
 def get_model(args, device):

@@ -11,10 +11,11 @@ class Logger:
         self.weight_distance = []
         self.consensus = []
 
-    def log_step(self, step, epoch, train_loss, ts_total, ts_step):
+    def log_step(self, step, epoch, train_loss, train_acc, ts_total, ts_step):
         self.train_losses.append(train_loss)
         log = {
             'Train Loss': train_loss,
+            'Train Acc': train_acc,
             'Iteration': step,
             'Epoch': epoch,
             'Total time': time.time() - ts_total,

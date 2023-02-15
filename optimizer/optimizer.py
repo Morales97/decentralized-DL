@@ -4,7 +4,7 @@ import pdb
 import os
 import sys
 sys.path.insert(0, os.path.join(sys.path[0], '..'))
-from helpers.sgd_grad_stats import SGD_GradStats
+from optimizer.sgd_grad_stats import SGD_GradStats
 
 def get_optimizer(args, model):
     if args.opt == 'SGD':

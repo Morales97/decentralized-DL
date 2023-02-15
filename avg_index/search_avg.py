@@ -8,7 +8,7 @@ import os
 sys.path.insert(0, os.path.join(sys.path[0], '..'))
 from helpers.parser import parse_args
 from loaders.data import get_data
-from helpers.avg_index import UniformAvgIndex, ModelAvgIndex
+from avg_index.avg_index import UniformAvgIndex, ModelAvgIndex
 from model.model import get_model
 
 @torch.no_grad()

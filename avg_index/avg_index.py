@@ -11,7 +11,6 @@ from typing import Iterable, Optional, Union, Protocol
 
 import torch
 import pdb 
-import os.path as osp
 
 class AvgIndex(Protocol):
     available_checkpoints: set[int]

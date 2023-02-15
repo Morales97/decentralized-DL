@@ -29,7 +29,7 @@ import wandb
 from helpers.parser import SCRATCH_DIR, SAVE_DIR, ENTITY
 import pdb
 from helpers.logger import Logger
-from helpers.optimizer import OptimizerEMA_IN
+from optimizer.optimizer import OptimizerEMA_IN
 import numpy as np
 
 model_names = sorted(name for name in models.__dict__

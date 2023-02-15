@@ -11,29 +11,14 @@ import torch.nn.functional as F
 from helpers.utils import save_experiment, get_expt_name, MultiAccuracyTracker, save_checkpoint
 from helpers.logger import Logger
 from helpers.parser import parse_args
-from helpers.optimizer import get_optimizer
+from optimizer.optimizer import get_optimizer
 from helpers.consensus import compute_node_consensus, compute_weight_distance, get_momentum_norm, get_gradient_norm, compute_weight_norm
 from helpers.evaluate import eval_all_models, evaluate_model
 from helpers.wa import AveragedModel, update_bn, SWALR
-from helpers.avg_index import UniformAvgIndex, ModelAvgIndex
+from avg_index.avg_index import UniformAvgIndex, ModelAvgIndex
 from helpers.lr_scheduler import get_lr_schedulers
 import wandb
 import os
-
-def worker_local_step(model, opt, scheduler, train_loader_iter, device):
-    input, target = next(train_loader_iter)
-    input = input.to(device)
-    target = target.to(device)
-    
-    model.train()
-    output = model(input)
-    opt.zero_grad()
-    loss = F.cross_entropy(output, target)
-    loss.backward()
-    opt.step()
-    scheduler.step()
-    return loss.item()
-
 
 def initialize_nodes(args, models, opts, n_nodes_new, device):
     ''' All-reduce all models and optimizers, and use to initialize new nodes (all of them with same params and momentum)'''
@@ -267,15 +252,31 @@ def train(args, wandb):
         if args.model_std > 0:
             add_noise_to_models(models, args.model_std, device)
 
-        # local update for each worker
         train_loss = 0
+        correct = 0
         ts_step = time.time()
+        # for every node
         for i in range(len(models)):
             if args.data_split:
-                train_loss += worker_local_step(models[i], opts[i], schedulers[i], train_loader_iter[i], device)
+                input, target = next(train_loader_iter[i])
             else:
-                train_loss += worker_local_step(models[i], opts[i], schedulers[i], iter(train_loader), device)
-            
+                input, target = next(iter(train_loader))
+            input = input.to(device)
+            target = target.to(device)
+            # Forward pass
+            models[i].train()
+            output = models[i](input)
+            # Back-prop
+            opts[i].zero_grad()
+            loss = F.cross_entropy(output, target)
+            loss.backward()
+            opts[i].step()
+            schedulers[i].step()
+
+            train_loss += loss.item()
+            pred = output.argmax(dim=1, keepdim=True)
+            correct += pred.eq(target.view_as(pred)).sum().item()
+
             # EMA updates
             if len(args.alpha) > 0 and step % args.ema_interval == 0:
                 if len(args.alpha) == 1:
@@ -291,8 +292,20 @@ def train(args, wandb):
         step +=1
         epoch += n_nodes * batch_size / n_samples
         train_loss /= n_nodes
-        logger.log_step(step, epoch, train_loss, ts_total, ts_step)
+        train_acc = correct / (n_nodes * batch_size) * 100
+        logger.log_step(step, epoch, train_loss, train_acc, ts_total, ts_step)
         
+        # EMA train log
+        if args.log_train_ema:
+            ema_model = get_average_model(args, ema_models)
+            with torch.no_grad():
+                output = ema_model(input)
+                ema_loss = F.cross_entropy(output, target)
+                pred = output.argmax(dim=1, keepdim=True)
+                ema_acc = pred.eq(target.view_as(pred)).sum().item() / batch_size * 100
+                logger.log_quantity(step, epoch, ema_loss.item(), name='EMA Train Loss')
+                logger.log_quantity(step, epoch, ema_acc, name='EMA Train Acc')
+
         # gossip
         diffuse(args, phase, comm_matrix, models, step)
         
@@ -460,3 +473,6 @@ if __name__ == '__main__':
 # python train_cifar.py --expt_name=MNIST_lr1_decay --local_exec=True --n_nodes=1 --topology=solo --dataset=mnist --lr_warmup_epochs=0 --epochs=15 --lr_decay 5 10 --net=log_reg --lr=1 --alpha 0.999 0.95 0.98 0.99 0.995 
 
 # python train_cifar.py --wandb=False --local_exec=True --n_nodes=1 --topology=solo --dataset=mnist --lr_warmup_epochs=0 --epochs=1 --net=log_reg --lr=0.1 --viz_weights
+
+# MNIST DSGD
+# python train_cifar.py --expt_name=MNIST_lr1_ring --local_exec=True --n_nodes=8 --topology=ring --batch_size=32 --dataset=mnist --lr_warmup_epochs=0 --epochs=15 --lr_decay 5 10 --net=log_reg --lr=1 --alpha 0.999 0.95 0.98 0.99 0.995
