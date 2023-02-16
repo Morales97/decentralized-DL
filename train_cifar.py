@@ -447,6 +447,9 @@ if __name__ == '__main__':
 
     if not args.expt_name:
         args.expt_name = get_expt_name(args)
+    if args.save_model and not os.path.exists(os.path.join(SAVE_DIR, args.expt_name)):
+        os.makedirs(os.path.join(SAVE_DIR, args.expt_name))
+
 
     if args.wandb:
         wandb.init(name=args.expt_name, dir=args.save_dir, config=args, project=args.project, entity=args.entity)
