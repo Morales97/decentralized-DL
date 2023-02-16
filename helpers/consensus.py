@@ -84,3 +84,8 @@ def get_grad_stats(opt):
     means = torch.cat(means)
     vars = torch.cat(vars)
     pdb.set_trace()
+
+def get_cosine_similarity(model1, model2):
+    params1 = torch.cat([p.data.view(-1) for p in model1.parameters()])  # vectorize parameters
+    params2 = torch.cat([p.data.view(-1) for p in model2.parameters()])
+    return F.cosine_similarity(params1, params2, dim=0)

@@ -12,7 +12,7 @@ from helpers.utils import save_experiment, get_expt_name, MultiAccuracyTracker, 
 from helpers.logger import Logger
 from helpers.parser import parse_args
 from optimizer.optimizer import get_optimizer
-from helpers.consensus import compute_node_consensus, compute_weight_distance, get_momentum_norm, get_gradient_norm, compute_weight_norm
+from helpers.consensus import compute_node_consensus, compute_weight_distance, get_cosine_similarity, get_momentum_norm, get_gradient_norm, compute_weight_norm
 from helpers.evaluate import eval_all_models, evaluate_model
 from helpers.wa import AveragedModel, update_bn, SWALR
 from avg_index.avg_index import UniformAvgIndex, ModelAvgIndex
@@ -97,6 +97,14 @@ def compute_model_tracking_metrics(args, logger, models, ema_models, opts, step,
         mom_norm = get_momentum_norm(opts[0])
         logger.log_quantity(step, epoch, mom_norm , 'Momentum norm')
 
+    # Cosine similarity Student-EMA
+    cos_sim = get_cosine_similarity(models[0], ema_model)
+    
+    # Cosine similarity with init
+    if model_init is not None:
+        cos_sim = get_cosine_similarity(models[0], model_init)
+
+
 def update_bn_and_eval(model, train_loader, test_loader, device, logger, log_name=''):
     _model = deepcopy(model)
     update_bn(args, train_loader, _model, device)
@@ -136,14 +144,11 @@ def train(args, wandb):
     init_model.load_state_dict(models[0].state_dict())
 
     # init model averaging
-    if len(args.alpha) == 1:
-        ema_models, ema_opts = get_ema_models(args, models, device, args.alpha[0])
-    else:
-        ema_models, ema_opts = {}, {}
-        for alpha in args.alpha:
-            ema_model_alpha, ema_opt_alpha = get_ema_models(args, models, device, alpha)
-            ema_models[alpha] = ema_model_alpha
-            ema_opts[alpha] = ema_opt_alpha
+    ema_models, ema_opts = {}, {}
+    for alpha in args.alpha:
+        ema_model_alpha, ema_opt_alpha = get_ema_models(args, models, device, alpha)
+        ema_models[alpha] = ema_model_alpha
+        ema_opts[alpha] = ema_opt_alpha
     if args.late_ema_epoch > 0:
         late_ema_models, late_ema_opts = get_ema_models(args, models, device, alpha=0.995)
         late_ema_active = False   # indicate when to init step_offset
@@ -180,8 +185,7 @@ def train(args, wandb):
     epoch = 0
     prev_epoch = 1
     max_acc = MultiAccuracyTracker(['Student', 'EMA', 'Late EMA', 'MA'])
-    if len(args.alpha) > 1:
-        max_acc.init(args.alpha)
+    max_acc.init(args.alpha)
     epoch_swa = args.epoch_swa # epoch to start SWA averaging (default: 100)
     epoch_swa_budget = args.epoch_swa_budget
     epoch_swa3 = 0
@@ -279,11 +283,8 @@ def train(args, wandb):
 
             # EMA updates
             if len(args.alpha) > 0 and step % args.ema_interval == 0:
-                if len(args.alpha) == 1:
-                    ema_opts[i].update()
-                else:
-                    for alpha in args.alpha:
-                        ema_opts[alpha][i].update()
+                for alpha in args.alpha:
+                    ema_opts[alpha][i].update()
                 if args.late_ema_epoch > 0 and epoch > args.late_ema_epoch:
                     if not late_ema_active:
                         late_ema_active = True
@@ -342,24 +343,18 @@ def train(args, wandb):
                 ts_eval = time.time()
                 
                 # evaluate on average of EMA models
-                if len(args.alpha) == 1:
-                    ema_model = get_average_model(device, ema_models)
+                best_ema_acc = 0
+                best_ema_loss = 1e5
+                for alpha in args.alpha: 
+                    ema_model = get_average_model(device, ema_models[alpha])
                     ema_loss, ema_acc = evaluate_model(ema_model, test_loader, device)
-                    logger.log_acc(step, epoch, ema_acc*100, ema_loss, name='EMA')
-                    max_acc.update(ema_acc, 'EMA')
-                else:
-                    best_ema_acc = 0
-                    best_ema_loss = 1e5
-                    for alpha in args.alpha: 
-                        ema_model = get_average_model(device, ema_models[alpha])
-                        ema_loss, ema_acc = evaluate_model(ema_model, test_loader, device)
-                        logger.log_acc(step, epoch, ema_acc*100, ema_loss, name='EMA ' + str(alpha))
-                        max_acc.update(ema_acc, alpha)
-                        best_ema_acc = max(best_ema_acc, ema_acc)
-                        best_ema_loss = min(best_ema_loss, ema_loss)
-                    max_acc.update(best_ema_acc, 'EMA')
-                    logger.log_acc(step, epoch, best_ema_acc*100, best_ema_loss, name='EMA')  # actually EMA = multi-EMA. to not leave EMA empty
-                    logger.log_acc(step, epoch, best_ema_acc*100, name='Multi-EMA Best')
+                    logger.log_acc(step, epoch, ema_acc*100, ema_loss, name='EMA ' + str(alpha))
+                    max_acc.update(ema_acc, alpha)
+                    best_ema_acc = max(best_ema_acc, ema_acc)
+                    best_ema_loss = min(best_ema_loss, ema_loss)
+                max_acc.update(best_ema_acc, 'EMA')
+                logger.log_acc(step, epoch, best_ema_acc*100, best_ema_loss, name='EMA')  
+                logger.log_acc(step, epoch, best_ema_acc*100, name='Multi-EMA Best')
                 # Late EMA
                 if late_ema_active:
                     late_ema_model = get_average_model(device, late_ema_models)
@@ -400,7 +395,7 @@ def train(args, wandb):
             compute_model_tracking_metrics(args, logger, models, ema_models, opts, step, epoch, device)
 
         # save checkpoint
-        if args.save_model and step % args.save_interval == 0:
+        if args.save_model and (step-1) % args.save_interval == 0:
             # if not args.multiprocessing_distributed or (args.multiprocessing_distributed and args.rank % ngpus_per_node == 0):
             for i in range(len(models)):
                 save_checkpoint({
@@ -408,14 +403,14 @@ def train(args, wandb):
                     'step': step,
                     'net': args.net,
                     'state_dict': models[i].state_dict(),
-                    'ema_state_dict': ema_models[i].state_dict(),
+                    'ema_state_dict': ema_models[args.alpha[-1]][i].state_dict(),
                     'optimizer' : opts[i].state_dict(),
-                }, filename=SAVE_DIR + 'checkpoint_m' + str(i) + '.pth.tar')
+                }, filename=os.path.join(SAVE_DIR, args.expt_name, f'checkpoint_m{i}_{step}.pth.tar'))
 
-                if args.wandb:
-                    model_artifact = wandb.Artifact('ckpt_m' + str(i), type='model')
-                    model_artifact.add_file(filename=SAVE_DIR + 'checkpoint_m' + str(i) + '.pth.tar')
-                    wandb.log_artifact(model_artifact)
+                # if args.wandb:
+                #     model_artifact = wandb.Artifact('ckpt_m' + str(i), type='model')
+                #     model_artifact.add_file(filename=SAVE_DIR + 'checkpoint_m' + str(i) + '.pth.tar')
+                #     wandb.log_artifact(model_artifact)
             print('Checkpoint(s) saved!')
 
     logger.log_single_acc(max_acc.get('Student'), log_as='Max Accuracy')
@@ -459,10 +454,6 @@ if __name__ == '__main__':
         train(args, None)
 
 # python train_cifar.py --lr=3.2 --topology=ring dataset=cifar100 --wandb=False --local_exec=True --eval_on_average_model=True
-# python train_cifar.py --lr=3.2 --topology=fully_connected dataset=cifar100 --wandb=False --local_exec=True --model_std=0.01
-# python train_cifar.py --lr=3.2 --topology ring fully_connected dataset=cifar100 --wandb=False --local_exec=True --n_nodes 8 16 --start_epoch_phases 0 1 --eval_on_average_model=True --steps_eval=20 --lr 3.2 1.6 --late_ema_epoch=1
-# python train_cifar.py --lr=3.2 --topology=ring dataset=cifar100 --eval_on_average_model=True --n_nodes=4 --save_model=True --save_interval=20
-# python train_cifar.py --lr=3.2 --topology solo solodataset=cifar100 --wandb=False --local_exec=True --n_nodes 1 1 --batch_size 1024 2048 --start_epoch_phases 0 1 --steps_eval=40 --lr 3.2 1.6 --data_split=True
 # python train_cifar.py --wandb=False --local_exec=True --n_nodes=1 --topology=solo --data_fraction=0.05 --alpha 0.999 0.995 0.98
 # python train_cifar.py --n_nodes=1 --topology=solo --avg_index --alpha 0.999 0.995 0.98 --steps_eval=400 --epochs=100 --lr_decay 40 80
 # python train_cifar.py --wandb=False --local_exec=True --n_nodes=1 --topology=solo --data_fraction=0.005 --data_split=False --lr_decay 10 20 --lr_linear_decay_epochs 5 --lr_scheduler 
@@ -475,5 +466,9 @@ if __name__ == '__main__':
 # python train_cifar.py --wandb=False --local_exec=True --n_nodes=1 --topology=solo --dataset=mnist --lr_warmup_epochs=0 --epochs=1 --net=log_reg --lr=0.1 --viz_weights
 
 # MNIST DSGD
-# python train_cifar.py --expt_name=MNIST_lr1_ring --local_exec=True --n_nodes=8 --topology=ring --batch_size=32 --log_train_ema --dataset=mnist --lr_warmup_epochs=0 --epochs=15 --lr_decay 5 10 --lr_decay_factor=5 --net=log_reg --lr=1 --alpha 0.999 0.95 0.98 0.99 0.995
-# python train_cifar.py --expt_name=MNIST_lr1_ring_decay2 --local_exec=True --n_nodes=8 --topology=ring --batch_size=32 --log_train_ema --dataset=mnist --lr_warmup_epochs=0 --epochs=30 --lr_decay 5 10 15 20 25 --lr_decay_factor=2 --net=log_reg --lr=1 --alpha 0.999 0.95 0.98 0.99 0.995 --tracking_interval=10
+# python train_cifar.py --expt_name=MNIST_lr1_ring --local_exec=True --n_nodes=8 --topology=ring --batch_size=32 --dataset=mnist --lr_warmup_epochs=0 --epochs=15 --lr_decay 5 10 --lr_decay_factor=5 --net=log_reg --lr=1 --alpha 0.999 0.95 0.98 0.99 0.995
+# python train_cifar.py --expt_name=MNIST_lr1_ring_decay2 --local_exec=True --n_nodes=8 --topology=ring --batch_size=32 --dataset=mnist --lr_warmup_epochs=0 --epochs=30 --lr_decay 5 10 15 20 25 --lr_decay_factor=2 --net=log_reg --lr=1 --alpha 0.999 0.95 0.98 0.99 0.995 --tracking_interval=10
+
+# CIFAR-10 2-layer CNN
+# python train_cifar.py --expt_name=CNN_lr0.1 --local_exec=True --lr=0.1 --net=convnet_rgb --n_nodes=1 --topology=solo --epochs=30 --lr_decay 10 20 --lr_warmup_epochs=0
+# python train_cifar.py --expt_name=CNN_lr0.1_decay2 --lr=0.1 --net=convnet_rgb --n_nodes=1 --topology=solo --epochs=60 --lr_decay 10 20 30 40 50 --lr_decay_factor=2 --alpha 0.95 0.98 0.99 0.999 0.995 --lr_warmup_epochs=0 --save_model --save_interval=780

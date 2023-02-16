@@ -24,8 +24,8 @@ def get_parser():
                         help='wandb entity to use')
     parser.add_argument('--save_dir', type=str, default=SAVE_DIR,
                         help='local directory to save experiment results to')
-    parser.add_argument('--save_model', type=boolfromstr, default=False,
-                        help='If not set, model will not be saved')
+    parser.add_argument('--save_model', action='store_true',
+                        help='If not set, checkpoints will not be saved')
     parser.add_argument('--save_interval', type=int, default=1000,
                         help='step interval to save checkpoint') 
                         
@@ -76,7 +76,7 @@ def get_parser():
                         help='custom SGD variant to use')
     parser.add_argument('--avg_index', action='store_true', 
                         help='Save checkpoints of running model average')
-    parser.add_argument('--log_train_ema', action='store_true', 
+    parser.add_argument('--log_train_ema', type=boolfromstr, default=True,
                         help='log EMA train accuracy and loss')
 
     # hyperparameters
