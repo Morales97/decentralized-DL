@@ -99,10 +99,12 @@ def compute_model_tracking_metrics(args, logger, models, ema_models, opts, step,
 
     # Cosine similarity Student-EMA
     cos_sim = get_cosine_similarity(models[0], ema_model)
+    logger.log_quantity(step, epoch, cos_sim, name='Cosine similarity Student-EMA')
     
     # Cosine similarity with init
     if model_init is not None:
         cos_sim = get_cosine_similarity(models[0], model_init)
+        logger.log_quantity(step, epoch, cos_sim, name='Cosine similarity to init')
 
 
 def update_bn_and_eval(model, train_loader, test_loader, device, logger, log_name=''):
