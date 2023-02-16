@@ -8,7 +8,7 @@ import os
 sys.path.insert(0, os.path.join(sys.path[0], '..'))
 from helpers.parser import parse_args
 from loaders.data import get_data
-from avg_index.avg_index import UniformAvgIndex, ModelAvgIndex
+from avg_index import UniformAvgIndex, ModelAvgIndex
 from model.model import get_model
 
 @torch.no_grad()
@@ -49,7 +49,6 @@ def update_bn(loader, model, device=None):
 
 def eval_avg_model(model, train_loader, test_loader):
     '''
-    Get model average between [start, end]
     Update BN stats on train data
     Evaluate on test data
     '''
@@ -172,6 +171,72 @@ def exponential_search(index, train_loader, test_loader, end, start, min=0, accs
         return best_acc, 0
     return exponential_search(index, train_loader, test_loader, end, search_idxs[i-2], min=search_idxs[i], accs=accs)
 
+def three_split_search(index, train_loader, test_loader, end, start, min=0, accs={}, test=True):
+    '''
+    3-split search. 
+    [WARNING] Assumes concavity of accuracy along average models
+    '''
+    avl_ckpts = list(index._index.available_checkpoints)
+    avl_ckpts.sort()
+
+    assert start in avl_ckpts, 'non-existing start checkpoint'
+    assert end in avl_ckpts, 'non-existing end checkpoint'
+    search_range = np.array(avl_ckpts[avl_ckpts.index(start) : avl_ckpts.index(end)])   # select search range
+
+    while True:
+        print(search_range)
+        if len(search_range) > 4:
+            idxs = [0, len(search_range)//3, 2*len(search_range)//3, len(search_range)-1]
+            search_steps = search_range[idxs]
+            max_acc = 0
+            for step in search_steps:
+                if step not in accs.keys():
+                    model = index.avg_from(step, until=end)
+                    _, acc = eval_avg_model(model, train_loader, test_loader)
+                    accs[step] = acc
+                max_acc = max(max_acc, accs[step])
+                print(f'Acc: {accs[step]} at step {step}')
+                
+            if accs[search_steps[0]] == max_acc:
+                search_range = search_range[:idxs[1]]
+            if accs[search_steps[1]] == max_acc:
+                search_range = search_range[:idxs[2]]
+            if accs[search_steps[2]] == max_acc:
+                search_range = search_range[idxs[1]:]
+            if accs[search_steps[3]] == max_acc:
+                search_range = search_range[idxs[2]:]
+        else:
+            for step in search_range:
+                max_acc = 0
+                if step not in accs.keys():
+                    model = index.avg_from(step, until=end)
+                    _, acc = eval_avg_model(model, train_loader, test_loader)
+                    accs[step] = acc
+                if max_acc < accs[step]:
+                    max_acc = accs[step]
+                    max_step = step
+            return max_acc, max_step
+
+
+
+def recursive_glob(rootdir=".", suffix=""):
+    return [
+        os.path.join(looproot, filename)
+        for looproot, _, filenames in os.walk(rootdir)
+        for filename in filenames
+        if filename.endswith(suffix)
+    ]
+def find_index_ckpt(rootdir=".", prefix='index'):
+    files = [
+        os.path.join(looproot, filename)
+        for looproot, _, filenames in os.walk(rootdir)
+        for filename in filenames
+        if filename.startswith(prefix)
+    ]
+    file = files[0]
+    end_step = file.split('_')[-1].split('.')[0]
+    return file, end_step
+
 if __name__ == '__main__':
     ''' For debugging purposes '''
     args = parse_args()
@@ -180,8 +245,8 @@ if __name__ == '__main__':
     train_loader = train_loader[0]
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
     save_dir = os.path.join(args.save_dir, args.expt_name)
-    step = 38800 # TODO search in save_dir and get latest index_{step}.pt
-    state_dir = os.path.join(save_dir, f'index_{step}.pt')
+    index_ckpt_file, step = find_index_ckpt(save_dir)
+    state_dir = os.path.join(save_dir, index_ckpt_file)
 
     uniform_index = UniformAvgIndex('.')
     state_dict = torch.load(state_dir)
@@ -195,13 +260,18 @@ if __name__ == '__main__':
 
     # compute all accuracies in advance and store
     accs = {}
-    for i in range(1, 38400//400):
-        model = index.avg_from(i*400, until=38400)
-        _, acc = eval_avg_model(model, train_loader, test_loader)
-        accs[i*400] = acc
-        print(f'Step {i*400}, acc: {acc}')
-    torch.save(accs, os.path.join(save_dir, 'accs_computed.pt'))
+    av_ckpts = list(state_dict['available_checkpoints'])
+    av_ckpts.sort()
+
+    # for ckpt in av_ckpts[:-1]:
+    #     model = index.avg_from(ckpt, until=av_ckpts[-1])
+    #     _, acc = eval_avg_model(model, train_loader, test_loader)
+    #     accs[ckpt] = acc
+    #     print(f'Step {ckpt}, acc: {acc}')
+    # torch.save(accs, os.path.join(save_dir, 'accs_computed.pt'))
     
-    exponential_search(index, train_loader, test_loader, end=38400, start=38000, accs=accs, test=False)
+    accs = torch.load(os.path.join(save_dir, 'accs_computed.pt'))
+    # exponential_search(index, train_loader, test_loader, end=38400, start=38000, accs=accs, test=False)
+    three_split_search(index, train_loader, test_loader, end=av_ckpts[-1], start=av_ckpts[0], accs=accs, test=False)
 
 # python helpers/search_avg.py 

@@ -349,14 +349,14 @@ def train(args, wandb):
                     max_acc.update(ema_acc, 'EMA')
                 else:
                     best_ema_acc = 0
-                    best_ema_loss = 10
+                    best_ema_loss = 1e5
                     for alpha in args.alpha: 
                         ema_model = get_average_model(device, ema_models[alpha])
                         ema_loss, ema_acc = evaluate_model(ema_model, test_loader, device)
                         logger.log_acc(step, epoch, ema_acc*100, ema_loss, name='EMA ' + str(alpha))
                         max_acc.update(ema_acc, alpha)
                         best_ema_acc = max(best_ema_acc, ema_acc)
-                        best_ema_loss = max(best_ema_loss, ema_loss)
+                        best_ema_loss = min(best_ema_loss, ema_loss)
                     max_acc.update(best_ema_acc, 'EMA')
                     logger.log_acc(step, epoch, best_ema_acc*100, best_ema_loss, name='EMA')  # actually EMA = multi-EMA. to not leave EMA empty
                     logger.log_acc(step, epoch, best_ema_acc*100, name='Multi-EMA Best')
@@ -476,4 +476,4 @@ if __name__ == '__main__':
 
 # MNIST DSGD
 # python train_cifar.py --expt_name=MNIST_lr1_ring --local_exec=True --n_nodes=8 --topology=ring --batch_size=32 --log_train_ema --dataset=mnist --lr_warmup_epochs=0 --epochs=15 --lr_decay 5 10 --lr_decay_factor=5 --net=log_reg --lr=1 --alpha 0.999 0.95 0.98 0.99 0.995
-# python train_cifar.py --expt_name=MNIST_lr1_ring_decay2 --local_exec=True --n_nodes=8 --topology=ring --batch_size=32 --log_train_ema --dataset=mnist --lr_warmup_epochs=0 --epochs=30 --lr_decay 5 10 15 20 25 --lr_decay_factor=2 --net=log_reg --lr=1 --alpha 0.999 0.95 0.98 0.99 0.995
+# python train_cifar.py --expt_name=MNIST_lr1_ring_decay2 --local_exec=True --n_nodes=8 --topology=ring --batch_size=32 --log_train_ema --dataset=mnist --lr_warmup_epochs=0 --epochs=30 --lr_decay 5 10 15 20 25 --lr_decay_factor=2 --net=log_reg --lr=1 --alpha 0.999 0.95 0.98 0.99 0.995 --tracking_interval=10
