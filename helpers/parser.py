@@ -86,6 +86,8 @@ def get_parser():
                         help='batch size for a single node')
     parser.add_argument('--lr', type=float, nargs='+', default=[0.2],
                         help='learning rate')   
+    parser.add_argument('--lr_decay_as', type=str, default='step',
+                        help='type of lr decay (step/cosine)')               
     parser.add_argument('--lr_decay', type=int, nargs='+', default=[150, 225],
                         help='decay lr by factor at the listed fractions of training')                                       
     parser.add_argument('--lr_decay_factor', type=float, default=10,
@@ -94,7 +96,7 @@ def get_parser():
                         help='warm up learning rate in the first epochs') 
     parser.add_argument('--lr_linear_decay_epochs', type=int, default=0,
                         help='decay learning rate linearly insted of step') 
-    parser.add_argument('--lr_scheduler', action='store_true', 
+    parser.add_argument('--lr_scheduler', type=boolfromstr, default=True,
                         help='to use torch´s lr scheduler instead of manual')
 
     # optimizer

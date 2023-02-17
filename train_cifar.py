@@ -278,7 +278,7 @@ def train(args, wandb):
             loss.backward()
             opts[i].step()
             schedulers[i].step()
-
+            
             train_loss += loss.item()
             pred = output.argmax(dim=1, keepdim=True)
             correct += pred.eq(target.view_as(pred)).sum().item()
@@ -394,7 +394,9 @@ def train(args, wandb):
 
         # log consensus distance, weight norm
         if step % args.tracking_interval == 0:
-            compute_model_tracking_metrics(args, logger, models, ema_models, opts, step, epoch, device)
+            print(opts[0].param_groups[0]['lr'])
+            
+            compute_model_tracking_metrics(args, logger, models, ema_models, opts, step, epoch, device, init_model)
 
         # save checkpoint
         if args.save_model and (step-1) % args.save_interval == 0:
