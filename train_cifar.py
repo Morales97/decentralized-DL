@@ -12,7 +12,8 @@ from helpers.utils import save_experiment, get_expt_name, MultiAccuracyTracker, 
 from helpers.logger import Logger
 from helpers.parser import parse_args
 from optimizer.optimizer import get_optimizer
-from helpers.consensus import compute_node_consensus, compute_weight_distance, get_cosine_similarity, get_momentum_norm, get_gradient_norm, compute_weight_norm
+from helpers.consensus import compute_node_consensus, compute_weight_distance, get_momentum_norm, get_gradient_norm, compute_weight_norm
+from helpers.train_dynamics import get_cosine_similarity, get_prediction_disagreement
 from helpers.evaluate import eval_all_models, evaluate_model
 from helpers.wa import AveragedModel, update_bn, SWALR
 from avg_index.avg_index import UniformAvgIndex, ModelAvgIndex
@@ -394,8 +395,7 @@ def train(args, wandb):
 
         # log consensus distance, weight norm
         if step % args.tracking_interval == 0:
-            print(opts[0].param_groups[0]['lr'])
-            
+            get_prediction_disagreement(models[0], ema_models[args.alpha[-1]][0], test_loader, device)
             compute_model_tracking_metrics(args, logger, models, ema_models, opts, step, epoch, device, init_model)
 
         # save checkpoint
