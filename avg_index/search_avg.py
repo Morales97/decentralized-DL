@@ -263,6 +263,7 @@ if __name__ == '__main__':
     av_ckpts = list(state_dict['available_checkpoints'])
     av_ckpts.sort()
 
+    # NOTE UNCOMMENT to precompute checkpoints
     # for ckpt in av_ckpts[:-1]:
     #     model = index.avg_from(ckpt, until=av_ckpts[-1])
     #     _, acc = eval_avg_model(model, train_loader, test_loader)
@@ -274,4 +275,4 @@ if __name__ == '__main__':
     # exponential_search(index, train_loader, test_loader, end=38400, start=38000, accs=accs, test=False)
     three_split_search(index, train_loader, test_loader, end=av_ckpts[-1], start=av_ckpts[0], accs=accs, test=False)
 
-# python helpers/search_avg.py 
+# python helpers/search_avg.py --net=XX --expt_name=XX

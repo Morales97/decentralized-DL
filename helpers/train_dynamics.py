@@ -20,39 +20,43 @@ def recursive_glob(rootdir=".", prefix="", suffix=""):
 
 def get_ckpt_steps(ckpt_files):
     steps = [int(file.split('_')[-1][:-8]) for file in ckpt_files]
-    root = ckpt_files[0].split('_')[:-1]
+    root = ckpt_files[0].rsplit('_',1)[0]
     
     return steps, root
 
-def get_cosine_similarity(model1, model2):
-    with torch.no_grad():
-        params1 = torch.cat([p.data.view(-1) for p in model1.parameters()])  # vectorize parameters
-        params2 = torch.cat([p.data.view(-1) for p in model2.parameters()])
-        return F.cosine_similarity(params1, params2, dim=0)
+def copy_upper_triangle_to_lower(matrix):
+    return matrix + matrix.T - np.diag(np.diag(matrix))
 
+@torch.no_grad()
+def get_cosine_similarity(model1, model2):
+    params1 = torch.cat([p.data.view(-1) for p in model1.parameters()])  # vectorize parameters
+    params2 = torch.cat([p.data.view(-1) for p in model2.parameters()])
+    return F.cosine_similarity(params1, params2, dim=0)
+
+@torch.no_grad()
 def get_prediction_disagreement(model1, model2, loader, device):
     model1.eval()
     model2.eval()
     agree_count = 0
     distance = 0
-    with torch.no_grad():
-        for data, target in loader:
-            data, target = data.to(device), target.to(device)
-            output1 = model1(data)
-            output2 = model2(data)
-            distance += torch.linalg.norm((output1 - output2), dim=1).sum()  # Using L2 norm as distance. Could also use JS
 
-            pred1 = output1.argmax(dim=1, keepdim=True)
-            pred2 = output2.argmax(dim=1, keepdim=True)
+    for data, target in loader:
+        data, target = data.to(device), target.to(device)
+        output1 = model1(data)
+        output2 = model2(data)
+        distance += torch.linalg.norm((output1 - output2), dim=1).sum()  # Using L2 norm as distance. Could also use JS
 
-            agree_count += pred1.eq(pred2).sum().item()
+        pred1 = output1.argmax(dim=1, keepdim=True)
+        pred2 = output2.argmax(dim=1, keepdim=True)
+
+        agree_count += pred1.eq(pred2).sum().item()
     return distance/len(loader.dataset), agree_count/len(loader.dataset)
 
 def get_train_metrics(args):
     # Get checkpoints of experiment
-    ckpt_files = recursive_glob(os.path.join(SAVE_DIR, args.expt_name))
-    ckpt_steps, file_root = get_ckpt_steps(ckpt_files, prefix='checkpoint')
-
+    ckpt_files = recursive_glob(os.path.join(SAVE_DIR, args.expt_name), prefix='checkpoint')
+    ckpt_steps, file_root = get_ckpt_steps(ckpt_files)
+    ckpt_steps = ckpt_steps[:4]
     # data
     _, test_loader = get_data(args, batch_size=100)
 
@@ -79,18 +83,21 @@ def get_train_metrics(args):
             cosine_similiarities[i,j] = get_cosine_similarity(model_i, model_j)
             pred_distance[i,j], pred_disagreement[i,j] = get_prediction_disagreement(model_i, model_j, test_loader, device)
 
-            cosine_similiarities[i,j] = cosine_similiarities[j,i]
-            pred_distance[i,j] = pred_distance[j,i]
-            pred_disagreement[i,j] = pred_disagreement[j,i]
+    # [j,i] = [i,j]
+    cosine_similiarities = copy_upper_triangle_to_lower(cosine_similiarities)
+    pred_distance = copy_upper_triangle_to_lower(pred_distance)
+    pred_disagreement = copy_upper_triangle_to_lower(pred_disagreement)
+    pdb.set_trace()
+    return cosine_similiarities, pred_distance, pred_disagreement
 
 if __name__ == '__main__':
     args = parse_args()
 
     cos_sim, pred_dist, pred_disag = get_train_metrics(args)
 
-    np.save(os.path.join(SAVE_DIR, args.expt_name, 'cosine_similarity', cos_sim))
-    np.save(os.path.join(SAVE_DIR, args.expt_name, 'prediction_distance', pred_dist))
-    np.save(os.path.join(SAVE_DIR, args.expt_name, 'prediction_disagreement', pred_disag))
+    np.save(os.path.join(SAVE_DIR, args.expt_name, 'cosine_similarity'), cos_sim)
+    np.save(os.path.join(SAVE_DIR, args.expt_name, 'prediction_distance'), pred_dist)
+    np.save(os.path.join(SAVE_DIR, args.expt_name, 'prediction_disagreement'), pred_disag)
     pdb.set_trace()
 # python train_dynamics.py --net=convnet_rgb --dataset=cifar10 --expt_name=CNN_lr0.04_decay2
 
