@@ -54,7 +54,6 @@ def eval_avg_model(model, train_loader, test_loader):
     '''
     # print('Evaluating average model from %d to %d...' % (start, end))
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
-    model.to(device)
 
     # update BN stats
     update_bn(train_loader, model, device)

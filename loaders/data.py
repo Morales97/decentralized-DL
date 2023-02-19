@@ -25,9 +25,9 @@ def _get_cifar(args, root, batch_size, fraction):
     if args.p_label_skew > 0:
         raise Exception('Heterogeneous CIFAR not supported yet')
     elif args.data_split:
-        return get_cifar(args, root, batch_size, iid=False)
+        return get_cifar(args, root, batch_size, iid=False, noisy=args.label_noise)
     else:
-        return get_cifar(args, root, batch_size, iid=True, fraction=fraction)
+        return get_cifar(args, root, batch_size, iid=True, fraction=fraction, noisy=args.label_noise)
 
 
 def get_data(args, batch_size, fraction=-1):

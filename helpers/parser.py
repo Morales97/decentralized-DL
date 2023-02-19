@@ -34,7 +34,7 @@ def get_parser():
                         help='choice of architecture') 
     
     # decentralized
-    parser.add_argument('--n_nodes', type=int, nargs='+', default=[16],
+    parser.add_argument('--n_nodes', type=int, nargs='+', default=[1],
                         help='number of nodes') 
     parser.add_argument('--same_init', type=boolfromstr, default=True,
                         help='initialize all models equally')
@@ -124,6 +124,8 @@ def get_parser():
                         help='Set between 0 and 1 to use a random subset of dataset with selected fraction of samples')
     parser.add_argument('--viz_weights', action='store_true',
                         help='For Logistic regression, viz weights for each class')
+    parser.add_argument('--label_noise', action='store_true',
+                        help='Use noisy labels (from http://noisylabels.com/, 40% noise on C-100)')
 
     # evaluation
     parser.add_argument('--eval_on_average_model', type=boolfromstr, default=False,

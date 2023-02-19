@@ -50,18 +50,18 @@ def get_prediction_disagreement(model1, model2, loader, device):
         pred2 = output2.argmax(dim=1, keepdim=True)
 
         agree_count += pred1.eq(pred2).sum().item()
-    return distance/len(loader.dataset), agree_count/len(loader.dataset)
+    return distance/len(loader.dataset), 1-agree_count/len(loader.dataset)
 
 def get_train_metrics(args):
     # Get checkpoints of experiment
     ckpt_files = recursive_glob(os.path.join(SAVE_DIR, args.expt_name), prefix='checkpoint')
     ckpt_steps, file_root = get_ckpt_steps(ckpt_files)
-    ckpt_steps = ckpt_steps[:4]
+
     # data
     _, test_loader = get_data(args, batch_size=100)
 
     # init
-    cosine_similiarities = np.zeros((len(ckpt_steps), len(ckpt_steps))) 
+    cosine_similarities = np.zeros((len(ckpt_steps), len(ckpt_steps))) 
     pred_disagreement = np.zeros((len(ckpt_steps), len(ckpt_steps)))
     pred_distance = np.zeros((len(ckpt_steps), len(ckpt_steps)))
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
@@ -71,24 +71,25 @@ def get_train_metrics(args):
         model_i = get_model(args, device)
         model_i.load_state_dict(ckpt_i['state_dict'])
 
-        cosine_similiarities[i,i] = 1
+        cosine_similarities[i,i] = 1
         pred_distance[i,i] = 0
         pred_disagreement[i,i] = 0
 
-        for j, step_j in enumerate(ckpt_steps[i:]):
+        for j, step_j in enumerate(ckpt_steps[i+1:]):
+            j = j+i+1
             ckpt_j = torch.load(os.path.join(SAVE_DIR, file_root + f'_{step_j}.pth.tar'))
             model_j = get_model(args, device)
             model_j.load_state_dict(ckpt_j['state_dict'])
 
-            cosine_similiarities[i,j] = get_cosine_similarity(model_i, model_j)
+            cosine_similarities[i,j] = get_cosine_similarity(model_i, model_j)
             pred_distance[i,j], pred_disagreement[i,j] = get_prediction_disagreement(model_i, model_j, test_loader, device)
 
     # [j,i] = [i,j]
-    cosine_similiarities = copy_upper_triangle_to_lower(cosine_similiarities)
+    cosine_similarities = copy_upper_triangle_to_lower(cosine_similarities)
     pred_distance = copy_upper_triangle_to_lower(pred_distance)
     pred_disagreement = copy_upper_triangle_to_lower(pred_disagreement)
-    pdb.set_trace()
-    return cosine_similiarities, pred_distance, pred_disagreement
+
+    return cosine_similarities, pred_distance, pred_disagreement
 
 if __name__ == '__main__':
     args = parse_args()
@@ -98,7 +99,7 @@ if __name__ == '__main__':
     np.save(os.path.join(SAVE_DIR, args.expt_name, 'cosine_similarity'), cos_sim)
     np.save(os.path.join(SAVE_DIR, args.expt_name, 'prediction_distance'), pred_dist)
     np.save(os.path.join(SAVE_DIR, args.expt_name, 'prediction_disagreement'), pred_disag)
-    pdb.set_trace()
+
 # python train_dynamics.py --net=convnet_rgb --dataset=cifar10 --expt_name=CNN_lr0.04_decay2
 
 

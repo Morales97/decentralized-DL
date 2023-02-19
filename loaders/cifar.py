@@ -33,7 +33,7 @@ def get_cifar_test(args, root):
     return data.DataLoader(dataset, batch_size=100, shuffle=False)
 
 
-def get_cifar(args, root, batch_size, iid=True, fraction=-1):
+def get_cifar(args, root, batch_size, iid=True, fraction=-1, noisy=False):
     '''
     Return CIFAR-10 or CIFAR-100 data loaders
     Optionally, return a subset (if fraction in [0,1])
@@ -68,6 +68,16 @@ def get_cifar(args, root, batch_size, iid=True, fraction=-1):
         download=True,
     )
 
+    # Optionally add label noise (CIFAR-100N from http://noisylabels.com/, 40% noisy labels)
+    if noisy:
+        if args.dataset == 'cifar10':
+            noise_label = torch.load(os.path.join(root, 'cifar-100-python/CIFAR-10_human.pt'))
+        elif args.dataset == 'cifar100':
+            noise_label = torch.load(os.path.join(root, 'cifar-100-python/CIFAR-100_human.pt'))
+        clean_label = noise_label['clean_label'] 
+        noisy_label = noise_label['noisy_label'] 
+        traindata.targets = noisy_label.tolist()
+
     # Use a random subset of CIFAR
     if fraction > 0:
         assert fraction < 1
@@ -91,7 +101,6 @@ def get_cifar(args, root, batch_size, iid=True, fraction=-1):
                 x, batch_size=batch_size, shuffle=True) for x in traindata_split]
 
     test_loader = get_cifar_test(args, root)
-
     return train_loader, test_loader
 
 
