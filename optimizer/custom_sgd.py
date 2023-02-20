@@ -7,7 +7,7 @@ import pdb
 import sys
 import os
 sys.path.insert(0, os.path.join(sys.path[0], '..'))
-from helpers.custom_optim import CustomOptimizer
+from optimizer.custom_optim import CustomOptimizer
 
 __all__ = ['SGD', 'sgd']
 

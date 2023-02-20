@@ -38,7 +38,7 @@ def get_mnist_iid(root, batch_size):
     return train_loader, test_loader
 
 
-def get_mnist_split(root, n_nodes, batch_size):
+def get_mnist_split(root, n_nodes, batch_size, noisy=False):
     '''
     Split dataset randomly between workers -> breaks IID
     '''
@@ -46,6 +46,12 @@ def get_mnist_split(root, n_nodes, batch_size):
                                transform=transforms.Compose(
                                    [transforms.ToTensor(), transforms.Normalize((0.1307,), (0.3081,))])
                                )
+
+    if noisy:
+        targets = traindata.targets.numpy()
+        idxs = np.random.choice([0, 1], size=targets.shape, p=[0.8, 0.2])   # 20% noise
+        targets[idxs==1] = np.random.randint(10, size=targets[idxs==1].shape)
+        traindata.targets = targets
 
     traindata_split = data.random_split(
         traindata, [int(traindata.data.shape[0] / n_nodes) for _ in range(n_nodes)])
