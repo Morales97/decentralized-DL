@@ -2,7 +2,6 @@ from copy import deepcopy
 import numpy as np
 import pdb
 from loaders.data import get_data
-from loaders.mnist import viz_weights, viz_weights_and_ema
 from topology import get_gossip_matrix, diffuse, get_average_model, get_average_opt
 import time
 import torch
@@ -12,15 +11,30 @@ from helpers.utils import save_experiment, get_expt_name, MultiAccuracyTracker, 
 from helpers.logger import Logger
 from helpers.parser import parse_args
 from optimizer.optimizer import get_optimizer
-from helpers.consensus import compute_node_consensus, compute_weight_distance, get_momentum_norm, get_gradient_norm, compute_weight_norm
-from helpers.train_dynamics import get_cosine_similarity, get_prediction_disagreement
+from helpers.consensus import compute_node_consensus, compute_weight_distance, get_gradient_norm, compute_weight_norm, get_momentum_norm
 from helpers.evaluate import eval_all_models, evaluate_model
 from helpers.wa import AveragedModel, update_bn, SWALR
-from avg_index.avg_index import UniformAvgIndex, ModelAvgIndex
-from helpers.lr_scheduler import get_lr_schedulers
-import wandb
 from optimizer.custom_sgd import CustomSGD
+import wandb
 import os
+
+def worker_local_step(model, opt, train_loader_iter, device):
+    input, target = next(train_loader_iter)
+    input = input.to(device)
+    target = target.to(device)
+
+    # ts_optimization = time.time()
+    model.train()
+    output = model(input)
+    opt.zero_grad()
+    loss = F.cross_entropy(output, target)
+    loss.backward()
+    # ts_opt_step = time.time()
+    opt.step()
+    # print(f'Optimizer step time {time.time() - ts_opt_step}')
+    # print(f'Forward and optimmization time {time.time() - ts_optimization}')
+    return loss.item()
+
 
 def initialize_nodes(args, models, opts, n_nodes_new, device):
     ''' All-reduce all models and optimizers, and use to initialize new nodes (all of them with same params and momentum)'''
@@ -67,7 +81,7 @@ def update_SWA(args, swa_model, models, device, n):
     n += 1
     return swa_model, n
 
-def compute_model_tracking_metrics(args, logger, models, ema_models, opts, step, epoch, device, model_init=None):
+def compute_model_tracking_metrics(args, logger, models, step, epoch, device, model_init=None, opts=None):
     # consensus distance
     L2_dist = compute_node_consensus(args, device, models)
     logger.log_consensus(step, epoch, L2_dist)
@@ -85,29 +99,10 @@ def compute_model_tracking_metrics(args, logger, models, ema_models, opts, step,
     grad_norm = get_gradient_norm(models[0])
     logger.log_grad_norm(step, epoch, grad_norm)
 
-    # EMA weight L2 norm
-    ema_model = ema_models[args.alpha[-1]][0]  # norm of EMA model of node[0] with alpha[-1] 
-    L2_norm_ema = compute_weight_norm(ema_model)
-    logger.log_quantity(step, epoch, L2_norm_ema, name='EMA Weight L2 norm')
-
-    # student to EMA weight L2 distance
-    L2_dist_ema = compute_weight_distance(models[0], ema_model)
-    logger.log_quantity(step, epoch, L2_dist_ema, name='Student-EMA L2 distance')
-
-    # Momentum L2 norm
-    if args.momentum > 0 and args.opt == 'SGD':
+    # momentum L2 norm
+    if opts is not None and args.opt == 'SGD':
         mom_norm = get_momentum_norm(opts[0])
         logger.log_quantity(step, epoch, mom_norm , 'Momentum norm')
-
-    # Cosine similarity Student-EMA
-    cos_sim = get_cosine_similarity(models[0], ema_model)
-    logger.log_quantity(step, epoch, cos_sim, name='Cosine similarity Student-EMA')
-    
-    # Cosine similarity with init
-    if model_init is not None:
-        cos_sim = get_cosine_similarity(models[0], model_init)
-        logger.log_quantity(step, epoch, cos_sim, name='Cosine similarity to init')
-
 
 def update_bn_and_eval(model, train_loader, test_loader, device, logger, log_name=''):
     _model = deepcopy(model)
@@ -119,7 +114,7 @@ def update_bn_and_eval(model, train_loader, test_loader, device, logger, log_nam
 ########################################################################################
 
 
-def train(args, wandb):
+def train(args, steps, wandb):
 
     torch.manual_seed(args.seed)
     np.random.seed(args.seed)
@@ -133,7 +128,6 @@ def train(args, wandb):
         n_samples = np.sum([len(tl.dataset) for tl in train_loader])
     else:
         n_samples = len(train_loader.dataset)
-    warmup_steps = n_samples / (args.n_nodes[0] * args.batch_size[0]) * args.lr_warmup_epochs
 
     # init nodes
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
@@ -150,38 +144,32 @@ def train(args, wandb):
             param.detach_()
         opts = [CustomSGD(model_x.parameters(), models[0].parameters(), model_v.parameters(), \
             args.lr[0], alpha=args.custom_a, beta=args.custom_b, variant=args.variant, weight_decay=args.wd)]
-        if args.lr_scheduler:
-            raise Exception('LR Scheduler does not work with custom optimizer. set --lr_scheduler=False')
-
     else:
         models = [get_model(args, device) for _ in range(n_nodes)]
         opts = [get_optimizer(args, model) for model in models]
-        schedulers = get_lr_schedulers(args, n_samples, opts)   
     if args.same_init:
         for i in range(1, len(models)):
             models[i].load_state_dict(models[0].state_dict())
     init_model = get_model(args, device)
     init_model.load_state_dict(models[0].state_dict())
 
-    # init model averaging
-    ema_models, ema_opts = {}, {}
-    for alpha in args.alpha:
-        ema_model_alpha, ema_opt_alpha = get_ema_models(args, models, device, alpha)
-        ema_models[alpha] = ema_model_alpha
-        ema_opts[alpha] = ema_opt_alpha
+    # init EMA
+    if len(args.alpha) == 1:
+        ema_models, ema_opts = get_ema_models(args, models, device, args.alpha[0])
+    else:
+        ema_models, ema_opts = {}, {}
+        for alpha in args.alpha:
+            ema_model_alpha, ema_opt_alpha = get_ema_models(args, models, device, alpha)
+            ema_models[alpha] = ema_model_alpha
+            ema_opts[alpha] = ema_opt_alpha
     if args.late_ema_epoch > 0:
         late_ema_models, late_ema_opts = get_ema_models(args, models, device, alpha=0.995)
         late_ema_active = False   # indicate when to init step_offset
-
-    if args.avg_index:
-        index_save_dir = os.path.join(args.save_dir, args.expt_name)
-        if not os.path.exists(index_save_dir):
-            os.makedirs(index_save_dir)
-        index = ModelAvgIndex(
-            models[0],              # NOTE only supported with solo mode now.
-            UniformAvgIndex(index_save_dir, checkpoint_period=args.steps_eval),
-            include_buffers=True,
-        )
+    swa_model = AveragedModel(models[0], device, use_buffers=True)
+    swa_model2 = AveragedModel(models[0], device, use_buffers=True) # average every step, not every epoch (Moving Average)
+    if args.swa_per_phase:
+        swa_model3 = AveragedModel(models[0], device, use_buffers=True) # SWA for every lr phase
+    # swa_scheduler = SWALR(opts[0], anneal_strategy="linear", anneal_epochs=5, swa_lr=args.swa_lr)
 
     # initialize variables
     comm_matrix = get_gossip_matrix(args, 0)
@@ -200,7 +188,11 @@ def train(args, wandb):
     epoch = 0
     prev_epoch = 1
     max_acc = MultiAccuracyTracker(['Student', 'EMA', 'Late EMA', 'MA'])
-    max_acc.init(args.alpha)
+    if len(args.alpha) > 1:
+        max_acc.init(args.alpha)
+    epoch_swa = args.epoch_swa # epoch to start SWA averaging (default: 100)
+    epoch_swa_budget = args.epoch_swa_budget
+    epoch_swa3 = 0
 
     # TRAIN LOOP
     # for step in range(steps['total_steps']):
@@ -211,8 +203,8 @@ def train(args, wandb):
                     train_loader_iter[i] = iter(train_loader[i])
 
         # lr warmup
-        if step < warmup_steps and not args.lr_scheduler:
-            lr = args.lr[0] * (step+1) / warmup_steps
+        if step < steps['warmup_steps']:
+            lr = args.lr[0] * (step+1) / steps['warmup_steps']
             for opt in opts:
                 for g in opt.param_groups:
                     g['lr'] = lr
@@ -220,11 +212,26 @@ def train(args, wandb):
         # lr decay
         if lr_decay_phase < total_lr_phases and epoch > args.lr_decay[lr_decay_phase]:
             lr_decay_phase += 1
-            if not args.lr_scheduler:
-                for opt in opts:
-                    for g in opt.param_groups:
-                        g['lr'] = g['lr']/args.lr_decay_factor
-                print('lr decayed to %.4f' % g['lr'])
+            for opt in opts:
+                for g in opt.param_groups:
+                    g['lr'] = g['lr']/args.lr_decay_factor
+            print('lr decayed to %.4f' % g['lr'])
+            if args.swa_per_phase:
+                update_bn_and_eval(swa_model3, train_loader, test_loader, device, logger, log_name='SWA phase ' + str(lr_decay_phase))
+                swa_model3 = AveragedModel(models[0], device, use_buffers=True) # restart SWA
+
+        # drop weight decay
+        if args.wd_drop > 0 and epoch > args.wd_drop:
+            for opt in opts:
+                for g in opt.param_groups:
+                    g['weight_decay'] = 0     
+
+        # drop momentum
+        if args.momentum_drop > 0 and epoch > args.momentum_drop:
+            for opt in opts:
+                for g in opt.param_groups:
+                    g['momentum'] = 0  
+                    g['nesterov'] = False
 
         # advance to the next training phase
         if phase+1 < total_phases and epoch > args.start_epoch_phases[phase+1]:
@@ -265,19 +272,15 @@ def train(args, wandb):
         if args.model_std > 0:
             add_noise_to_models(models, args.model_std, device)
 
+        # local update for each worker
         train_loss = 0
-        correct = 0
         ts_step = time.time()
-        # for every node
         for i in range(len(models)):
-            if args.data_split:
-                input, target = next(train_loader_iter[i])
-            else:
-                input, target = next(iter(train_loader))
-            input = input.to(device)
-            target = target.to(device)
-
             if args.opt != 'SGD':
+                input, target = next(train_loader_iter[i])
+                input = input.to(device)
+                target = target.to(device)
+
                 # ts_optimizer = time.time()
                 models[i].train()
                 output = models[i](input)
@@ -297,54 +300,53 @@ def train(args, wandb):
                         model_v.train()
                         _ = model_v(input)
 
-            else:
-                # Forward pass
-                models[i].train()
-                output = models[i](input)
-                # Back-prop
-                opts[i].zero_grad()
-                loss = F.cross_entropy(output, target)
-                loss.backward()
-                opts[i].step()
-                schedulers[i].step()
-                
-            train_loss += loss.item()   # NOTE train loss for the last worker (no difference if n_nodes=1)
-            pred = output.argmax(dim=1, keepdim=True)
-            correct += pred.eq(target.view_as(pred)).sum().item()
-
+                train_loss += loss.item()
+                # print(f'Forward and optimization [s]: {time.time() - ts_optimizer}')
+            else:          
+                if args.data_split:
+                    train_loss += worker_local_step(models[i], opts[i], train_loader_iter[i], device)
+                else:
+                    train_loss += worker_local_step(models[i], opts[i], iter(train_loader), device)
+            
             # EMA updates
-            if len(args.alpha) > 0 and step % args.ema_interval == 0:
+            if len(args.alpha) == 1:
+                ema_opts[i].update()
+            else:
                 for alpha in args.alpha:
                     ema_opts[alpha][i].update()
-                if args.late_ema_epoch > 0 and epoch > args.late_ema_epoch:
-                    if not late_ema_active:
-                        late_ema_active = True
-                    late_ema_opts[i].update()
+            if args.late_ema_epoch > 0 and epoch > args.late_ema_epoch:
+                if not late_ema_active:
+                    late_ema_active = True
+                late_ema_opts[i].update()
 
         step +=1
         epoch += n_nodes * batch_size / n_samples
         train_loss /= n_nodes
-        train_acc = correct / (n_nodes * batch_size) * 100
-        logger.log_step(step, epoch, train_loss, train_acc, ts_total, ts_step)
+        logger.log_step(step, epoch, train_loss, ts_total, ts_step)
         
-        # EMA train log
-        if args.log_train_ema:
-            ema_model = get_average_model(device, ema_models[args.alpha[-1]])   
-            with torch.no_grad():
-                output = ema_model(input)
-                ema_loss = F.cross_entropy(output, target)
-                pred = output.argmax(dim=1, keepdim=True)
-                ema_acc = pred.eq(target.view_as(pred)).sum().item() / batch_size * 100
-                logger.log_quantity(step, epoch, ema_loss.item(), name='EMA Train Loss')
-                logger.log_quantity(step, epoch, ema_acc, name='EMA Train Acc')
-
         # gossip
         diffuse(args, phase, comm_matrix, models, step)
         
+        # SWA update
+        if epoch > epoch_swa:
+            epoch_swa += 1
+            swa_model.update_parameters(models)
+            # if args.swa_lr != 0:
+            #     swa_scheduler.step()
+            test_loss, acc = evaluate_model(swa_model, test_loader, device)
+            logger.log_acc(step, epoch, acc*100, name='SWA')
+            
+            if epoch > epoch_swa_budget:    # compute SWA at budget 1
+                epoch_swa_budget = 1e5 # deactivate
+                update_bn_and_eval(swa_model, train_loader, test_loader, device, logger, log_name='SWA Budget 1')
 
-        # index model average
-        if args.avg_index:
-            index.record_step()
+        if args.swa_per_phase and epoch > epoch_swa3:   # TODO improve how to keep track of epoch end
+            epoch_swa3 += 1
+            swa_model3.update_parameters(models)
+
+        # MA update (SWA but every step)
+        if epoch > args.epoch_swa:
+            swa_model2.update_parameters(models)
 
         # evaluate 
         if (not args.eval_after_epoch and step % args.steps_eval == 0) or epoch >= args.epochs or (args.eval_after_epoch and epoch > prev_epoch):
@@ -353,24 +355,35 @@ def train(args, wandb):
                 ts_eval = time.time()
                 
                 # evaluate on average of EMA models
-                best_ema_acc = 0
-                best_ema_loss = 1e5
-                for alpha in args.alpha: 
-                    ema_model = get_average_model(device, ema_models[alpha])
+                if len(args.alpha) == 1:
+                    ema_model = get_average_model(device, ema_models)
                     ema_loss, ema_acc = evaluate_model(ema_model, test_loader, device)
-                    logger.log_acc(step, epoch, ema_acc*100, ema_loss, name='EMA ' + str(alpha))
-                    max_acc.update(ema_acc, alpha)
-                    best_ema_acc = max(best_ema_acc, ema_acc)
-                    best_ema_loss = min(best_ema_loss, ema_loss)
-                max_acc.update(best_ema_acc, 'EMA')
-                logger.log_acc(step, epoch, best_ema_acc*100, best_ema_loss, name='EMA')  
-                logger.log_acc(step, epoch, best_ema_acc*100, name='Multi-EMA Best')
+                    logger.log_acc(step, epoch, ema_acc*100, ema_loss, name='EMA')
+                    max_acc.update(ema_acc, 'EMA')
+                else:
+                    best_ema_acc = 0
+                    best_ema_loss = 10
+                    for alpha in args.alpha: 
+                        ema_model = get_average_model(device, ema_models[alpha])
+                        ema_loss, ema_acc = evaluate_model(ema_model, test_loader, device)
+                        logger.log_acc(step, epoch, ema_acc*100, ema_loss, name='EMA ' + str(alpha))
+                        max_acc.update(ema_acc, alpha)
+                        best_ema_acc = max(best_ema_acc, ema_acc)
+                        best_ema_loss = max(best_ema_loss, ema_loss)
+                    max_acc.update(best_ema_acc, 'EMA')
+                    logger.log_acc(step, epoch, best_ema_acc*100, best_ema_loss, name='EMA')  # actually EMA = multi-EMA. to not leave EMA empty
+                    logger.log_acc(step, epoch, best_ema_acc*100, name='Multi-EMA Best')
                 # Late EMA
                 if late_ema_active:
                     late_ema_model = get_average_model(device, late_ema_models)
                     late_ema_loss, late_ema_acc = evaluate_model(late_ema_model, test_loader, device)
                     logger.log_acc(step, epoch, late_ema_acc*100, late_ema_loss, name='Late EMA') 
                     max_acc.update(late_ema_acc, 'Late EMA')
+                # Moving Average
+                if epoch > args.epoch_swa:
+                    swa2_loss, swa2_acc = evaluate_model(swa_model2, test_loader, device)
+                    logger.log_acc(step, epoch, swa2_acc*100, swa2_loss, name='MA') 
+                    max_acc.update(swa2_acc, 'MA')
 
 
                 if args.opt != 'SGD':   # custom SGD
@@ -406,16 +419,16 @@ def train(args, wandb):
 
                 max_acc.update(acc, 'Student')
                 ts_steps_eval = time.time()
-                if args.viz_weights:
-                    viz_weights_and_ema(models[0].linear.weight.detach().numpy(), ema_models[args.alpha[0]][0].linear.weight.detach().numpy(), save=True, epoch=epoch)
 
         # log consensus distance, weight norm
         if step % args.tracking_interval == 0:
-            # get_prediction_disagreement(models[0], ema_models[args.alpha[-1]][0], test_loader, device)
-            compute_model_tracking_metrics(args, logger, models, ema_models, opts, step, epoch, device, init_model)
+            if args.momentum > 0:
+                compute_model_tracking_metrics(args, logger, models, step, epoch, device, opts=opts)
+            else:
+                compute_model_tracking_metrics(args, logger, models, step, epoch, device)
 
         # save checkpoint
-        if args.save_model and (step-1) % args.save_interval == 0:
+        if args.save_model and step % args.save_interval == 0:
             # if not args.multiprocessing_distributed or (args.multiprocessing_distributed and args.rank % ngpus_per_node == 0):
             for i in range(len(models)):
                 save_checkpoint({
@@ -423,14 +436,14 @@ def train(args, wandb):
                     'step': step,
                     'net': args.net,
                     'state_dict': models[i].state_dict(),
-                    'ema_state_dict': ema_models[args.alpha[-1]][i].state_dict(),
+                    'ema_state_dict': ema_models[i].state_dict(),
                     'optimizer' : opts[i].state_dict(),
-                }, filename=os.path.join(SAVE_DIR, args.expt_name, f'checkpoint_m{i}_{step}.pth.tar'))
+                }, filename=SAVE_DIR + 'checkpoint_m' + str(i) + '.pth.tar')
 
-                # if args.wandb:
-                #     model_artifact = wandb.Artifact('ckpt_m' + str(i), type='model')
-                #     model_artifact.add_file(filename=SAVE_DIR + 'checkpoint_m' + str(i) + '.pth.tar')
-                #     wandb.log_artifact(model_artifact)
+                if args.wandb:
+                    model_artifact = wandb.Artifact('ckpt_m' + str(i), type='model')
+                    model_artifact.add_file(filename=SAVE_DIR + 'checkpoint_m' + str(i) + '.pth.tar')
+                    wandb.log_artifact(model_artifact)
             print('Checkpoint(s) saved!')
 
     logger.log_single_acc(max_acc.get('Student'), log_as='Max Accuracy')
@@ -439,38 +452,34 @@ def train(args, wandb):
     # logger.log_single_acc(max_acc.get('MA'), log_as='Max MA Accuracy')
 
     # Make a full pass over EMA and SWA models to update 
+    if epoch > args.epoch_swa:
+        update_bn_and_eval(swa_model, train_loader, test_loader, device, logger, log_name='SWA Acc (after BN)')
+    if args.swa_per_phase:
+        lr_decay_phase += 1
+        update_bn_and_eval(swa_model3, train_loader, test_loader, device, logger, log_name='SWA phase ' + str(lr_decay_phase))
     if len(args.alpha) == 1:
         update_bn_and_eval(ema_model, train_loader, test_loader, device, logger, log_name='EMA Acc (after BN)')
+    update_bn_and_eval(swa_model2, train_loader, test_loader, device, logger, log_name='MA Acc (after BN)')
     update_bn_and_eval(get_average_model(device, models), train_loader, test_loader, device, logger, log_name='Student Acc (after BN)') # TODO check if cumulative moving average BN is better than using running average
-
-    # save avg_index
-    if args.avg_index:
-        torch.save(index.state_dict(), os.path.join(index_save_dir, f'index_{index._index._uuid}_{step}.pt'))
-
-    if args.viz_weights:
-        # viz_weights(models[0].linear.weight.detach().numpy())
-        # viz_weights(ema_models[args.alpha[0]][0].linear.weight.detach().numpy())
-        viz_weights_and_ema(models[0].linear.weight.detach().numpy(), ema_models[args.alpha[0]][0].linear.weight.detach().numpy())
 
 if __name__ == '__main__':
     from helpers.parser import SCRATCH_DIR, SAVE_DIR
     args = parse_args()
-    #os.environ['WANDB_CACHE_DIR'] = SCRATCH_DIR # NOTE this should be a directory periodically deleted. Otherwise, delete manually
+    os.environ['WANDB_CACHE_DIR'] = SCRATCH_DIR # NOTE this should be a directory periodically deleted. Otherwise, delete manually
 
     if not args.expt_name:
         args.expt_name = get_expt_name(args)
-    if args.save_model and not os.path.exists(os.path.join(SAVE_DIR, args.expt_name)):
-        os.makedirs(os.path.join(SAVE_DIR, args.expt_name))
-
+    
+    steps = {
+        'warmup_steps': 50000 / (args.n_nodes[0] * args.batch_size[0]) * args.lr_warmup_epochs,    # NOTE using n_nodes[0] to compute warmup epochs. Assuming warmup occurs in the first phase
+    }
 
     if args.wandb:
         wandb.init(name=args.expt_name, dir=args.save_dir, config=args, project=args.project, entity=args.entity)
-        train(args, wandb)
+        train(args, steps, wandb)
         wandb.finish()
     else:
-        train(args, None)
-
-# python train_cifar_customSGD.py --wandb=False --local_exec=True --opt=customSGD --variant=2 --custom_a=0.1 --custom_b=0.5 --epochs=50 --lr=0.1 --lr_warmup_epochs=0 --lr_decay_as=step --lr_decay=50 --net=rn20
+        train(args, steps, None)
 
 # python train_cifar_customSGD.py --wandb=False --expt_name=new_a0_b1 --project=MLO-optimizer --opt=customSGD --momentum=0.9 --custom_a=0.1 --custom_b=0.5 --lr=0.1 --epochs=50 --lr_decay=100 --lr_warmup_epochs=0 --net=rn18
 # python train_cifar_customSGD.py --wandb=False --expt_name=SGD --project=MLO-optimizer --momentum=0 --nesterov=False --wd=0 --lr=0.1 --epochs=50 --lr_decay=100 --lr_warmup_epochs=0 --net=rn18

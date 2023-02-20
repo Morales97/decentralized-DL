@@ -263,15 +263,16 @@ if __name__ == '__main__':
     av_ckpts.sort()
 
     # NOTE UNCOMMENT to precompute checkpoints
-    # for ckpt in av_ckpts[:-1]:
-    #     model = index.avg_from(ckpt, until=av_ckpts[-1])
-    #     _, acc = eval_avg_model(model, train_loader, test_loader)
-    #     accs[ckpt] = acc
-    #     print(f'Step {ckpt}, acc: {acc}')
-    # torch.save(accs, os.path.join(save_dir, 'accs_computed.pt'))
+    for ckpt in av_ckpts[:-1]:
+        model = index.avg_from(ckpt, until=av_ckpts[int(3*len(av_ckpts)//6)]) # until start of phase 2 (epoch 150)
+        # model = index.avg_from(ckpt, until=av_ckpts[-1])
+        _, acc = eval_avg_model(model, train_loader, test_loader)
+        accs[ckpt] = acc
+        print(f'Step {ckpt}, acc: {acc}')
+    torch.save(accs, os.path.join(save_dir, 'accs_computed.pt'))
     
     accs = torch.load(os.path.join(save_dir, 'accs_computed.pt'))
     # exponential_search(index, train_loader, test_loader, end=38400, start=38000, accs=accs, test=False)
-    three_split_search(index, train_loader, test_loader, end=av_ckpts[-1], start=av_ckpts[0], accs=accs, test=False)
+    # three_split_search(index, train_loader, test_loader, end=av_ckpts[-1], start=av_ckpts[0], accs=accs, test=False)
 
-# python helpers/search_avg.py --net=XX --expt_name=XX
+# python avg_index/search_avg.py --dataset=cifar100 --net=XX --expt_name=XX

@@ -395,7 +395,7 @@ def train(args, wandb):
 
         # log consensus distance, weight norm
         if step % args.tracking_interval == 0:
-            get_prediction_disagreement(models[0], ema_models[args.alpha[-1]][0], test_loader, device)
+            # get_prediction_disagreement(models[0], ema_models[args.alpha[-1]][0], test_loader, device)
             compute_model_tracking_metrics(args, logger, models, ema_models, opts, step, epoch, device, init_model)
 
         # save checkpoint

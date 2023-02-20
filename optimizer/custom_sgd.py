@@ -43,83 +43,6 @@ class CustomSGD(CustomOptimizer):
             group.setdefault('differentiable', False)
 
     @_use_grad_for_differentiable
-    def step_old(self, closure=None):       # NOTE DM: original implementation
-        """Performs a single optimization step.
-
-        Args:
-            closure (Callable, optional): A closure that reevaluates the model
-                and returns the loss.
-        """
-        loss = None
-        if closure is not None:
-            with torch.enable_grad():
-                loss = closure()
-
-        # DM: Implementing the following algorithm
-        # v_{t+1} = v_{t} - lr·g(y_t)
-        # x_{t+1} = (1-a)·x_t + a·v_{t+1}
-        # y_{t+1} = (1-b)·x_{t+1} + b·v_{t+1}
-
-        # v_{t+1} = v_{t} - lr·g(y_t)
-        for group_y, group_v in zip(self.param_groups, self.param_groups_v):
-            params_with_grad = []
-            d_p_list = []
-            momentum_buffer_list = []
-            has_sparse_grad = False
-
-            for p_y, p_v in zip(group_y['params'], group_v['params']):
-                if p_y.grad is not None:
-                    params_with_grad.append(p_v)
-                    d_p_list.append(p_y.grad)
-                    if p_y.grad.is_sparse:
-                        has_sparse_grad = True
-
-                    state = self.state[p_y]
-                    if 'momentum_buffer' not in state:
-                        momentum_buffer_list.append(None)
-                    else:
-                        momentum_buffer_list.append(state['momentum_buffer'])
-
-            
-            sgd(params_with_grad,
-                d_p_list,
-                momentum_buffer_list,
-                weight_decay=group_y['weight_decay'],
-                momentum=group_y['momentum'],
-                lr=group_y['lr'],
-                dampening=group_y['dampening'],
-                nesterov=group_y['nesterov'],
-                maximize=group_y['maximize'], 
-                has_sparse_grad=has_sparse_grad,
-                foreach=group_y['foreach'])
-
-            # update momentum_buffers in state
-            # for p, momentum_buffer in zip(params_with_grad, momentum_buffer_list):
-            #     state = self.state[p]
-            #     state['momentum_buffer'] = momentum_buffer
-
-        # x_{t+1} = (1-a)·x_t + a·v_{t+1}
-        if self.variant == 0:
-            for group_x, group_v in zip(self.param_groups_x, self.param_groups_v):
-                for p_x, p_v in zip(group_x['params'], group_v['params']):
-                    _combine_params(p_x, p_v, self.alpha)
-
-        # x_{t+1} = ·x_t + a·v_{t+1}
-        elif self.variant == 1:
-            for group_x, group_v in zip(self.param_groups_x, self.param_groups_v):
-                for p_x, p_v in zip(group_x['params'], group_v['params']):
-                    for p1, p2 in zip(p_x, p_v):
-                        p1.add_(p2, alpha=self.alpha)
-
-        # y_{t+1} = (1-b)·x_{t+1} + b·v_{t+1}
-        for group_x, group_y, group_v in zip(self.param_groups_x, self.param_groups, self.param_groups_v):
-            for p_x, p_y, p_v in zip(group_x['params'], group_y['params'], group_v['params']):
-                _combine_params_2(p_y, p_x, p_v, self.beta)
-
-
-        return loss
-
-    @_use_grad_for_differentiable
     def step(self, closure=None):  
         if self.variant == 2:
             return self.step_variant_2()     
@@ -319,23 +242,3 @@ def _single_tensor_sgd_custom_2(params_x: List[Tensor],     # NOTE DM, custom SG
         param_y.mul_(beta).add_(param_x, alpha=1-beta).add_(d_p, alpha=-lr) # y_{t+1} = (1-b)·x_{t+1} + b·y_{t+1} + lr·g(y_t)
         param_x.mul_(1-alpha).add_(param_y, alpha=alpha)                    # x_{t+1} = (1-a)·x_t + a·y_{t+1}
 
-
-# DM: for example, x_{t+1} = (1-a)·x_t + a·v_{t+1}
-def _combine_params(params_1: List[Tensor],
-                       params_2: List[Tensor],
-                       alpha: float):
-
-    for p1, p2 in zip(params_1, params_2):
-        p1.mul_(1-alpha)
-        p1.add_(p2, alpha=alpha)
-
-# DM: for example, y_{t+1} = (1-b)·x_{t+1} + b·v_{t+1}
-def _combine_params_2(params_1: List[Tensor],
-                       params_2: List[Tensor],
-                       params_3: List[Tensor],
-                       alpha: float):
-
-    for p1, p2, p3 in zip(params_1, params_2, params_3):
-        p1.zero_()
-        p1.add_(p2, alpha=(1-alpha))
-        p1.add_(p3, alpha=alpha)

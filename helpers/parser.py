@@ -130,7 +130,7 @@ def get_parser():
     # evaluation
     parser.add_argument('--eval_on_average_model', type=boolfromstr, default=False,
                         help='evaluate on the average of all workers models (true), or separate and report mean accuracy (false)')
-    parser.add_argument('--steps_eval', type=int, default=100,
+    parser.add_argument('--steps_eval', type=int, default=400,
                         help='evaluate every x number of steps')
     parser.add_argument('--tracking_interval', type=int, default=50,
                         help='evaluate L2 distance of model conensus every x number of steps')
