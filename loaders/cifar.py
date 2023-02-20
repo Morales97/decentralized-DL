@@ -83,9 +83,11 @@ def get_cifar(args, root, batch_size, iid=True, fraction=-1, noisy=False):
         assert fraction < 1
         n_samples = int(np.floor(len(traindata) * fraction))
         traindata_split = data.random_split(traindata, [n_samples, len(traindata)-n_samples], generator=torch.Generator().manual_seed(42))     # manual seed fixed for reproducible results
-        sampler = data.RandomSampler(traindata_split[0], replacement=True, num_samples=batch_size)  # to sample with replacement (IID)
-        train_loader = data.DataLoader(traindata_split[0], sampler=sampler, batch_size=batch_size)
-    
+        # sampler = data.RandomSampler(traindata_split[0], replacement=True, num_samples=batch_size)  # to sample with replacement (IID)
+        # train_loader = data.DataLoader(traindata_split[0], sampler=sampler, batch_size=batch_size)
+        train_loader = [data.DataLoader(traindata_split[0], batch_size=batch_size, shuffle=True)]     # sample without replacement
+
+
     # Use full CIFAR
     else:
         if iid:
