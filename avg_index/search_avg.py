@@ -263,7 +263,7 @@ if __name__ == '__main__':
     av_ckpts.sort()
 
     # NOTE UNCOMMENT to precompute checkpoints
-    for ckpt in av_ckpts[:-1]:
+    for ckpt in av_ckpts[:int(3*len(av_ckpts)//6)]:
         model = index.avg_from(ckpt, until=av_ckpts[int(3*len(av_ckpts)//6)]) # until start of phase 2 (epoch 150)
         # model = index.avg_from(ckpt, until=av_ckpts[-1])
         _, acc = eval_avg_model(model, train_loader, test_loader)

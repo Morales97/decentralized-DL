@@ -312,10 +312,10 @@ def resnet50_in(args):
     return torchvision.models.resnet50(weights=torchvision.models.ResNet50_Weights.IMAGENET1K_V2)
 
 if __name__ == '__main__':
-    model = ResNet(dataset='imagenet', resnet_size=18)
-    summary(model, (3, 224, 224))
-    # model = ResNet(dataset='cifar10', resnet_size=18)
-    # summary(model, (3, 32, 32))
+    # model = ResNet(dataset='imagenet', resnet_size=18)
+    # summary(model, (3, 224, 224))
+    model = ResNet(dataset='cifar10', resnet_size=18)
+    summary(model, (3, 32, 32))
     pdb.set_trace()
     for param in model.parameters():
         pdb.set_trace()
