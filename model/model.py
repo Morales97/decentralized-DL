@@ -2,6 +2,7 @@ from model.convnet import ConvNet, ConvNet_OP, MLP, LogisticRegression
 from model.resnet import resnet20, resnet18, resnet50
 from model.vgg import vgg16_C2
 from model.vgg2 import vgg11, vgg11_bn, vgg16, vgg16_bn
+from model.preresnet import preresnet164
 from optimizer.optimizer import OptimizerEMA
 import torch 
 
@@ -32,6 +33,8 @@ def get_model(args, device):
         model = vgg16(args)
     elif args.net == 'vgg16bn':   # modified VGG-16 (less hidden units in linear layers)
         model = vgg16_bn(args)
+    elif args.net == 'preresnet164':
+        model = preresnet164(args)
     else:
         raise Exception('model not supported')
 

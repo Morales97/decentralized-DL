@@ -177,6 +177,8 @@ def main_worker(gpu, ngpus_per_node, args, wandb):
         if args.arch == 'resnet152':
             model = models.resnet152(weights=models.ResNet152_Weights.IMAGENET1K_V1) # acc@1 78.3%
             # model = models.resnet152(weights=models.ResNet152_Weights.IMAGENET1K_V2) # acc@1 82.2%
+        elif args.arch == 'resnet18':
+            model = models.resnet18(weights=models.ResNet18_Weights.IMAGENET1K_V1) # acc@1 69.7%
         else:
             # model = models.__dict__[args.arch](pretrained=True)
             model = models.resnet50(weights=models.ResNet50_Weights.IMAGENET1K_V1) # acc@1 76.1%
