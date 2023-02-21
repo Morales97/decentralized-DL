@@ -3,6 +3,7 @@ import torch
 import torch.nn.functional as F
 import numpy as np
 import os
+from sklearn.decomposition import PCA
 
 import sys
 sys.path.insert(0, os.path.join(sys.path[0], '..'))
@@ -96,23 +97,25 @@ def get_pca(args):
     ckpt_steps, file_root = get_ckpt_steps(ckpt_files)
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
-    from sklearn.decomposition import PCA
-    pca = PCA(n_components=2)
-
     models = []
     for file in ckpt_files:
         ckpt_i = torch.load(file)
         model_i = get_model(args, device)
         model_i.load_state_dict(ckpt_i['state_dict'])
-        models.append(model_i)
+        models.append(torch.cat([p.data.view(-1) for p in model_i.parameters()]).cpu().numpy())
+    models = np.asarray(models)
 
-    pdb.set_trace()
-
+    pca = PCA(n_components=2)
+    models_pca = pca.fit(models).transform(models)
+    return models_pca
+    
 if __name__ == '__main__':
     args = parse_args()
 
+    models_pca = get_pca(args)
     cos_sim, pred_dist, pred_disag = get_train_metrics(args)
 
+    np.save(os.path.join(SAVE_DIR, args.expt_name, 'models_pca'), models_pca)
     np.save(os.path.join(SAVE_DIR, args.expt_name, 'cosine_similarity'), cos_sim)
     np.save(os.path.join(SAVE_DIR, args.expt_name, 'prediction_distance'), pred_dist)
     np.save(os.path.join(SAVE_DIR, args.expt_name, 'prediction_disagreement'), pred_disag)
