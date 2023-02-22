@@ -139,7 +139,7 @@ def train(args, wandb):
     n_nodes = args.n_nodes[0]
     models = [get_model(args, device) for _ in range(n_nodes)]
     opts = [get_optimizer(args, model) for model in models]
-    schedulers = get_lr_schedulers(args, n_samples, opts)   
+    schedulers = [get_lr_schedulers(args, n_samples, opt) for opt in opts]   
     if args.same_init:
         for i in range(1, len(models)):
             models[i].load_state_dict(models[0].state_dict())

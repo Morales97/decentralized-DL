@@ -3,10 +3,9 @@ from torch.optim import lr_scheduler as lrs
 import numpy as np
 import pdb 
 
-def get_lr_schedulers(args, n_samples, opts):
+def get_lr_schedulers(args, n_samples, opt):
     ''' WARNING only to be used with fixed batch size and n_nodes (i.e., fixed number of steps per epoch'''
 
-    schedulers = []
     gamma = 1 / args.lr_decay_factor
     steps_per_epoch = np.ceil(n_samples / (args.n_nodes[0] * args.batch_size[0]))
     warmup_steps = max(steps_per_epoch * args.lr_warmup_epochs, 1)                          # NOTE need at least steps >= 1 to not break LinearLR
@@ -14,39 +13,31 @@ def get_lr_schedulers(args, n_samples, opts):
     phases_steps_2 = [steps_per_epoch * phase - warmup_steps for phase in args.lr_decay]    # to use in MultiStepLR
     
     if not args.lr_scheduler:
-        for opt in opts:
-            schedulers.append(lrs.ConstantLR(opt, 1, total_iters=0))        # NOTE to not interfere with outside tuning of LR
-        return schedulers
+        return lrs.ConstantLR(opt, 1, total_iters=0)        # NOTE to not interfere with outside tuning of LR
 
     if args.lr_decay_as == 'step':
         # warmup + (linear decay + constant) x times
         if args.lr_linear_decay_epochs > 0:
             lr_factors = [gamma**i for i in range(len(phases_steps_1)+1)]
-            for opt in opts:
-                warmup = lrs.LinearLR(opt, start_factor=1e-8, end_factor=lr_factors[0], total_iters=warmup_steps)
-                schs_list = [warmup]
-                for i in range(len(phases_steps_1)):
-                    linear = lrs.LinearLR(opt, start_factor=lr_factors[i], end_factor=lr_factors[i+1], total_iters=steps_per_epoch*args.lr_linear_decay_epochs)
-                    schs_list.append(linear)
-                scheduler = lrs.SequentialLR(opt, schs_list, milestones=phases_steps_1)
-            schedulers.append(scheduler)
+            warmup = lrs.LinearLR(opt, start_factor=1e-8, end_factor=lr_factors[0], total_iters=warmup_steps)
+            schs_list = [warmup]
+            for i in range(len(phases_steps_1)):
+                linear = lrs.LinearLR(opt, start_factor=lr_factors[i], end_factor=lr_factors[i+1], total_iters=steps_per_epoch*args.lr_linear_decay_epochs)
+                schs_list.append(linear)
+            scheduler = lrs.SequentialLR(opt, schs_list, milestones=phases_steps_1)
         # warmup + step decay
         else:
-            for opt in opts:
-                warmup = lrs.LinearLR(opt, start_factor=1e-8, end_factor=1, total_iters=warmup_steps)    
-                multistep = lrs.MultiStepLR(opt, milestones=phases_steps_2, gamma=1/args.lr_decay_factor)   
-                scheduler = lrs.SequentialLR(opt, [warmup, multistep], milestones=[warmup_steps])
-            schedulers.append(scheduler)
+            warmup = lrs.LinearLR(opt, start_factor=1e-8, end_factor=1, total_iters=warmup_steps)    
+            multistep = lrs.MultiStepLR(opt, milestones=phases_steps_2, gamma=1/args.lr_decay_factor)   
+            scheduler = lrs.SequentialLR(opt, [warmup, multistep], milestones=[warmup_steps])
     elif args.lr_decay_as == 'cosine':
-        for opt in opts:
-            warmup = lrs.LinearLR(opt, start_factor=1e-8, end_factor=1, total_iters=warmup_steps)  
-            cosine = lrs.CosineAnnealingLR(opt, steps_per_epoch * args.epochs - warmup_steps)
-            scheduler = lrs.SequentialLR(opt, [warmup, cosine], milestones=[warmup_steps])
-        schedulers.append(scheduler)
+        warmup = lrs.LinearLR(opt, start_factor=1e-8, end_factor=1, total_iters=warmup_steps)  
+        cosine = lrs.CosineAnnealingLR(opt, steps_per_epoch * args.epochs - warmup_steps)
+        scheduler = lrs.SequentialLR(opt, [warmup, cosine], milestones=[warmup_steps])
     else:
         raise ValueError('LR decay type not supported')
 
-    return schedulers
+    return scheduler
 
 
 def linear_for_warmup():
