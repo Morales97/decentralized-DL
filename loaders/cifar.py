@@ -105,6 +105,56 @@ def get_cifar(args, root, batch_size, iid=True, fraction=-1, noisy=False):
     test_loader = get_cifar_test(args, root)
     return train_loader, test_loader
 
+def get_cifar_filtered_samples(args, root, teacher_model):
+    '''
+    For noisy CIFAR-100, filter the training set such that only samples predicted correctly by the teacher
+    (i.e., supposedly without label noise) will be used
+    '''
+
+    dataset = datasets.CIFAR100
+    normalize = transforms.Normalize(
+        (0.5071, 0.4867, 0.4408), (0.2675, 0.2565, 0.2761)
+    )
+
+    # Train transforms
+    transform = transforms.Compose(
+        [
+            transforms.RandomHorizontalFlip(),
+            transforms.RandomCrop((32, 32), 4),
+            transforms.ToTensor(),
+            normalize,
+        ]
+    )
+    
+    noise_label = torch.load(os.path.join(root, 'cifar-100-python/CIFAR-100_human.pt'))
+    clean_label = noise_label['clean_label'] 
+    noisy_label = noise_label['noisy_label'] 
+
+
+    traindata = dataset(
+        root=root,
+        train=True,
+        transform=transform,
+        download=True,
+    )
+    train_loader_no_shuffle = data.DataLoader(traindata, batch_size=100, shuffle=False)
+    device = 'cuda' if torch.cuda.is_available() else 'cpu'
+
+    # predict with teacher
+    correct = []
+    correct_wrt_noisy_labels = []
+    for i, (input, target) in enumerate(train_loader_no_shuffle):
+        input = input.to(device)
+        target = target.to(device)
+
+        output = teacher_model(input)
+        pred = output.argmax(dim=1, keepdim=True)
+        correct += pred.eq(target.view_as(pred)).view(-1).tolist()
+        pdb.set_trace()
+        correct_wrt_noisy_labels += pred.eq(noisy_label[i*100:(i+1)*100].view_as(pred)).view(-1).tolist()
+
+    print(f'Teacher model train accuracy (clean labels): {np.sum(correct)/len(traindata.targets)}')
+    print(f'Teacher model train accuracy (noisy labels): {np.sum(correct_wrt_noisy_labels)/len(traindata.targets)}')
 
 # def create_ffcv_dataset():
 #     datasets = {

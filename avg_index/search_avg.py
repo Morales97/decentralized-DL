@@ -7,7 +7,8 @@ import sys
 import os
 sys.path.insert(0, os.path.join(sys.path[0], '..'))
 from helpers.parser import parse_args
-from loaders.data import get_data
+from loaders.data import get_data, ROOT_CLUSTER
+from loaders.cifar import get_cifar_filtered_samples
 from avg_index import UniformAvgIndex, ModelAvgIndex
 from model.model import get_model
 
@@ -44,7 +45,6 @@ def update_bn(loader, model, device=None, compute_train_acc=False):
             target = target.to(device)
             pred = output.argmax(dim=1, keepdim=True)
             correct += pred.eq(target.view_as(pred)).sum().item()
-            pdb.set_trace()
 
     for bn_module in momenta.keys():
         bn_module.momentum = momenta[bn_module]
@@ -285,7 +285,10 @@ if __name__ == '__main__':
     start = 43200
     end = 58400
     model = index.avg_from(start, until=end)
-    eval_avg_model(model, train_loader, test_loader, compute_train_acc=True)
+    # _, acc = eval_avg_model(model, train_loader, test_loader, compute_train_acc=True)   # NOTE there is some randomness in update_bn/evaluation? accuracies are ±0.2
+    # print(acc)
+    update_bn(train_loader, model, device)
+    get_cifar_filtered_samples(args, ROOT_CLUSTER, model)
     pdb.set_trace()
 
 # python avg_index/search_avg.py --dataset=cifar100 --net=XX --expt_name=XX
