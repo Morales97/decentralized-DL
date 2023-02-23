@@ -139,6 +139,7 @@ def get_cifar_filtered_samples(args, root, teacher_model, samples_selected=None)
     noise_label = torch.load(os.path.join(root, 'cifar-100-python/CIFAR-100_human.pt'))
     clean_label = noise_label['clean_label'] 
     noisy_label = noise_label['noisy_label'] 
+    clean_labels = (clean_label == noisy_label)
 
     if samples_selected is not None:
         assert len(samples_selected) == 50000
@@ -162,7 +163,6 @@ def get_cifar_filtered_samples(args, root, teacher_model, samples_selected=None)
             correct_wrt_noisy_labels += pred.eq(noisy_target.view_as(pred)).view(-1).tolist()
 
         # compute accuracy on clean/noisy labels
-        clean_labels = (clean_label == noisy_label)
         n_clean = clean_labels.sum()
         n_noisy = 50000 - n_clean
         clean_correct = np.array(correct)[clean_labels].sum()
