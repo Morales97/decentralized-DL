@@ -152,14 +152,30 @@ def get_cifar_filtered_samples(args, root, teacher_model):
         noisy_target = torch.from_numpy(noisy_label[i*100:(i+1)*100]).to(device)
         correct_wrt_noisy_labels += pred.eq(noisy_target.view_as(pred)).view(-1).tolist()
 
-    print(f'Teacher model train accuracy (clean labels): {np.sum(correct)/len(traindata.targets)}')
-    print(f'Teacher model train accuracy (noisy labels): {np.sum(correct_wrt_noisy_labels)/len(traindata.targets)}')
+    # compute accuracy on clean/noisy labels
+    clean_labels = (clean_label == noisy_label)
+    n_clean = clean_labels.sum()
+    n_noisy = 50000 - n_clean
+    acc_on_clean = np.array(correct)[clean_labels].sum() / n_clean
+    acc_on_noisy = np.array(correct)[clean_labels==False].sum() / (50000-n_clean)
+    noisy_labels_fitted = np.array(correct_wrt_noisy_labels)[clean_labels==False].sum() / n_noisy
+
+    print(f'Teacher model train accuracy (wrt clean labels): {np.sum(correct)/len(traindata.targets)*100}')
+    print(f'Teacher model train accuracy on {n_clean} samples with clean labels: {acc_on_clean*100}')
+    print(f'Teacher model train accuracy on {n_clean} samples with noisy labels: {acc_on_noisy*100}')
+    
+    print(f'\nTeacher model train accuracy (wrt noisy labels): {np.sum(correct_wrt_noisy_labels)/len(traindata.targets)*100}')
+    print(f'Noise fitted: Samples (out of {n_noisy}) where teacher predicted the noisy label: {noisy_labels_fitted*100}')
+    
 
     # use noisy labels dataset, filtering out samples which where not predicted correctly by teacher (suspicious of noise!)
     traindata.targets = noisy_label.tolist()
     filtered_dataset = data.Subset(traindata, np.where(correct_wrt_noisy_labels)[0])
-    train_loader = [data.DataLoader(filtered_dataset, batch_size=batch_size, shuffle=True)]
+    train_loader = [data.DataLoader(filtered_dataset, batch_size=args.batch_size[0], shuffle=True)]
     pdb.set_trace()
+
+    test_loader = get_cifar_test(args, root)
+    return train_loader, test_loader
 
 # def create_ffcv_dataset():
 #     datasets = {
