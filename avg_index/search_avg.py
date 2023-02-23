@@ -12,7 +12,7 @@ from avg_index import UniformAvgIndex, ModelAvgIndex
 from model.model import get_model
 
 @torch.no_grad()
-def update_bn(loader, model, device=None):
+def update_bn(loader, model, device=None, compute_train_acc=False):
     '''
     From https://github.com/timgaripov/swa
     Perform a pass over loader to recompute BN stats
@@ -34,20 +34,26 @@ def update_bn(loader, model, device=None):
         module.momentum = None
         module.num_batches_tracked *= 0
 
+    correct = 0
     for input in loader:
         if isinstance(input, (list, tuple)):
-            input = input[0]
-        if device is not None:
-            input = input.to(device)
+            input = input[0].to(device)
 
-        model(input)
+        output = model(input)
+        
+        if compute_train_acc:
+            target = input[1].to(device)
+            pred = output.argmax(dim=1, keepdim=True)
+            correct += pred.eq(target.view_as(pred)).sum().item()
 
     for bn_module in momenta.keys():
         bn_module.momentum = momenta[bn_module]
     model.train(was_training)
 
+    if compute_train_acc:
+        print(f'Train accuracy: {correct/len(loader.dataset)}')
 
-def eval_avg_model(model, train_loader, test_loader):
+def eval_avg_model(model, train_loader, test_loader, compute_train_acc=False):
     '''
     Update BN stats on train data
     Evaluate on test data
@@ -56,7 +62,7 @@ def eval_avg_model(model, train_loader, test_loader):
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
     # update BN stats
-    update_bn(train_loader, model, device)
+    update_bn(train_loader, model, device, compute_train_acc)
 
     # evaluate 
     model.eval()
@@ -72,6 +78,7 @@ def eval_avg_model(model, train_loader, test_loader):
 
     loss /= len(test_loader.dataset)
     acc = correct / len(test_loader.dataset) * 100
+
 
     return loss, acc
 
@@ -263,16 +270,23 @@ if __name__ == '__main__':
     av_ckpts.sort()
 
     # NOTE UNCOMMENT to precompute checkpoints
-    for ckpt in av_ckpts[:int(3*len(av_ckpts)//6)]:
-        model = index.avg_from(ckpt, until=av_ckpts[int(3*len(av_ckpts)//6)]) # until start of phase 2 (epoch 150)
-        # model = index.avg_from(ckpt, until=av_ckpts[-1])
-        _, acc = eval_avg_model(model, train_loader, test_loader)
-        accs[ckpt] = acc
-        print(f'Step {ckpt}, acc: {acc}')
-    torch.save(accs, os.path.join(save_dir, 'accs_computed.pt'))
+    # for ckpt in av_ckpts[:int(3*len(av_ckpts)//6)]:
+    #     model = index.avg_from(ckpt, until=av_ckpts[int(3*len(av_ckpts)//6)]) # until start of phase 2 (epoch 150)
+    #     # model = index.avg_from(ckpt, until=av_ckpts[-1])
+    #     _, acc = eval_avg_model(model, train_loader, test_loader)
+    #     accs[ckpt] = acc
+    #     print(f'Step {ckpt}, acc: {acc}')
+    # torch.save(accs, os.path.join(save_dir, 'accs_computed.pt'))
     
     accs = torch.load(os.path.join(save_dir, 'accs_computed.pt'))
     # exponential_search(index, train_loader, test_loader, end=38400, start=38000, accs=accs, test=False)
     # three_split_search(index, train_loader, test_loader, end=av_ckpts[-1], start=av_ckpts[0], accs=accs, test=False)
+
+    pdb.set_trace()
+    start = 100*390
+    end = 150*390
+    model = index.avg_from(start, until=end)
+    eval_avg_model(model, train_loader, test_loader, compute_train_acc=Trueº)
+    pdb.set_trace()
 
 # python avg_index/search_avg.py --dataset=cifar100 --net=XX --expt_name=XX
