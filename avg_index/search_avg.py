@@ -35,16 +35,16 @@ def update_bn(loader, model, device=None, compute_train_acc=False):
         module.num_batches_tracked *= 0
 
     correct = 0
-    for input in loader:
-        if isinstance(input, (list, tuple)):
-            input = input[0].to(device)
+    for input, target in loader:
+        input = input.to(device)
 
         output = model(input)
         
         if compute_train_acc:
-            target = input[1].to(device)
+            target = target.to(device)
             pred = output.argmax(dim=1, keepdim=True)
             correct += pred.eq(target.view_as(pred)).sum().item()
+            pdb.set_trace()
 
     for bn_module in momenta.keys():
         bn_module.momentum = momenta[bn_module]
@@ -282,11 +282,10 @@ if __name__ == '__main__':
     # exponential_search(index, train_loader, test_loader, end=38400, start=38000, accs=accs, test=False)
     # three_split_search(index, train_loader, test_loader, end=av_ckpts[-1], start=av_ckpts[0], accs=accs, test=False)
 
-    pdb.set_trace()
-    start = 100*390
-    end = 150*390
+    start = 43200
+    end = 58400
     model = index.avg_from(start, until=end)
-    eval_avg_model(model, train_loader, test_loader, compute_train_acc=Trueº)
+    eval_avg_model(model, train_loader, test_loader, compute_train_acc=True)
     pdb.set_trace()
 
 # python avg_index/search_avg.py --dataset=cifar100 --net=XX --expt_name=XX
