@@ -105,10 +105,12 @@ def get_cifar(args, root, batch_size, iid=True, fraction=-1, noisy=False):
     test_loader = get_cifar_test(args, root)
     return train_loader, test_loader
 
-def get_cifar_filtered_samples(args, root, teacher_model):
+def get_cifar_filtered_samples(args, root, teacher_model, samples_selected=None):
     '''
     For noisy CIFAR-100, filter the training set such that only samples predicted correctly by the teacher
     (i.e., supposedly without label noise) will be used
+
+    samples_selected: If specified, it is a vector of bools indicating which samples to use in the subset
     '''
 
     dataset = datasets.CIFAR100
@@ -125,10 +127,6 @@ def get_cifar_filtered_samples(args, root, teacher_model):
             normalize,
         ]
     )
-    
-    noise_label = torch.load(os.path.join(root, 'cifar-100-python/CIFAR-100_human.pt'))
-    clean_label = noise_label['clean_label'] 
-    noisy_label = noise_label['noisy_label'] 
 
     traindata = dataset(
         root=root,
@@ -136,42 +134,54 @@ def get_cifar_filtered_samples(args, root, teacher_model):
         transform=transform,
         download=True,
     )
-    train_loader_no_shuffle = data.DataLoader(traindata, batch_size=100, shuffle=False)
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
-    # predict with teacher
-    correct = []
-    correct_wrt_noisy_labels = []
-    for i, (input, target) in enumerate(train_loader_no_shuffle):
-        input = input.to(device)
-        target = target.to(device)
+    noise_label = torch.load(os.path.join(root, 'cifar-100-python/CIFAR-100_human.pt'))
+    clean_label = noise_label['clean_label'] 
+    noisy_label = noise_label['noisy_label'] 
 
-        output = teacher_model(input)
-        pred = output.argmax(dim=1, keepdim=True)
-        correct += pred.eq(target.view_as(pred)).view(-1).tolist()
-        noisy_target = torch.from_numpy(noisy_label[i*100:(i+1)*100]).to(device)
-        correct_wrt_noisy_labels += pred.eq(noisy_target.view_as(pred)).view(-1).tolist()
+    if samples_selected is not None:
+        assert len(samples_selected) == 50000
+        correct_wrt_noisy_labels = samples_selected
+        noisy_correct_wrt_noise = np.array(correct_wrt_noisy_labels)[clean_labels==False].sum()
+        clean_correct = np.array(correct_wrt_noisy_labels).sum() - noisy_correct_wrt_noise
+    else:
+        train_loader_no_shuffle = data.DataLoader(traindata, batch_size=100, shuffle=False)
 
-    # compute accuracy on clean/noisy labels
-    clean_labels = (clean_label == noisy_label)
-    n_clean = clean_labels.sum()
-    n_noisy = 50000 - n_clean
-    clean_correct = np.array(correct)[clean_labels].sum()
-    noisy_correct = np.array(correct)[clean_labels==False].sum()
-    noisy_corrrect_wrt_noise = np.array(correct_wrt_noisy_labels)[clean_labels==False].sum()
-    acc_on_clean = clean_correct / n_clean
-    acc_on_noisy = noisy_correct / n_noisy
-    noisy_labels_fitted = noisy_corrrect_wrt_noise / n_noisy
+        # predict with teacher
+        correct = []
+        correct_wrt_noisy_labels = []
+        for i, (input, target) in enumerate(train_loader_no_shuffle):
+            input = input.to(device)
+            target = target.to(device)
 
-    print('\n ~~ ON CLEAN LABELS ~~')
-    print(f'Teacher model train accuracy (wrt clean labels): {np.sum(correct)/len(traindata.targets)*100:.2f}%')
-    print(f'Teacher model train accuracy on {n_clean} clean-label samples: {acc_on_clean*100:.2f}%')
-    print(f'Teacher model train accuracy on {n_noisy} noisy-label samples: {acc_on_noisy*100:.2f}%')
-    
-    print('\n ~~ ON NOISY LABELS ~~')
-    print(f'\nTeacher model train accuracy (wrt noisy labels): {np.sum(correct_wrt_noisy_labels)/len(traindata.targets)*100:.2f}%')
-    print(f'Noise fitted: Noisy-label samples (out of {n_noisy}) where teacher predicted the noisy label: {noisy_labels_fitted*100:.2f}%')
-    
+            output = teacher_model(input)
+            pred = output.argmax(dim=1, keepdim=True)
+            correct += pred.eq(target.view_as(pred)).view(-1).tolist()
+            noisy_target = torch.from_numpy(noisy_label[i*100:(i+1)*100]).to(device)
+            correct_wrt_noisy_labels += pred.eq(noisy_target.view_as(pred)).view(-1).tolist()
+
+        # compute accuracy on clean/noisy labels
+        clean_labels = (clean_label == noisy_label)
+        n_clean = clean_labels.sum()
+        n_noisy = 50000 - n_clean
+        clean_correct = np.array(correct)[clean_labels].sum()
+        noisy_correct = np.array(correct)[clean_labels==False].sum()
+        noisy_correct_wrt_noise = np.array(correct_wrt_noisy_labels)[clean_labels==False].sum()
+        acc_on_clean = clean_correct / n_clean
+        acc_on_noisy = noisy_correct / n_noisy
+        noisy_labels_fitted = noisy_correct_wrt_noise / n_noisy
+
+        print('\n ~~ ON CLEAN LABELS ~~')
+        print(f'Teacher model train accuracy (wrt clean labels): {np.sum(correct)/len(traindata.targets)*100:.2f}%')
+        print(f'Teacher model train accuracy on {n_clean} clean-label samples: {acc_on_clean*100:.2f}%')
+        print(f'Teacher model train accuracy on {n_noisy} noisy-label samples: {acc_on_noisy*100:.2f}%')
+        
+        print('\n ~~ ON NOISY LABELS ~~')
+        print(f'\nTeacher model train accuracy (wrt noisy labels): {np.sum(correct_wrt_noisy_labels)/len(traindata.targets)*100:.2f}%')
+        print(f'Noise fitted: Noisy-label samples (out of {n_noisy}) where teacher predicted the noisy label: {noisy_labels_fitted*100:.2f}%')
+        
+        np.save(root + '/filtred_dataset_40.npy', np.array(correct_wrt_noisy_labels))
 
     # use noisy labels dataset, filtering out samples which where not predicted correctly by teacher (suspicious of noise!)
     traindata.targets = noisy_label.tolist()
@@ -179,7 +189,7 @@ def get_cifar_filtered_samples(args, root, teacher_model):
     train_loader = [data.DataLoader(filtered_dataset, batch_size=args.batch_size[0], shuffle=True)]
     
     print('\n ~~ FILTERED DATASET ~~')
-    print(f'The new dataset contains {len(train_loader[0].dataset)} samples. {clean_correct} clean-labeled samples + {noisy_corrrect_wrt_noise} noisy-label.')
+    print(f'The new dataset contains {len(train_loader[0].dataset)} samples. {clean_correct} clean-labeled samples + {noisy_correct_wrt_noise} noisy-label.')
     pdb.set_trace()
 
     test_loader = get_cifar_test(args, root)
