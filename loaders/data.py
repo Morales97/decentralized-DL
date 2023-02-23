@@ -26,7 +26,7 @@ def _get_cifar(args, root, batch_size, fraction):
         raise Exception('Heterogeneous CIFAR not supported yet')
 
     elif args.select_samples != '':
-        select_samples = np.load(os.path.join(root, args.selected_samples, '.npy'))
+        select_samples = np.load(os.path.join(root, args.select_samples, '.npy'))
         return get_cifar_filtered_samples(args, root, None, select_samples)
     elif args.data_split:
         return get_cifar(args, root, batch_size, iid=False, fraction=fraction, noisy=args.label_noise)
