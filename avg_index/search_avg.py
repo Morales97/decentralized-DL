@@ -289,6 +289,5 @@ if __name__ == '__main__':
     # print(acc)
     update_bn(train_loader, model, device)
     get_cifar_filtered_samples(args, ROOT_CLUSTER, model)
-    pdb.set_trace()
 
 # python avg_index/search_avg.py --dataset=cifar100 --net=XX --expt_name=XX

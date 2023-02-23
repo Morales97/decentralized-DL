@@ -181,7 +181,7 @@ def get_cifar_filtered_samples(args, root, teacher_model, samples_selected=None)
         print(f'\nTeacher model train accuracy (wrt noisy labels): {np.sum(correct_wrt_noisy_labels)/len(traindata.targets)*100:.2f}%')
         print(f'Noise fitted: Noisy-label samples (out of {n_noisy}) where teacher predicted the noisy label: {noisy_labels_fitted*100:.2f}%')
         
-        np.save(root + '/filtred_dataset_40.npy', np.array(correct_wrt_noisy_labels))
+        np.save(root + '/filtered_dataset_40.npy', np.array(correct_wrt_noisy_labels))
 
     # use noisy labels dataset, filtering out samples which where not predicted correctly by teacher (suspicious of noise!)
     traindata.targets = noisy_label.tolist()
@@ -190,7 +190,6 @@ def get_cifar_filtered_samples(args, root, teacher_model, samples_selected=None)
     
     print('\n ~~ FILTERED DATASET ~~')
     print(f'The new dataset contains {len(train_loader[0].dataset)} samples. {clean_correct} clean-labeled samples + {noisy_correct_wrt_noise} noisy-label.')
-    pdb.set_trace()
 
     test_loader = get_cifar_test(args, root)
     return train_loader, test_loader

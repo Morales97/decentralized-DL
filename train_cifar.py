@@ -126,7 +126,6 @@ def train(args, wandb):
 
     # data
     train_loader, test_loader = get_data(args, args.batch_size[0], args.data_fraction)
-    pdb.set_trace()
     if args.data_split:
         train_loader_lengths = [len(t) for t in train_loader]
         train_loader_iter = [iter(t) for t in train_loader]
