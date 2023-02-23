@@ -12,3 +12,4 @@ data/cifar-100-python/*
 *.gif
 *.ipynb
 *.pt
+*.npy
