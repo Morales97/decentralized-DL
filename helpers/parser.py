@@ -128,7 +128,7 @@ def get_parser():
                         help='Use noisy labels (from http://noisylabels.com/, 40% noise on C-100)')
 
     # evaluation
-    parser.add_argument('--eval_on_average_model', type=boolfromstr, default=False,
+    parser.add_argument('--eval_on_average_model', type=boolfromstr, default=True,
                         help='evaluate on the average of all workers models (true), or separate and report mean accuracy (false)')
     parser.add_argument('--steps_eval', type=int, default=400,
                         help='evaluate every x number of steps')
