@@ -129,7 +129,6 @@ def get_cifar_filtered_samples(args, root, teacher_model):
     noise_label = torch.load(os.path.join(root, 'cifar-100-python/CIFAR-100_human.pt'))
     clean_label = noise_label['clean_label'] 
     noisy_label = noise_label['noisy_label'] 
-    traindata.targets = noisy_label.tolist()
 
     traindata = dataset(
         root=root,
@@ -156,10 +155,12 @@ def get_cifar_filtered_samples(args, root, teacher_model):
     print(f'Teacher model train accuracy (clean labels): {np.sum(correct)/len(traindata.targets)}')
     print(f'Teacher model train accuracy (noisy labels): {np.sum(correct_wrt_noisy_labels)/len(traindata.targets)}')
 
-    filtered_dataset = data.Subset(traindata, np.where(correct)[0])
+    # use noisy labels dataset, filtering out samples which where not predicted correctly by teacher (suspicious of noise!)
+    traindata.targets = noisy_label.tolist()
+    filtered_dataset = data.Subset(traindata, np.where(correct_wrt_noisy_labels)[0])
     train_loader = [data.DataLoader(filtered_dataset, batch_size=batch_size, shuffle=True)]
     pdb.set_trace()
-    
+
 # def create_ffcv_dataset():
 #     datasets = {
 #         'train': datasets.CIFAR10('/tmp', train=True, download=True),
