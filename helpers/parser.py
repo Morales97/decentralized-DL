@@ -126,6 +126,8 @@ def get_parser():
                         help='For Logistic regression, viz weights for each class')
     parser.add_argument('--label_noise', action='store_true',
                         help='Use noisy labels (from http://noisylabels.com/, 40% noise on C-100)')
+    parser.add_argument('--select_samples', type=str, default='', 
+                        help='File of saved subset to select. Used to train with noisy labels.')
 
     # evaluation
     parser.add_argument('--eval_on_average_model', type=boolfromstr, default=True,

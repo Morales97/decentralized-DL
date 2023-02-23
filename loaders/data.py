@@ -5,7 +5,7 @@ from torchvision import datasets, transforms
 import torch
 import torch.utils.data as data
 from loaders.mnist import get_heterogeneous_mnist, get_mnist_split, get_mnist_iid
-from loaders.cifar import get_cifar
+from loaders.cifar import get_cifar, get_cifar_filtered_samples
 
 ROOT_LOCAL = './data'
 ROOT_CLUSTER = '/mloraw1/danmoral/data'
@@ -24,6 +24,10 @@ def _get_cifar(args, root, batch_size, fraction):
     
     if args.p_label_skew > 0:
         raise Exception('Heterogeneous CIFAR not supported yet')
+
+    elif args.select_samples != '':
+        select_samples = np.load(os.path.join(root, args.selected_samples, '.npy'))
+        return get_cifar_filtered_samples(args, root, None, select_samples)
     elif args.data_split:
         return get_cifar(args, root, batch_size, iid=False, fraction=fraction, noisy=args.label_noise)
     else:
