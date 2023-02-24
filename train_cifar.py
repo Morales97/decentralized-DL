@@ -165,16 +165,16 @@ def train(args, wandb):
         index_save_dir = os.path.join(args.save_dir, args.expt_name)
         if not os.path.exists(index_save_dir):
             os.makedirs(index_save_dir)
-        # index = ModelAvgIndex(
-        #     models[0],              # NOTE only supported with solo mode now.
-        #     UniformAvgIndex(index_save_dir, checkpoint_period=args.steps_eval),
-        #     include_buffers=True,
-        # )
         index = ModelAvgIndex(
             models[0],              # NOTE only supported with solo mode now.
-            TriangleAvgIndex(index_save_dir, checkpoint_period=args.steps_eval),
+            UniformAvgIndex(index_save_dir, checkpoint_period=args.steps_eval),
             include_buffers=True,
         )
+        # index = ModelAvgIndex(
+        #     models[0],              # NOTE only supported with solo mode now.
+        #     TriangleAvgIndex(index_save_dir, checkpoint_period=args.steps_eval),
+        #     include_buffers=True,
+        # )
 
     # initialize variables
     comm_matrix = get_gossip_matrix(args, 0)
