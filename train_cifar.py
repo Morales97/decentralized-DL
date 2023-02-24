@@ -16,7 +16,7 @@ from helpers.consensus import compute_node_consensus, compute_weight_distance, g
 from helpers.train_dynamics import get_cosine_similarity, get_prediction_disagreement
 from helpers.evaluate import eval_all_models, evaluate_model
 from helpers.wa import AveragedModel, update_bn, SWALR
-from avg_index.avg_index import UniformAvgIndex, ModelAvgIndex
+from avg_index.avg_index import TriangleAvgIndex, UniformAvgIndex, ModelAvgIndex
 from helpers.lr_scheduler import get_lr_schedulers
 import wandb
 import os
@@ -165,9 +165,14 @@ def train(args, wandb):
         index_save_dir = os.path.join(args.save_dir, args.expt_name)
         if not os.path.exists(index_save_dir):
             os.makedirs(index_save_dir)
+        # index = ModelAvgIndex(
+        #     models[0],              # NOTE only supported with solo mode now.
+        #     UniformAvgIndex(index_save_dir, checkpoint_period=args.steps_eval),
+        #     include_buffers=True,
+        # )
         index = ModelAvgIndex(
             models[0],              # NOTE only supported with solo mode now.
-            UniformAvgIndex(index_save_dir, checkpoint_period=args.steps_eval),
+            TriangleAvgIndex(index_save_dir, checkpoint_period=args.steps_eval),
             include_buffers=True,
         )
 
