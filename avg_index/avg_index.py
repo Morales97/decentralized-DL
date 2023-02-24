@@ -168,7 +168,7 @@ class TriangleAvgIndex(AvgIndex):
         if self._current_avg is None or self._current_t_avg is None:
             self._counter = 1
             self._current_avg = _clone_tensors(tensors)
-            self._current_t_avg = _clone_tensors(tensors)
+            self._current_t_avg = _clone_tensors(self._current_avg) 
             return
 
         # Update uniform average
