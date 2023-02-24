@@ -8,6 +8,7 @@ from copy import deepcopy
 from dataclasses import dataclass
 import uuid
 from typing import Iterable, Optional, Union, Protocol
+import itertools
 
 import torch
 import pdb 
@@ -165,10 +166,11 @@ class TriangleAvgIndex(AvgIndex):
 
     def add(self, tensors: Iterable[torch.Tensor]):
         """Add a new data point (e.g. model parameters) to the index."""
+        tensors, tensors_t = itertools.tee(tensors)     # Duplicate iterator
         if self._current_avg is None or self._current_t_avg is None:
             self._counter = 1
             self._current_avg = _clone_tensors(tensors)
-            self._current_t_avg = _clone_tensors(self._current_avg) 
+            self._current_t_avg = _clone_tensors(tensors_t) 
             return
 
         # Update uniform average
@@ -180,7 +182,7 @@ class TriangleAvgIndex(AvgIndex):
         # Update t-average
         new_weight_t = 2.0 / (self._counter + 1)
         torch._foreach_mul_(self._current_t_avg, 1.0 - new_weight_t)
-        torch._foreach_add_(self._current_t_avg, list(tensors), alpha=new_weight_t)
+        torch._foreach_add_(self._current_t_avg, list(tensors_t), alpha=new_weight_t)
         if (
             self._checkpoint_period is not None
             and self._counter % self._checkpoint_period == 0
