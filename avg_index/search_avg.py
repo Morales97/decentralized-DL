@@ -254,7 +254,8 @@ if __name__ == '__main__':
     index_ckpt_file, step = find_index_ckpt(save_dir)
     state_dir = os.path.join(save_dir, index_ckpt_file)
 
-    _index = TriangleAvgIndex('.') # UniformAvgIndex('.')
+    _index = UniformAvgIndex('.')
+    # _index = TriangleAvgIndex('.') 
     state_dict = torch.load(state_dir)
     _index.load_state_dict(state_dict)
 
