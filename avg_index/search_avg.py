@@ -9,7 +9,7 @@ sys.path.insert(0, os.path.join(sys.path[0], '..'))
 from helpers.parser import parse_args
 from loaders.data import get_data, ROOT_CLUSTER
 from loaders.cifar import get_cifar_filtered_samples
-from avg_index import UniformAvgIndex, ModelAvgIndex
+from avg_index import UniformAvgIndex, ModelAvgIndex, TriangleAvgIndex
 from model.model import get_model
 
 @torch.no_grad()
@@ -254,13 +254,13 @@ if __name__ == '__main__':
     index_ckpt_file, step = find_index_ckpt(save_dir)
     state_dir = os.path.join(save_dir, index_ckpt_file)
 
-    uniform_index = UniformAvgIndex('.')
+    _index = TriangleAvgIndex('.') # UniformAvgIndex('.')
     state_dict = torch.load(state_dir)
-    uniform_index.load_state_dict(state_dict)
+    _index.load_state_dict(state_dict)
 
     index = ModelAvgIndex(
             get_model(args, device),              # NOTE only supported with solo mode now.
-            uniform_index,
+            _index,
             include_buffers=True,
         )
 
@@ -271,23 +271,24 @@ if __name__ == '__main__':
 
     # NOTE UNCOMMENT to precompute checkpoints
     # for ckpt in av_ckpts[:int(3*len(av_ckpts)//6)]:
-    #     model = index.avg_from(ckpt, until=av_ckpts[int(3*len(av_ckpts)//6)]) # until start of phase 2 (epoch 150)
-    #     # model = index.avg_from(ckpt, until=av_ckpts[-1])
-    #     _, acc = eval_avg_model(model, train_loader, test_loader)
-    #     accs[ckpt] = acc
-    #     print(f'Step {ckpt}, acc: {acc}')
-    # torch.save(accs, os.path.join(save_dir, 'accs_computed.pt'))
+    for ckpt in av_ckpts[:-1]:
+        # model = index.avg_from(ckpt, until=av_ckpts[int(3*len(av_ckpts)//6)]) # until start of phase 2 (epoch 150)
+        model = index.avg_from(ckpt, until=av_ckpts[-1])
+        _, acc = eval_avg_model(model, train_loader, test_loader)
+        accs[ckpt] = acc
+        print(f'Step {ckpt}, acc: {acc}')
+    torch.save(accs, os.path.join(save_dir, 'accs_computed.pt'))
     
     accs = torch.load(os.path.join(save_dir, 'accs_computed.pt'))
     # exponential_search(index, train_loader, test_loader, end=38400, start=38000, accs=accs, test=False)
-    # three_split_search(index, train_loader, test_loader, end=av_ckpts[-1], start=av_ckpts[0], accs=accs, test=False)
+    three_split_search(index, train_loader, test_loader, end=av_ckpts[-1], start=av_ckpts[0], accs=accs, test=False)
 
-    start = 43200
-    end = 58400
-    model = index.avg_from(start, until=end)
+    # start = 43200
+    # end = 58400
+    # model = index.avg_from(start, until=end)
     # _, acc = eval_avg_model(model, train_loader, test_loader, compute_train_acc=True)   # NOTE there is some randomness in update_bn/evaluation? accuracies are ±0.2
     # print(acc)
-    update_bn(train_loader, model, device)
-    get_cifar_filtered_samples(args, ROOT_CLUSTER, model)
+    # update_bn(train_loader, model, device)
+    # get_cifar_filtered_samples(args, ROOT_CLUSTER, model)
 
 # python avg_index/search_avg.py --dataset=cifar100 --net=XX --expt_name=XX
