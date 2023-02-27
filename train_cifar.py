@@ -107,6 +107,8 @@ def compute_model_tracking_metrics(args, logger, models, ema_models, opts, step,
         cos_sim = get_cosine_similarity(models[0], model_init)
         logger.log_quantity(step, epoch, cos_sim, name='Cosine similarity to init')
 
+    lr = opts[0].param_groups[0]['lr']
+    logger.log_quantity(step, epoch, lr, name='Learing rate')
 
 def update_bn_and_eval(model, train_loader, test_loader, device, logger, log_name=''):
     _model = deepcopy(model)
