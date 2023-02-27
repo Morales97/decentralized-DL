@@ -28,7 +28,7 @@ def evaluate(model, test_loader, adv=True, epsilon=8./255):
 
         adv_bx = adversary(model, bx, by) if adv else bx
         with torch.no_grad():
-            logits = model(adv_bx * 2 - 1)
+            logits = model(adv_bx * 2 - 1) # TODO change this
 
         loss = F.cross_entropy(logits.data, by, reduction='sum')
         running_loss += loss.cpu().data.numpy()

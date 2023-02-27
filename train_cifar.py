@@ -200,6 +200,16 @@ def train(args, wandb):
     epoch_swa_budget = args.epoch_swa_budget
     epoch_swa3 = 0
 
+    if args.resume:
+        ckpt = torch.load(args.resume)
+        assert len(models) == 1     # NOTE resuming only supported for solo training for now
+        models[0].load_state_dict(ckpt['state_dict'])
+        ema_models[args.alpha[-1]][0].load_state_dict(ckpt['ema_state_dict'])
+        opts[0].load_state_dict(ckpt['optimizer'])
+        epoch = ckpt['epoch']
+        step = ckpt['step']
+        print(f'Resuming from step {step} (epoch {epoch}) ...')
+
     # TRAIN LOOP
     # for step in range(steps['total_steps']):
     while epoch < args.epochs:

@@ -32,7 +32,9 @@ def get_parser():
     # model
     parser.add_argument('--net', type=str, default='rn20',
                         help='choice of architecture') 
-    
+    parser.add_argument('--resume', type=str, default='',
+                        help='path to checkpoint to resume from')
+
     # decentralized
     parser.add_argument('--n_nodes', type=int, nargs='+', default=[1],
                         help='number of nodes') 
