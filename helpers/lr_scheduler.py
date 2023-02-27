@@ -36,7 +36,7 @@ def get_lr_schedulers(args, n_samples, opt):
         scheduler = lrs.SequentialLR(opt, [warmup, cosine], milestones=[warmup_steps])
     elif args.lr_decay_as == 'linear':
         warmup = lrs.LinearLR(opt, start_factor=1e-8, end_factor=1, total_iters=warmup_steps) 
-        linear = lrs.LinearLR(opt, start_factor=1, end_factor=args.lr_end_factor, total_iters=steps_per_epoch*args.lr_linear_decay_epochs)
+        linear = lrs.LinearLR(opt, start_factor=1, end_factor=args.swa_lr/args.lr, total_iters=steps_per_epoch*args.lr_linear_decay_epochs)
         scheduler = lrs.SequentialLR(opt, [warmup, linear], milestones=phases_steps_1)
     else:
         raise ValueError('LR decay type not supported')
