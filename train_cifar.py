@@ -206,6 +206,7 @@ def train(args, wandb):
         models[0].load_state_dict(ckpt['state_dict'])
         ema_models[args.alpha[-1]][0].load_state_dict(ckpt['ema_state_dict'])
         opts[0].load_state_dict(ckpt['optimizer'])
+        schedulers[0] = ckpt['scheduler'] # NOTE if changing the LR scheduler (e.g., choosing a different final_lr), need to overwrite certain keys in the scheduler state_dict
         epoch = ckpt['epoch']
         step = ckpt['step']
         print(f'Resuming from step {step} (epoch {epoch}) ...')
@@ -426,6 +427,7 @@ def train(args, wandb):
                     'state_dict': models[i].state_dict(),
                     'ema_state_dict': ema_models[args.alpha[-1]][i].state_dict(),
                     'optimizer' : opts[i].state_dict(),
+                    'scheduler': schedulers[i].state_dict()
                 }, filename=os.path.join(SAVE_DIR, args.expt_name, f'checkpoint_m{i}_{step}.pth.tar'))
 
                 # if args.wandb:
