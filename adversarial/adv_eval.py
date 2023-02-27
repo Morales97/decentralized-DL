@@ -1,11 +1,15 @@
 import torch
+import torch.nn.functional as F
 
 import os
 import sys
 sys.path.insert(0, os.path.join(sys.path[0], '..'))
 from adversarial import attacks
 from helpers.parser import parse_args
-
+from loaders.data import get_data, ROOT_CLUSTER
+from model.model import get_model
+from avg_index.search_avg import find_index_ckpt
+from avg_index.avg_index import UniformAvgIndex, ModelAvgIndex, TriangleAvgIndex
 
 def evaluate(model, test_loader, adv=True, epsilon=8./255):
     adversary = attacks.PGD_linf(epsilon=epsilon, num_steps=20, step_size=2./255).cuda()
@@ -66,5 +70,12 @@ if __name__ == '__main__':
     epsilon = 8./255
     loss, acc = evaluate(model, test_loader, epsilon=epsilon)
     print(f'Adversarial Test Accuracy (eps={epsilon}): {acc} \t Advesarial Test Loss: {loss}')
+
+    epsilon = 4./255
+    loss, acc = evaluate(model, test_loader, epsilon=epsilon)
+    print(f'Adversarial Test Accuracy (eps={epsilon}): {acc} \t Advesarial Test Loss: {loss}')
+    
+    loss, acc = evaluate(model, test_loader, adv=False)
+    print(f'Test Accuracy: {acc} \t Test Loss: {loss}')
 
 # python adversarial/adv_eval.py --net=rn18 --dataset=cifar100 --expt_name=C4.3_lr0.8
