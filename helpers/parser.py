@@ -98,8 +98,8 @@ def get_parser():
                         help='decay learning rate linearly insted of step') 
     parser.add_argument('--lr_scheduler', type=boolfromstr, default=True,
                         help='to use torch´s lr scheduler instead of manual')
-    parser.add_argument('--swa_lr', type=int, default=0,
-                        help='final LR to perform SWA in') 
+    parser.add_argument('--final_lr', type=int, default=0,
+                        help='final LR (usually to perform SWA in)') 
 
     # optimizer
     parser.add_argument('--opt', type=str, default='SGD',
