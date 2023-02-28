@@ -88,9 +88,9 @@ if __name__ == '__main__':
     # loss, acc = evaluate(model, test_loader, epsilon=epsilon)
     # print(f'Adversarial Test Accuracy (eps={epsilon}): {acc} \t Advesarial Test Loss: {loss}')
 
-    # epsilon = 4./255
-    # loss, acc = evaluate(model, test_loader, epsilon=epsilon)
-    # print(f'Adversarial Test Accuracy (eps={epsilon}): {acc} \t Advesarial Test Loss: {loss}')
+    epsilon = 4./255
+    loss, acc = evaluate(model, test_loader, epsilon=epsilon)
+    print(f'Adversarial Test Accuracy (eps={epsilon}): {acc} \t Advesarial Test Loss: {loss}')
     
     loss, acc = evaluate(model, test_loader, adv=False)
     print(f'Test Accuracy: {acc} \t Test Loss: {loss}')
