@@ -88,14 +88,18 @@ if __name__ == '__main__':
     ckpt = torch.load('/mloraw1/danmoral/checkpoints/C4.3_lr0.8_ckpts/checkpoint_m0_96721.pth.tar')
     model.load_state_dict(ckpt['state_dict'])
 
-    # epsilon = 8./255
-    # loss, acc = evaluate(model, test_loader, epsilon=epsilon)
-    # print(f'Adversarial Test Accuracy (eps={epsilon}): {acc} \t Advesarial Test Loss: {loss}')
+    epsilon = 8./255
+    loss, acc = evaluate(model, test_loader, epsilon=epsilon)
+    print(f'Adversarial Test Accuracy (eps={epsilon}): {acc} \t Advesarial Test Loss: {loss}')
 
     epsilon = 4./255
     loss, acc = evaluate(model, test_loader, epsilon=epsilon)
     print(f'Adversarial Test Accuracy (eps={epsilon}): {acc} \t Advesarial Test Loss: {loss}')
     
+    epsilon = 2./255
+    loss, acc = evaluate(model, test_loader, epsilon=epsilon)
+    print
+
     loss, acc = evaluate(model, test_loader, adv=False)
     print(f'Test Accuracy: {acc} \t Test Loss: {loss}')
 
