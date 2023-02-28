@@ -168,16 +168,6 @@ def save_checkpoint(state, filename, is_best=False):
     if is_best:
         shutil.copyfile(filename, 'model_best.pth.tar')
 
-def update_scheduler(args, scheduler_state):
-    '''
-    Update scheduler to change LR schedule when resuming
-    '''
-    if args.lr >= args.final_lr:
-        scheduler_state['_schedulers'][1]['end_factor'] = args.final_lr
-    else:
-        scheduler_state['_schedulers'][1]['base_lrs'] = [args.final_lr]
-        scheduler_state['_schedulers'][1]['end_factor'] = 1
-        
 if __name__ == '__main__':
     # config = {'test': 1}
     # save_experiment(config, None, filename='experiments_mnist/results/test')

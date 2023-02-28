@@ -8,7 +8,7 @@ import time
 import torch
 from model.model import add_noise_to_models, get_model, get_ema_models
 import torch.nn.functional as F
-from helpers.utils import save_experiment, get_expt_name, MultiAccuracyTracker, save_checkpoint, update_scheduler
+from helpers.utils import save_experiment, get_expt_name, MultiAccuracyTracker, save_checkpoint
 from helpers.logger import Logger
 from helpers.parser import parse_args
 from optimizer.optimizer import get_optimizer
@@ -211,7 +211,6 @@ def train(args, wandb):
         
         scheduler_state = ckpt['scheduler'] # NOTE if changing the LR scheduler (e.g., choosing a different final_lr), need to overwrite certain keys in the scheduler state_dict
         if 'prn164_SWA' in args.expt_name:
-            #update_scheduler(args, scheduler_state)
             scheduler_state['_schedulers'][1]['end_factor'] = args.final_lr   # NOTE change the end LR. Ad-hoc for SWA experiments
 
         schedulers[0].load_state_dict(scheduler_state)
