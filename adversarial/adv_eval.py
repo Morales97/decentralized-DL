@@ -10,6 +10,7 @@ from loaders.data import get_data, ROOT_CLUSTER
 from model.model import get_model
 from avg_index.search_avg import find_index_ckpt
 from avg_index.avg_index import UniformAvgIndex, ModelAvgIndex, TriangleAvgIndex
+import pdb
 
 def evaluate(model, test_loader, adv=True, epsilon=8./255):
     adversary = attacks.PGD_linf(epsilon=epsilon, num_steps=20, step_size=2./255).cuda()
@@ -28,7 +29,9 @@ def evaluate(model, test_loader, adv=True, epsilon=8./255):
 
         adv_bx = adversary(model, bx, by) if adv else bx
         with torch.no_grad():
-            logits = model(adv_bx * 2 - 1) # TODO change this
+            pdb.set_trace()
+            logits = model(adv_bx) # TODO change this
+            # logits = model(adv_bx * 2 - 1) # TODO change this
 
         loss = F.cross_entropy(logits.data, by, reduction='sum')
         running_loss += loss.cpu().data.numpy()
