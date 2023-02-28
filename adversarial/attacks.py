@@ -57,11 +57,9 @@ class PGD_linf(nn.Module):
         """
         bx_min = torch.min(bx)
         bx_max = torch.max(bx)
-        pdb.set_trace()
         bx = bx - bx_min
-        bx = bx / bx_max
-        pdb.set_trace()
-        
+        bx = bx / (bx_max - bx_min)
+
         adv_bx = bx.detach()
         adv_bx += torch.zeros_like(adv_bx).uniform_(-self.epsilon, self.epsilon)
 
@@ -76,6 +74,9 @@ class PGD_linf(nn.Module):
 
             adv_bx = torch.min(torch.max(adv_bx, bx - self.epsilon), bx + self.epsilon).clamp(0, 1)
 
+        adv_bx = adv_bx * (bx_max - bx_min)
+        adv_bx = adv_bx + bx_min
+        pdb.set_trace()
         return adv_bx
 
 
