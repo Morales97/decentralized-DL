@@ -211,7 +211,7 @@ def train(args, wandb):
         
         scheduler_state = ckpt['scheduler'] # NOTE if changing the LR scheduler (e.g., choosing a different final_lr), need to overwrite certain keys in the scheduler state_dict
         if 'prn164_SWA' in args.expt_name:
-            scheduler_state['_schedulers'][1]['end_factor'] = args.final_lr   # NOTE change the end LR. Ad-hoc for SWA experiments
+            scheduler_state['_schedulers'][1]['end_factor'] = args.final_lr / args.lr[0]   # NOTE change the end LR. Ad-hoc for SWA experiments
 
         schedulers[0].load_state_dict(scheduler_state)
         epoch = ckpt['epoch']
