@@ -10,6 +10,8 @@ from loaders.data import get_data, ROOT_CLUSTER
 from model.model import get_model
 from avg_index.search_avg import find_index_ckpt
 from avg_index.avg_index import UniformAvgIndex, ModelAvgIndex, TriangleAvgIndex
+from torchvision import datasets, transforms
+import torch.utils.data as data
 import pdb
 
 def evaluate(model, test_loader, adv=True, epsilon=8./255):
@@ -50,7 +52,17 @@ def evaluate(model, test_loader, adv=True, epsilon=8./255):
 if __name__ == '__main__':
     args = parse_args()
 
-    _, test_loader = get_data(args, args.batch_size[0], args.data_fraction)
+    # _, test_loader = get_data(args, args.batch_size[0], args.data_fraction)
+    dataset_loader = datasets.CIFAR100
+    transform = transforms.Compose([transforms.ToTensor()])
+    dataset = dataset_loader(
+        root=ROOT_CLUSTER,
+        train=False,
+        transform=transform,
+        download=True,
+    )
+    test_loader = data.DataLoader(dataset, batch_size=200, shuffle=False)
+
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
     save_dir = os.path.join(args.save_dir, args.expt_name)
     index_ckpt_file, step = find_index_ckpt(save_dir)
@@ -70,13 +82,13 @@ if __name__ == '__main__':
     av_ckpts.sort()
     model = index.avg_from(av_ckpts[int(3*len(av_ckpts)//6)], until=av_ckpts[-1])   # take as model the avg between half and end of training for now
 
-    epsilon = 8./255
-    loss, acc = evaluate(model, test_loader, epsilon=epsilon)
-    print(f'Adversarial Test Accuracy (eps={epsilon}): {acc} \t Advesarial Test Loss: {loss}')
+    # epsilon = 8./255
+    # loss, acc = evaluate(model, test_loader, epsilon=epsilon)
+    # print(f'Adversarial Test Accuracy (eps={epsilon}): {acc} \t Advesarial Test Loss: {loss}')
 
-    epsilon = 4./255
-    loss, acc = evaluate(model, test_loader, epsilon=epsilon)
-    print(f'Adversarial Test Accuracy (eps={epsilon}): {acc} \t Advesarial Test Loss: {loss}')
+    # epsilon = 4./255
+    # loss, acc = evaluate(model, test_loader, epsilon=epsilon)
+    # print(f'Adversarial Test Accuracy (eps={epsilon}): {acc} \t Advesarial Test Loss: {loss}')
     
     loss, acc = evaluate(model, test_loader, adv=False)
     print(f'Test Accuracy: {acc} \t Test Loss: {loss}')
