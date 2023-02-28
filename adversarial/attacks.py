@@ -61,7 +61,7 @@ class PGD_linf(nn.Module):
         # bx = bx / (bx_max - bx_min)
 
         range_bx = bx_max - bx_min
-        scaled_epsilon = self.epsilon * range_bx
+        scaled_epsilon = self.epsilon * 1 # range_bx
         adv_bx = bx.detach()
         # adv_bx += torch.zeros_like(adv_bx).uniform_(-self.epsilon, self.epsilon)
         adv_bx += torch.zeros_like(adv_bx).uniform_(-scaled_epsilon, scaled_epsilon)
@@ -77,7 +77,7 @@ class PGD_linf(nn.Module):
             adv_bx = adv_bx.detach() + self.step_size * torch.sign(grad.detach())
 
             # adv_bx = torch.min(torch.max(adv_bx, bx - self.epsilon), bx + self.epsilon).clamp(0, 1)
-            adv_bx = torch.min(torch.max(adv_bx, bx - scaled_epsilon), bx + scaled_epsilon).clamp(0, 1)
+            adv_bx = torch.min(torch.max(adv_bx, bx - scaled_epsilon), bx + scaled_epsilon)
 
         # adv_bx = adv_bx * (bx_max - bx_min)
         # adv_bx = adv_bx + bx_min
