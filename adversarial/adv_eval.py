@@ -89,5 +89,5 @@ if __name__ == '__main__':
     loss, acc = evaluate(model, test_loader, adv=False)
     print(f'Test Accuracy: {acc} \t Test Loss: {loss}')
 
-# python adversarial/adv_eval.py --net=rn18 --dataset=cifar100 --expt_name=C4.3_lr0.8
+# python adversarial/adv_eval.py --net=rn18 --dataset=cifar100 --expt_name=C4.3_lr0.8_cosine
 # python adversarial/adv_eval.py --net=rn18 --dataset=cifar100 --resume=/mloraw1/danmoral/checkpoints/C4.3_lr0.8_cosine/checkpoint_m0_117001.pth.tar

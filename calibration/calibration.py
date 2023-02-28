@@ -104,6 +104,7 @@ def get_model_results(model, data_loader, in_dist=True, t=1):
     confidence = []
     correct = []
     labels = []
+    running_loss = 0
 
     with torch.no_grad():
         for batch_idx, (data, target) in enumerate(data_loader):
@@ -125,8 +126,13 @@ def get_model_results(model, data_loader, in_dist=True, t=1):
             pred = output.data.max(1)[1]
             correct.extend(pred.eq(target).to('cpu').numpy().squeeze().tolist())
             labels.extend(target.to('cpu').numpy().squeeze().tolist())
+            
+            loss = F.cross_entropy(output, target, reduction='sum')
+            running_loss += loss.cpu().data.numpy()
+    
+    loss = running_loss / len(data_loader.targets)
 
-    return logits.copy(), confidence.copy(), correct.copy(), labels.copy()
+    return logits.copy(), confidence.copy(), correct.copy(), labels.copy(), loss
 
 
 if __name__ == '__main__':
@@ -150,10 +156,12 @@ if __name__ == '__main__':
     print('Ignoring temperature')
     t_star = 1
 
-    test_logits, test_confidence, test_correct, _ = get_model_results(model, test_loader, in_dist=True, t=t_star)
+    test_logits, test_confidence, test_correct, _, test_loss = get_model_results(model, test_loader, in_dist=True, t=t_star)
     rms, mad, sf1 = get_measures(np.array(test_confidence), np.array(test_correct))
+    print(f'Test Accuracy: {np.sum(test_correct)/10000*100} \t\t Test Loss: {test_loss}')
     print('RMS Calib Error (%): \t\t{:.2f}'.format(100 * rms))
     print('MAD Calib Error (%): \t\t{:.2f}'.format(100 * mad))
     print('Soft F1 Score (%):   \t\t{:.2f}'.format(100 * sf1))
 
 # python calibration/calibration.py --net=rn18 --dataset=cifar100 --resume=/mloraw1/danmoral/checkpoints/C4.3_lr0.8_cosine/checkpoint_m0_117001.pth.tar
+# python calibration/calibration.py --net=rn18 --dataset=cifar100 --expt_name=C4.3_lr0.8_cosine
