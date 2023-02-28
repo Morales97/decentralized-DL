@@ -31,7 +31,6 @@ def evaluate(model, test_loader, adv=True, epsilon=8./255):
 
         adv_bx = adversary(model, bx, by) if adv else bx
         with torch.no_grad():
-            pdb.set_trace()
             logits = model(adv_bx) # TODO change this
             # logits = model(adv_bx * 2 - 1) # TODO change this
 
@@ -83,8 +82,8 @@ if __name__ == '__main__':
     av_ckpts = list(state_dict['available_checkpoints'])
     av_ckpts.sort()
     model = index.avg_from(av_ckpts[int(3*len(av_ckpts)//6)], until=av_ckpts[-1])   # take as model the avg between half and end of training for now
-    update_bn(train_loader, model, device)
-    
+    update_bn(train_loader[0], model, device)
+
     # epsilon = 8./255
     # loss, acc = evaluate(model, test_loader, epsilon=epsilon)
     # print(f'Adversarial Test Accuracy (eps={epsilon}): {acc} \t Advesarial Test Loss: {loss}')

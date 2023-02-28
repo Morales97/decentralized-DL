@@ -6,7 +6,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import numpy as np
-
+import pdb
 
 def tensor_clamp(x, a_min, a_max):
     """
@@ -55,6 +55,13 @@ class PGD_linf(nn.Module):
         :param by: true labels
         :return: perturbed batch of images
         """
+        bx_min = torch.min(bx)
+        bx_max = torch.max(bx)
+        pdb.set_trace()
+        bx = bx - bx_min
+        bx = bx / bx_max
+        pdb.set_trace()
+        
         adv_bx = bx.detach()
         adv_bx += torch.zeros_like(adv_bx).uniform_(-self.epsilon, self.epsilon)
 
