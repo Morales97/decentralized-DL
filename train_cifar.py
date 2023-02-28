@@ -200,13 +200,19 @@ def train(args, wandb):
     epoch_swa_budget = args.epoch_swa_budget
     epoch_swa3 = 0
 
+    # Load checkpoint
     if args.resume:
         ckpt = torch.load(args.resume)
         assert len(models) == 1     # NOTE resuming only supported for solo training for now
+        
         models[0].load_state_dict(ckpt['state_dict'])
         ema_models[args.alpha[-1]][0].load_state_dict(ckpt['ema_state_dict'])
         opts[0].load_state_dict(ckpt['optimizer'])
+        
         schedulers[0] = ckpt['scheduler'] # NOTE if changing the LR scheduler (e.g., choosing a different final_lr), need to overwrite certain keys in the scheduler state_dict
+        if 'prn164_SWA' in args.expt_name:
+            schedulers[0]['_schedulers'][1]['end_factor'] = args.final_lr   # NOTE change the end LR. Ad-hoc for SWA experiments
+        
         epoch = ckpt['epoch']
         step = ckpt['step']
         print(f'Resuming from step {step} (epoch {epoch}) ...')
