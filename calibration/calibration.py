@@ -4,6 +4,7 @@ Adapted from https://github.com/hendrycks/pre-training/blob/83f5787dea1532a66fd7
 
 import torch
 import numpy as np
+import torch.nn.functional as F
 
 import os
 import sys
@@ -18,6 +19,7 @@ import pdb
 def calib_err(confidence, correct, p='2', beta=100):
     # beta is target bin size
     idxs = np.argsort(confidence)
+
     confidence = confidence[idxs]
     correct = correct[idxs]
     bins = [[i * beta, (i + 1) * beta] for i in range(len(confidence) // beta)]
@@ -149,7 +151,7 @@ if __name__ == '__main__':
     t_star = 1
 
     test_logits, test_confidence, test_correct, _ = get_model_results(model, test_loader, in_dist=True, t=t_star)
-    rms, mad, sf1 = get_measures(test_confidence, test_correct)
+    rms, mad, sf1 = get_measures(np.array(test_confidence), np.array(test_correct))
     print('RMS Calib Error (%): \t\t{:.2f}'.format(100 * rms))
     print('MAD Calib Error (%): \t\t{:.2f}'.format(100 * mad))
     print('Soft F1 Score (%):   \t\t{:.2f}'.format(100 * sf1))

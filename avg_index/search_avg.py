@@ -245,7 +245,7 @@ def find_index_ckpt(rootdir=".", prefix='index'):
 
 def get_avg_model(args, start=0.5, end=1):
     '''
-    Get an average model for expt_name run between epochs [total_epochs*start, total_epochs*end] 
+    Get an average model for expt_name run between epochs [total_epochs * start, total_epochs * end] 
     '''
     train_loader, test_loader = get_data(args, args.batch_size[0], args.data_fraction)
     save_dir = os.path.join(args.save_dir, args.expt_name)

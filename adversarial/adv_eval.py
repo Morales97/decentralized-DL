@@ -65,28 +65,14 @@ if __name__ == '__main__':
     # test_loader = data.DataLoader(dataset, batch_size=200, shuffle=False)
 
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
-    save_dir = os.path.join(args.save_dir, args.expt_name)
-    index_ckpt_file, step = find_index_ckpt(save_dir)
-    state_dir = os.path.join(save_dir, index_ckpt_file)
 
-    _index = UniformAvgIndex('.')
-    state_dict = torch.load(state_dir)
-    _index.load_state_dict(state_dict)
-
-    index = ModelAvgIndex(
-            get_model(args, device),              # NOTE only supported with solo mode now.
-            _index,
-            include_buffers=True,
-        )
-    
-    av_ckpts = list(state_dict['available_checkpoints'])
-    av_ckpts.sort()
-    
-    #model = index.avg_from(av_ckpts[int(3*len(av_ckpts)//6)], until=av_ckpts[-1])   # take as model the avg between half and end of training for now
-    #update_bn(train_loader[0], model, device)
-    model = get_model(args, device)
-    ckpt = torch.load('/mloraw1/danmoral/checkpoints/C4.3_lr0.8_cosine/checkpoint_m0_117001.pth.tar')
-    model.load_state_dict(ckpt['state_dict'])
+    if args.resume:
+        model = get_model(args, device)
+        ckpt = torch.load(args.resume)
+        model.load_state_dict(ckpt['state_dict'])
+        # model.load_state_dict(ckpt['ema_state_dict'])
+    else:
+        model = get_avg_model(args, start=0.5, end=1)
 
     epsilon = 8./255
     loss, acc = evaluate(model, test_loader, epsilon=epsilon)
@@ -104,3 +90,4 @@ if __name__ == '__main__':
     print(f'Test Accuracy: {acc} \t Test Loss: {loss}')
 
 # python adversarial/adv_eval.py --net=rn18 --dataset=cifar100 --expt_name=C4.3_lr0.8
+# python adversarial/adv_eval.py --net=rn18 --dataset=cifar100 --resume=/mloraw1/danmoral/checkpoints/C4.3_lr0.8_cosine/checkpoint_m0_117001.pth.tar
