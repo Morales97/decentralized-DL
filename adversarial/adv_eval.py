@@ -85,8 +85,8 @@ if __name__ == '__main__':
     #model = index.avg_from(av_ckpts[int(3*len(av_ckpts)//6)], until=av_ckpts[-1])   # take as model the avg between half and end of training for now
     #update_bn(train_loader[0], model, device)
     model = get_model(args, device)
-    state_dict = torch.load('/mloraw1/danmoral/checkpoints/C4.3_lr0.8_ckpts/checkpoint_m0_96721.pth.tar')
-    model.load_state_dict(state_dict)
+    ckpt = torch.load('/mloraw1/danmoral/checkpoints/C4.3_lr0.8_ckpts/checkpoint_m0_96721.pth.tar')
+    model.load_state_dict(ckpt['state_dict'])
 
     # epsilon = 8./255
     # loss, acc = evaluate(model, test_loader, epsilon=epsilon)
