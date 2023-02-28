@@ -57,26 +57,31 @@ class PGD_linf(nn.Module):
         """
         bx_min = torch.min(bx)
         bx_max = torch.max(bx)
-        bx = bx - bx_min
-        bx = bx / (bx_max - bx_min)
+        # bx = bx - bx_min
+        # bx = bx / (bx_max - bx_min)
 
+        range_bx = bx_max - bx_min
+        scaled_epsilon = self.epsilon * range_bx
         adv_bx = bx.detach()
-        adv_bx += torch.zeros_like(adv_bx).uniform_(-self.epsilon, self.epsilon)
+        # adv_bx += torch.zeros_like(adv_bx).uniform_(-self.epsilon, self.epsilon)
+        adv_bx += torch.zeros_like(adv_bx).uniform_(-scaled_epsilon, scaled_epsilon)
 
         for _ in range(self.num_steps):
             adv_bx.requires_grad_()
             with torch.enable_grad():
-                logits = model(adv_bx * 2 - 1)
+                # logits = model(adv_bx * 2 - 1)
+                logits = model(adv_bx)
                 loss = F.cross_entropy(logits, by, reduction='sum')
             grad = torch.autograd.grad(loss, adv_bx, only_inputs=True)[0]
 
             adv_bx = adv_bx.detach() + self.step_size * torch.sign(grad.detach())
 
-            adv_bx = torch.min(torch.max(adv_bx, bx - self.epsilon), bx + self.epsilon).clamp(0, 1)
+            # adv_bx = torch.min(torch.max(adv_bx, bx - self.epsilon), bx + self.epsilon).clamp(0, 1)
+            adv_bx = torch.min(torch.max(adv_bx, bx - scaled_epsilon), bx + scaled_epsilon).clamp(0, 1)
 
-        adv_bx = adv_bx * (bx_max - bx_min)
-        adv_bx = adv_bx + bx_min
-        pdb.set_trace()
+        # adv_bx = adv_bx * (bx_max - bx_min)
+        # adv_bx = adv_bx + bx_min
+        
         return adv_bx
 
 
