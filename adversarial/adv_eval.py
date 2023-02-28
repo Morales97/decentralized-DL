@@ -8,7 +8,7 @@ from adversarial import attacks
 from helpers.parser import parse_args
 from loaders.data import get_data, ROOT_CLUSTER
 from model.model import get_model
-from avg_index.search_avg import find_index_ckpt
+from avg_index.search_avg import find_index_ckpt, update_bn
 from avg_index.avg_index import UniformAvgIndex, ModelAvgIndex, TriangleAvgIndex
 from torchvision import datasets, transforms
 import torch.utils.data as data
@@ -52,16 +52,18 @@ def evaluate(model, test_loader, adv=True, epsilon=8./255):
 if __name__ == '__main__':
     args = parse_args()
 
-    # _, test_loader = get_data(args, args.batch_size[0], args.data_fraction)
-    dataset_loader = datasets.CIFAR100
-    transform = transforms.Compose([transforms.ToTensor()])
-    dataset = dataset_loader(
-        root=ROOT_CLUSTER,
-        train=False,
-        transform=transform,
-        download=True,
-    )
-    test_loader = data.DataLoader(dataset, batch_size=200, shuffle=False)
+    train_loader, test_loader = get_data(args, args.batch_size[0], args.data_fraction)
+    
+    # dataset_loader = datasets.CIFAR100
+    # transform = transforms.Compose([transforms.ToTensor(), transforms.Normalize((0.5071, 0.4867, 0.4408), (0.2675, 0.2565, 0.2761))])
+    # # transform = transforms.Compose([transforms.ToTensor()])
+    # dataset = dataset_loader(
+    #     root=ROOT_CLUSTER,
+    #     train=False,
+    #     transform=transform,
+    #     download=True,
+    # )
+    # test_loader = data.DataLoader(dataset, batch_size=200, shuffle=False)
 
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
     save_dir = os.path.join(args.save_dir, args.expt_name)
@@ -81,7 +83,8 @@ if __name__ == '__main__':
     av_ckpts = list(state_dict['available_checkpoints'])
     av_ckpts.sort()
     model = index.avg_from(av_ckpts[int(3*len(av_ckpts)//6)], until=av_ckpts[-1])   # take as model the avg between half and end of training for now
-
+    update_bn(train_loader, model, device)
+    
     # epsilon = 8./255
     # loss, acc = evaluate(model, test_loader, epsilon=epsilon)
     # print(f'Adversarial Test Accuracy (eps={epsilon}): {acc} \t Advesarial Test Loss: {loss}')
