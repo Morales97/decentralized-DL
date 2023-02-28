@@ -243,6 +243,32 @@ def find_index_ckpt(rootdir=".", prefix='index'):
     end_step = file.split('_')[-1].split('.')[0]
     return file, end_step
 
+def get_avg_model(args, start=0.5, end=1):
+    '''
+    Get an average model for expt_name run between epochs [total_epochs*start, total_epochs*end] 
+    '''
+    train_loader, test_loader = get_data(args, args.batch_size[0], args.data_fraction)
+    save_dir = os.path.join(args.save_dir, args.expt_name)
+    index_ckpt_file, step = find_index_ckpt(save_dir)
+    state_dir = os.path.join(save_dir, index_ckpt_file)
+
+    _index = UniformAvgIndex('.')
+    state_dict = torch.load(state_dir)
+    _index.load_state_dict(state_dict)
+
+    index = ModelAvgIndex(
+            get_model(args, device),              # NOTE only supported with solo mode now.
+            _index,
+            include_buffers=True,
+        )
+    
+    av_ckpts = list(state_dict['available_checkpoints'])
+    av_ckpts.sort()
+    model = index.avg_from(av_ckpts[int(len(av_ckpts)*start)-1], until=av_ckpts[int(len(av_ckpts)*end)-1])  
+    update_bn(train_loader[0], model, device)
+    
+    return model
+
 if __name__ == '__main__':
     ''' For debugging purposes '''
     args = parse_args()

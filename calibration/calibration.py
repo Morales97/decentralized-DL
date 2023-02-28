@@ -1,0 +1,157 @@
+'''
+Adapted from https://github.com/hendrycks/pre-training/blob/83f5787dea1532a66fd79ef6bbfb8b88e9af9514/uncertainty/CIFAR/test_calibration.py
+'''
+
+import torch
+import numpy as np
+
+import os
+import sys
+sys.path.insert(0, os.path.join(sys.path[0], '..'))
+from helpers.parser import parse_args
+from avg_index.search_avg import get_avg_model
+from model.model import get_model
+from loaders.data import get_data, ROOT_CLUSTER
+
+import pdb
+
+def calib_err(confidence, correct, p='2', beta=100):
+    # beta is target bin size
+    idxs = np.argsort(confidence)
+    confidence = confidence[idxs]
+    correct = correct[idxs]
+    bins = [[i * beta, (i + 1) * beta] for i in range(len(confidence) // beta)]
+    bins[-1] = [bins[-1][0], len(confidence)]
+
+    cerr = 0
+    total_examples = len(confidence)
+    for i in range(len(bins) - 1):
+        bin_confidence = confidence[bins[i][0]:bins[i][1]]
+        bin_correct = correct[bins[i][0]:bins[i][1]]
+        num_examples_in_bin = len(bin_confidence)
+
+        if num_examples_in_bin > 0:
+            difference = np.abs(np.nanmean(bin_confidence) - np.nanmean(bin_correct))
+
+            if p == '2':
+                cerr += num_examples_in_bin / total_examples * np.square(difference)
+            elif p == '1':
+                cerr += num_examples_in_bin / total_examples * difference
+            elif p == 'infty' or p == 'infinity' or p == 'max':
+                cerr = np.maximum(cerr, difference)
+            else:
+                assert False, "p must be '1', '2', or 'infty'"
+
+    if p == '2':
+        cerr = np.sqrt(cerr)
+
+    return cerr
+
+
+def soft_f1(confidence, correct):
+    wrong = 1 - correct
+    return 2 * ((1 - confidence) * wrong).sum()/(1 - confidence + wrong).sum()
+
+
+def tune_temp(logits, labels, binary_search=True, lower=0.2, upper=5.0, eps=0.0001):
+    logits = np.array(logits)
+
+    if binary_search:
+        import torch
+        import torch.nn.functional as F
+
+        logits = torch.FloatTensor(logits)
+        labels = torch.LongTensor(labels)
+        t_guess = torch.FloatTensor([0.5*(lower + upper)]).requires_grad_()
+
+        while upper - lower > eps:
+            if torch.autograd.grad(F.cross_entropy(logits / t_guess, labels), t_guess)[0] > 0:
+                upper = 0.5 * (lower + upper)
+            else:
+                lower = 0.5 * (lower + upper)
+            t_guess = t_guess * 0 + 0.5 * (lower + upper)
+
+        t = min([lower, 0.5 * (lower + upper), upper], key=lambda x: float(F.cross_entropy(logits / x, labels)))
+    else:
+        import cvxpy as cx
+
+        set_size = np.array(logits).shape[0]
+
+        t = cx.Variable()
+
+        expr = sum((cx.Minimize(cx.log_sum_exp(logits[i, :] * t) - logits[i, labels[i]] * t)
+                    for i in range(set_size)))
+        p = cx.Problem(expr, [lower <= t, t <= upper])
+
+        p.solve()   # p.solve(solver=cx.SCS)
+        t = 1 / t.value
+
+    return t
+
+def get_measures(confidence, correct):
+    rms = calib_err(confidence, correct, p='2')
+    mad = calib_err(confidence, correct, p='1')
+    sf1 = soft_f1(confidence, correct)
+
+    return rms, mad, sf1
+
+to_np = lambda x: x.data.to('cpu').numpy()
+
+def get_model_results(model, data_loader, in_dist=True, t=1):
+    logits = []
+    confidence = []
+    correct = []
+    labels = []
+
+    with torch.no_grad():
+        for batch_idx, (data, target) in enumerate(data_loader):
+            # if batch_idx >= ood_num_examples // args.test_bs and in_dist is False:
+            #     break
+            data, target = data.cuda(), target.cuda()
+
+            output = model(data)
+            logits.extend(to_np(output).squeeze())
+
+            # if args.use_01:
+            #     confidence.extend(to_np(
+            #         (F.softmax(output/t, dim=1).max(1)[0] - 1./num_classes)/(1 - 1./num_classes)
+            #     ).squeeze().tolist())
+            # else:
+
+            confidence.extend(to_np(F.softmax(output/t, dim=1).max(1)[0]).squeeze().tolist())
+
+            pred = output.data.max(1)[1]
+            correct.extend(pred.eq(target).to('cpu').numpy().squeeze().tolist())
+            labels.extend(target.to('cpu').numpy().squeeze().tolist())
+
+    return logits.copy(), confidence.copy(), correct.copy(), labels.copy()
+
+
+if __name__ == '__main__':
+    args = parse_args()
+    device = 'cuda' if torch.cuda.is_available() else 'cpu'
+
+    train_loader, test_loader = get_data(args, args.batch_size[0], args.data_fraction)
+    # val_logits, val_confidence, val_correct, val_labels = get_net_results(val_loader, in_dist=True)   # NOTE need to split train in train-val
+
+    if args.resume:
+        model = get_model(args, device)
+        ckpt = torch.load(args.resume)
+        model.load_state_dict(ckpt['state_dict'])
+        # model.load_state_dict(ckpt['ema_state_dict'])
+    else:
+        model = get_avg_model(args, start=0.5, end=1)
+
+    # print('\nTuning Softmax Temperature')
+    # t_star = tune_temp(val_logits, val_labels)
+    # print('Softmax Temperature Tuned. Temperature is {:.3f}'.format(t_star))
+    print('Ignoring temperature')
+    t_star = 1
+
+    test_logits, test_confidence, test_correct, _ = get_model_results(model, test_loader, in_dist=True, t=t_star)
+    rms, mad, sf1 = get_measures(test_confidence, test_correct)
+    print('RMS Calib Error (%): \t\t{:.2f}'.format(100 * rms))
+    print('MAD Calib Error (%): \t\t{:.2f}'.format(100 * mad))
+    print('Soft F1 Score (%):   \t\t{:.2f}'.format(100 * sf1))
+
+# python calibration/calibration.py --net=rn18 --dataset=cifar100 --resume=/mloraw1/danmoral/checkpoints/C4.3_lr0.8_cosine/checkpoint_m0_117001.pth.tar
