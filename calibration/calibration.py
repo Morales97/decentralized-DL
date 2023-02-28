@@ -13,7 +13,7 @@ from helpers.parser import parse_args
 from avg_index.search_avg import get_avg_model
 from model.model import get_model
 from loaders.data import get_data, ROOT_CLUSTER
-
+from helpers.evaluate import evaluate_model
 import pdb
 
 def calib_err(confidence, correct, p='2', beta=100):
@@ -130,7 +130,7 @@ def get_model_results(model, data_loader, in_dist=True, t=1):
             loss = F.cross_entropy(output, target, reduction='sum')
             running_loss += loss.cpu().data.numpy()
     
-    loss = running_loss / len(data_loader.targets)
+    loss = running_loss / len(data_loader.dataset)
 
     return logits.copy(), confidence.copy(), correct.copy(), labels.copy(), loss
 
@@ -150,6 +150,9 @@ if __name__ == '__main__':
     else:
         model = get_avg_model(args, start=0.5, end=1)
 
+    loss, acc = evaluate_model(model, test_loader, device)
+    print(f'Loss: {loss}, Acc: {acc}')
+    
     # print('\nTuning Softmax Temperature')
     # t_star = tune_temp(val_logits, val_labels)
     # print('Softmax Temperature Tuned. Temperature is {:.3f}'.format(t_star))

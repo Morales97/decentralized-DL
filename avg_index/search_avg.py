@@ -247,6 +247,7 @@ def get_avg_model(args, start=0.5, end=1):
     '''
     Get an average model for expt_name run between epochs [total_epochs * start, total_epochs * end] 
     '''
+    device = 'cuda' if torch.cuda.is_available() else 'cpu'
     train_loader, test_loader = get_data(args, args.batch_size[0], args.data_fraction)
     save_dir = os.path.join(args.save_dir, args.expt_name)
     index_ckpt_file, step = find_index_ckpt(save_dir)
