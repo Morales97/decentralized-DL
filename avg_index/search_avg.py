@@ -243,13 +243,16 @@ def find_index_ckpt(rootdir=".", prefix='index'):
     end_step = file.split('_')[-1].split('.')[0]
     return file, end_step
 
-def get_avg_model(args, start=0.5, end=1):
+def get_avg_model(args, start=0.5, end=1, expt_name=None):
     '''
     Get an average model for expt_name run between epochs [total_epochs * start, total_epochs * end] 
     '''
+    if not expt_name:
+        expt_name = args.expt_name
+
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
     train_loader, test_loader = get_data(args, args.batch_size[0], args.data_fraction)
-    save_dir = os.path.join(args.save_dir, args.expt_name)
+    save_dir = os.path.join(args.save_dir, expt_name)
     index_ckpt_file, step = find_index_ckpt(save_dir)
     state_dir = os.path.join(save_dir, index_ckpt_file)
 

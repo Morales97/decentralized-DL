@@ -101,7 +101,8 @@ def get_pca(args):
     for file in ckpt_files:
         ckpt_i = torch.load(file)
         model_i = get_model(args, device)
-        model_i.load_state_dict(ckpt_i['state_dict'])
+        # model_i.load_state_dict(ckpt_i['state_dict'])
+        model_i.load_state_dict(ckpt_i['ema_state_dict'])
         models.append(torch.cat([p.data.view(-1) for p in model_i.parameters()]).cpu().numpy())
     models = np.asarray(models)
 

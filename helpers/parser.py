@@ -9,8 +9,10 @@ SCRATCH_DIR = '/mloraw1/danmoral/scratch/' # directory to cache wandb artifacts 
 ENTITY = 'morales97' # wandb username
 
 
-def get_parser():
-    parser = argparse.ArgumentParser(description='')
+def get_parser(parser=None):
+    if not parser:
+        parser = argparse.ArgumentParser(description='')
+        
     # wandb 
     parser.add_argument('--expt_name', type=str, default='',
                         help='Name of the experiment for wandb')
