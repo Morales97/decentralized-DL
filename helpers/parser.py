@@ -12,7 +12,7 @@ ENTITY = 'morales97' # wandb username
 def get_parser(parser=None):
     if not parser:
         parser = argparse.ArgumentParser(description='')
-        
+
     # wandb 
     parser.add_argument('--expt_name', type=str, default='',
                         help='Name of the experiment for wandb')
@@ -153,8 +153,8 @@ def check_assertions(args):
 #def calculated_args(args):
 
 
-def parse_args():
-    parser = get_parser()
+def parse_args(parser=None):
+    parser = get_parser(parser)
     args = parser.parse_args()
     check_assertions(args)
     return args
