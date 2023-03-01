@@ -113,13 +113,17 @@ def get_pca(args):
 if __name__ == '__main__':
     args = parse_args()
 
-    models_pca = get_pca(args)
+    # models_pca = get_pca(args)
     cos_sim, pred_dist, pred_disag = get_train_metrics(args)
 
-    np.save(os.path.join(SAVE_DIR, args.expt_name, 'models_pca'), models_pca)
-    np.save(os.path.join(SAVE_DIR, args.expt_name, 'cosine_similarity'), cos_sim)
-    np.save(os.path.join(SAVE_DIR, args.expt_name, 'prediction_distance'), pred_dist)
-    np.save(os.path.join(SAVE_DIR, args.expt_name, 'prediction_disagreement'), pred_disag)
+    # np.save(os.path.join(SAVE_DIR, args.expt_name, 'models_pca'), models_pca)
+    # np.save(os.path.join(SAVE_DIR, args.expt_name, 'cosine_similarity'), cos_sim)
+    # np.save(os.path.join(SAVE_DIR, args.expt_name, 'prediction_distance'), pred_dist)
+    # np.save(os.path.join(SAVE_DIR, args.expt_name, 'prediction_disagreement'), pred_disag)
+    np.save(os.path.join(SAVE_DIR, args.expt_name, 'cosine_similarity_ema'), cos_sim)
+    np.save(os.path.join(SAVE_DIR, args.expt_name, 'prediction_distance_ema'), pred_dist)
+    np.save(os.path.join(SAVE_DIR, args.expt_name, 'prediction_disagreement_ema'), pred_disag)
+
 
 # python helpers/train_dynamics.py --net=convnet_rgb --dataset=cifar10 --expt_name=CNN_lr0.04_decay2
 # python helpers/train_dynamics.py --net=rn18 --dataset=cifar100 --expt_name=C4.3_lr0.8
