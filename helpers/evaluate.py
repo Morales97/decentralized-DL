@@ -56,8 +56,10 @@ def eval_ensemble(models, test_loader, device, avg_model=False):
     else:
         corrects = np.zeros(len(models))
         losses = np.zeros(len(models))
+        soft_accs = np.zeros(len(models))
         correct = 0
         loss = 0
+        soft_acc = 0
 
         for model in models:
            model.eval()
@@ -71,17 +73,22 @@ def eval_ensemble(models, test_loader, device, avg_model=False):
                     pred = output.argmax(dim=1, keepdim=True)
                     losses[i] += F.cross_entropy(output, target, reduction='sum').item()
                     corrects[i] += pred.eq(target.view_as(pred)).sum().item()
-
-                    ensemble_prob += F.softmax(output, dim=1)
+                    
+                    probs = F.softmax(output, dim=1)
+                    soft_accs[i] += probs
+                    ensemble_prob += probs
                 
                 ensemble_pred = ensemble_prob.argmax(dim=1, keepdim=True)
                 correct += ensemble_pred.eq(target.view_as(ensemble_pred)).sum().item()
+                soft_acc += ensemble_prob/len(models)
         
         accs = []
         for i in range(len(models)):
-            accs.append(corrects[i] / len(test_loader.dataset))
+            accs.append(corrects[i] / len(test_loader.dataset)) *100
             losses[i] /= len(test_loader.dataset)
-        acc = correct / len(test_loader.dataset)
+            soft_accs[i] /= len(test_loader.dataset) * 100
+        acc = correct / len(test_loader.dataset) * 100
+        soft_acc /= len(test_loader.dataset) * 100
 
-        return None, acc, losses, accs
+        return None, acc, soft_acc, losses, accs, soft_accs
 
