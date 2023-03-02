@@ -92,3 +92,7 @@ class WideResNet(nn.Module):
 def wideresnet28_10(args):
     if args.dataset == 'cifar100':
         return WideResNet(num_classes=100, depth=28, widen_factor=10)
+    elif args.dataset == 'cifar10':
+        return WideResNet(num_classes=10, depth=28, widen_factor=10)
+    else:
+        raise Exception('dataset not supported')
