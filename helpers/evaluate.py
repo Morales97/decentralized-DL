@@ -51,6 +51,7 @@ def eval_ensemble(models, test_loader, device, avg_model=False):
     if avg_model:
         model = get_average_model(device, models)
         loss, acc = evaluate_model(model, test_loader, device)
+        return loss, acc, None, None
 
     else:
         corrects = np.zeros(len(models))
@@ -75,4 +76,12 @@ def eval_ensemble(models, test_loader, device, avg_model=False):
                 
                 ensemble_pred = ensemble_prob.argmax(dim=1, keepdim=True)
                 correct += ensemble_pred.eq(target.view_as(ensemble_pred)).sum().item()
-                pdb.set_trace()
+        
+        accs = []
+        for i in range(len(models)):
+            accs.append(correct / len(test_loader.dataset))
+            losses[i] /= len(test_loader.dataset)
+        acc = correct / len(test_loader.dataset)
+
+        return None, acc, losses, accs
+
