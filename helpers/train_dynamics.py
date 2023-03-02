@@ -79,6 +79,7 @@ def get_prediction_disagreement_and_correctness(model1, model2, loader, device):
         agree_count += pred1.eq(pred2).sum().item()
         
         agreed = pred1.eq(pred2)
+        pdb.set_trace()
         agreed_correct = pred1[agreed].eq(target[agreed].view_as(pred1[agreed])).sum().item()
         correct_correct += agreed_correct
         incorrect_incorrect_same += agreed.sum().item() - agreed_correct
