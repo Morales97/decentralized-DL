@@ -45,7 +45,7 @@ if __name__ == '__main__':
         model = get_avg_model(args, start=0.5, end=1)
         # TODO
 
-    eval_ensemble(models)
+    eval_ensemble(models, test_loader, device)
 
     pred_disagreement = np.zeros((len(models), len(models)))
     pred_distance = np.zeros((len(models), len(models)))
