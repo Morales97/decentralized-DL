@@ -48,7 +48,7 @@ if __name__ == '__main__':
     _, acc, losses, accs = eval_ensemble(models, test_loader, device)
     _, avg_model_acc, _, _ = eval_ensemble(models, test_loader, device, avg_model=True)
     print('\n ~~~ Models accuracy ~~~')
-    for i, in range(len(accs)):
+    for i in range(len(accs)):
         print(f'Model {i}:\tAccuracy: {accs[i]} \tLoss: {losses[i]}')
     print(f'(Prediction) Ensemble Accuracy: {acc}')
     print(f'(Weight) Ensemble Accuracy: {avg_model_acc}')
