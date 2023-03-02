@@ -45,13 +45,13 @@ if __name__ == '__main__':
         model = get_avg_model(args, start=0.5, end=1)
         # TODO
 
-    _, acc, losses, accs = eval_ensemble(models, test_loader, device)
-    _, avg_model_acc, _, _ = eval_ensemble(models, test_loader, device, avg_model=True)
-    print('\n ~~~ Models accuracy ~~~')
-    for i in range(len(accs)):
-        print(f'Model {i}:\tAccuracy: {accs[i]} \tLoss: {losses[i]}')
-    print(f'(Prediction) Ensemble Accuracy: {acc}')
-    print(f'(Weight) Ensemble Accuracy: {avg_model_acc}')
+    # _, acc, losses, accs = eval_ensemble(models, test_loader, device)
+    # _, avg_model_acc, _, _ = eval_ensemble(models, test_loader, device, avg_model=True)
+    # print('\n ~~~ Models accuracy ~~~')
+    # for i in range(len(accs)):
+    #     print(f'Model {i}:\tAccuracy: {accs[i]} \tLoss: {losses[i]}')
+    # print(f'(Prediction) Ensemble Accuracy: {acc}')
+    # print(f'(Weight) Ensemble Accuracy: {avg_model_acc}')
 
     pred_disagreement = np.zeros((len(models), len(models)))
     pred_distance = np.zeros((len(models), len(models)))
