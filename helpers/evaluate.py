@@ -84,7 +84,7 @@ def eval_ensemble(models, test_loader, device, avg_model=False):
         
         accs = []
         for i in range(len(models)):
-            accs.append(corrects[i] / len(test_loader.dataset)) *100
+            accs.append(corrects[i] / len(test_loader.dataset) * 100) 
             losses[i] /= len(test_loader.dataset)
             soft_accs[i] /= len(test_loader.dataset) * 100
         acc = correct / len(test_loader.dataset) * 100
