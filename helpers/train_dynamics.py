@@ -53,6 +53,44 @@ def get_prediction_disagreement(model1, model2, loader, device):
         agree_count += pred1.eq(pred2).sum().item()
     return distance/len(loader.dataset), 1-agree_count/len(loader.dataset)
 
+@torch.no_grad()
+def get_prediction_disagreement_and_correctness(model1, model2, loader, device):
+    '''
+    also check if predictions agreed/disagreed where correct
+    '''
+    model1.eval()
+    model2.eval()
+    agree_count = 0
+    distance = 0
+    correct_correct = 0
+    correct_incorrect = 0
+    incorrect_incorrect_same = 0
+    incorrect_incorrect_different = 0
+
+    for data, target in loader:
+        data, target = data.to(device), target.to(device)
+        output1 = model1(data)
+        output2 = model2(data)
+        distance += torch.linalg.norm((output1 - output2), dim=1).sum()  # Using L2 norm as distance. Could also use JS
+
+        pred1 = output1.argmax(dim=1, keepdim=True)
+        pred2 = output2.argmax(dim=1, keepdim=True)
+
+        agree_count += pred1.eq(pred2).sum().item()
+        
+        agreed = pred1.eq(pred2)
+        agreed_correct = pred[agreed].eq(target[agreed].view_as(pred[agreed])).sum().item()
+        correct_correct += agreed_correct
+        incorrect_incorrect_same += agreed.sum().item() - agreed_correct
+
+        disagreed = not pred1.eq(pred2)
+        disagreed_correct = pred1[agreed].eq(target[agreed].view_as(pred1[agreed])).sum().item() + pred2[agreed].eq(target[agreed].view_as(pred2[agreed])).sum().item()
+        correct_incorrect += disagreed_correct
+        incorrect_incorrect_different += disagreed.sum().item() - correct_incorrect
+        pdb.set_trace()
+
+    return distance/len(loader.dataset), 1-agree_count/len(loader.dataset)
+
 def get_train_metrics(args):
     # Get checkpoints of experiment
     ckpt_files = recursive_glob(os.path.join(SAVE_DIR, args.expt_name), prefix='checkpoint')
