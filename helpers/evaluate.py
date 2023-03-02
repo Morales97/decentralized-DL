@@ -75,12 +75,12 @@ def eval_ensemble(models, test_loader, device, avg_model=False):
                     corrects[i] += pred.eq(target.view_as(pred)).sum().item()
                     
                     probs = F.softmax(output, dim=1)
-                    soft_accs[i] += probs
+                    soft_accs[i] += probs.gather(1, target.unsqueeze(1)).squeeze()
                     ensemble_prob += probs
                 
                 ensemble_pred = ensemble_prob.argmax(dim=1, keepdim=True)
                 correct += ensemble_pred.eq(target.view_as(ensemble_pred)).sum().item()
-                soft_acc += ensemble_prob/len(models)
+                soft_acc += ensemble_prob.gather(1, target.unsqueeze(1)).squeeze()/len(models)
         
         accs = []
         for i in range(len(models)):
