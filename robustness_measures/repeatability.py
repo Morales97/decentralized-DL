@@ -55,15 +55,23 @@ if __name__ == '__main__':
 
     pred_disagreement = np.zeros((len(models), len(models)))
     pred_distance = np.zeros((len(models), len(models)))
+    corr_corr = np.zeros((len(models), len(models)))
+    incorr_corr = np.zeros((len(models), len(models)))
+    incorr_incorr_same = np.zeros((len(models), len(models)))
+    incorr_incorr_diff = np.zeros((len(models), len(models)))
 
     for i, model_i in enumerate(models):
         pred_disagreement[i,i] = 0
         pred_distance[i,i] = 0
+        corr_corr[i,i] = 0
+        incorr_corr[i,i] = 0
+        incorr_incorr_same[i,i] = 0
+        incorr_incorr_diff[i,i] = 0
 
         for j, model_j in enumerate(models[i+1:]):
             j = j+i+1
             #pred_distance[i,j], pred_disagreement[i,j] = get_prediction_disagreement(model_i, model_j, test_loader, device)
-            pred_distance[i,j], pred_disagreement[i,j] = get_prediction_disagreement_and_correctness(model_i, model_j, test_loader, device)
+            pred_distance[i,j], pred_disagreement[i,j], corr_corr[i,j], incorr_corr[i,j], incorr_incorr_same[i,j], incorr_incorr_diff[i,j] = get_prediction_disagreement_and_correctness(model_i, model_j, test_loader, device)
             pred_distance[j,i], pred_disagreement[j,i] = pred_distance[i,j], pred_disagreement[i,j]
 
     print('\n ~~~ Prediction disagreement ~~~')
@@ -74,6 +82,14 @@ if __name__ == '__main__':
     print('Average L2 norm of (prob1 - prob2) in test samples')
     print(pred_distance)
 
+    print('Correct-Correct')
+    print(corr_corr)
+    print('Incorrect-Correct')
+    print(incorr_corr)
+    print('Incorrect-Incorrect, same prediction')
+    print(incorr_incorr_same)
+    print('Incorrect-Incorrect, different prediction')
+    print(incorr_incorr_diff)
 
 
 # python robustness_measures/repeatability.py --net=rn18 --dataset=cifar100 --resume=/mloraw1/danmoral/checkpoints/C4.3_lr0.8_cosine/checkpoint_m0_117001.pth.tar --resume2=/mloraw1/danmoral/checkpoints/C4.3_lr0.8_cosine_1/checkpoint_m0_117001.pth.tar --resume3=/mloraw1/danmoral/checkpoints/C4.3_lr0.8_cosine_2/checkpoint_m0_117001.pth.tar

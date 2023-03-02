@@ -87,9 +87,8 @@ def get_prediction_disagreement_and_correctness(model1, model2, loader, device):
         disagreed_correct = pred1[disagreed].eq(target.view_as(pred1)[disagreed]).sum().item() + pred2[disagreed].eq(target.view_as(pred2)[disagreed]).sum().item()
         correct_incorrect += disagreed_correct
         incorrect_incorrect_different += disagreed.sum().item() - disagreed_correct
-        pdb.set_trace()
 
-    return distance/len(loader.dataset), 1-agree_count/len(loader.dataset)
+    return distance/len(loader.dataset)*100, 1-agree_count/len(loader.dataset)*100, correct_correct/len(loader.dataset)*100, correct_incorrect/len(loader.dataset)*100, incorrect_incorrect_same/len(loader.dataset)*100, incorrect_incorrect_different/len(loader.dataset)*100
 
 def get_train_metrics(args):
     # Get checkpoints of experiment
