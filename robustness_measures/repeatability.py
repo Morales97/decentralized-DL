@@ -9,7 +9,7 @@ from helpers.parser import parse_args
 from avg_index.search_avg import get_avg_model
 from model.model import get_model
 from loaders.data import get_data, ROOT_CLUSTER
-from helpers.evaluate import evaluate_model
+from helpers.evaluate import evaluate_model, eval_ensemble
 from helpers.train_dynamics import get_prediction_disagreement
 import argparse
 import pdb
@@ -45,6 +45,7 @@ if __name__ == '__main__':
         model = get_avg_model(args, start=0.5, end=1)
         # TODO
 
+    eval_ensemble(models)
 
     pred_disagreement = np.zeros((len(models), len(models)))
     pred_distance = np.zeros((len(models), len(models)))
@@ -54,6 +55,7 @@ if __name__ == '__main__':
         pred_distance[i,i] = 0
 
         for j, model_j in enumerate(models[i+1:]):
+            j = j+i+1
             pred_distance[i,j], pred_disagreement[i,j] = get_prediction_disagreement(model_i, model_j, test_loader, device)
             pred_distance[j,i], pred_disagreement[j,i] = pred_distance[i,j], pred_disagreement[i,j]
 
@@ -65,4 +67,8 @@ if __name__ == '__main__':
     print('Average L2 norm of (prob1 - prob2) in test samples')
     print(pred_distance)
 
-# python robustness_measures/repeatability.py --net=rn18 --dataset=cifar100 --resume=/mloraw1/danmoral/checkpoints/C4.3_lr0.8_cosine/checkpoint_m0_117001.pth.tar --resume2=/mloraw1/danmoral/checkpoints/C4.3_lr0.8_cosine_1/checkpoint_m0_117001.pth.tar --resume3=/mloraw1/danmoral/checkpoints/C4.3_lr0.8_cosine_3/checkpoint_m0_117001.pth.tar
+
+
+# python robustness_measures/repeatability.py --net=rn18 --dataset=cifar100 --resume=/mloraw1/danmoral/checkpoints/C4.3_lr0.8_cosine/checkpoint_m0_117001.pth.tar --resume2=/mloraw1/danmoral/checkpoints/C4.3_lr0.8_cosine_1/checkpoint_m0_117001.pth.tar --resume3=/mloraw1/danmoral/checkpoints/C4.3_lr0.8_cosine_2/checkpoint_m0_117001.pth.tar
+# python robustness_measures/repeatability.py --net=rn18 --dataset=cifar100 --resume=/mloraw1/danmoral/checkpoints/C4.3_lr0.8_cosine/checkpoint_m0_60841.pth.tar --resume2=/mloraw1/danmoral/checkpoints/C4.3_lr0.8_cosine_1/checkpoint_m0_60841.pth.tar --resume3=/mloraw1/danmoral/checkpoints/C4.3_lr0.8_cosine_2/checkpoint_m0_60841.pth.tar --load_ema
+# python robustness_measures/repeatability.py --net=rn18 --dataset=cifar100 --resume=/mloraw1/danmoral/checkpoints/C4.3_lr0.8_cosine/checkpoint_m0_88921.pth.tar --resume2=/mloraw1/danmoral/checkpoints/C4.3_lr0.8_cosine_1/checkpoint_m0_88921.pth.tar --resume3=/mloraw1/danmoral/checkpoints/C4.3_lr0.8_cosine_2/checkpoint_m0_88921.pth.tar --load_ema
