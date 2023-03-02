@@ -88,7 +88,7 @@ def get_prediction_disagreement_and_correctness(model1, model2, loader, device):
         correct_incorrect += disagreed_correct
         incorrect_incorrect_different += disagreed.sum().item() - disagreed_correct
 
-    return distance/len(loader.dataset)*100, 1-agree_count/len(loader.dataset)*100, correct_correct/len(loader.dataset)*100, correct_incorrect/len(loader.dataset)*100, incorrect_incorrect_same/len(loader.dataset)*100, incorrect_incorrect_different/len(loader.dataset)*100
+    return distance/len(loader.dataset), (1-agree_count/len(loader.dataset))*100, correct_correct/len(loader.dataset)*100, correct_incorrect/len(loader.dataset)*100, incorrect_incorrect_same/len(loader.dataset)*100, incorrect_incorrect_different/len(loader.dataset)*100
 
 def get_train_metrics(args):
     # Get checkpoints of experiment
