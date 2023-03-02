@@ -63,7 +63,7 @@ def eval_ensemble(models, test_loader, device, avg_model=False):
         with torch.no_grad():
             for data, target in test_loader:
                 data, target = data.to(device), target.to(device)
-                ensemble_output = torch.zeros((data.shape[0], model.num_classes))
+                ensemble_prob = torch.zeros((data.shape[0], model.num_classes)).to(device)
 
                 for i, model in enumerate(models):
                     output = model(data)
@@ -71,8 +71,8 @@ def eval_ensemble(models, test_loader, device, avg_model=False):
                     losses[i] += F.cross_entropy(output, target, reduction='sum').item()
                     corrects[i] += pred.eq(target.view_as(pred)).sum().item()
 
-                    ensemble_output += F.softmax(output)
-                    ensemble_pred = ensemble_output.argmax(dim=1, keepdim=True)
-                    loss += F.cross_entropy(ensemble_output, ensemble_pred, reduction='sum').item()
-                    correct += ensemble_pred.eq(target.view_as(ensemble_pred)).sum().item()
-                    pdb.set_trace()
+                    ensemble_prob += F.softmax(output)
+                
+                ensemble_pred = ensemble_prob.argmax(dim=1, keepdim=True)
+                correct += ensemble_pred.eq(target.view_as(ensemble_pred)).sum().item()
+                pdb.set_trace()
