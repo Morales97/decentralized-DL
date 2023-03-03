@@ -132,6 +132,8 @@ class ResNetBase(nn.Module):
             return 100
         elif self.dataset == "imagenet":
             return 1000
+        elif self.dataset == "tiny-in":
+            return 200
 
     def _weight_initialization(self):
         for m in self.modules():
@@ -172,7 +174,7 @@ class ResNet(ResNetBase):
     def __init__(self, dataset, resnet_size):
         super(ResNet, self).__init__()
         self.dataset = dataset
-        self.small_input = True if 'cifar' in self.dataset else False   # CIFAR is 32x32, not 224x224
+        self.small_input = True if ['cifar', 'tiny'] in self.dataset else False   # CIFAR is 32x32, not 224x224
 
         # define model param.
         model_params = {

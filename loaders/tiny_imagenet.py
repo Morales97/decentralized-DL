@@ -87,4 +87,4 @@ def load_val_data(batch_size, file_path):
 def get_tinyimagenet(args, root, batch_size):
     train_loader = load_train_data(batch_size, os.path.join(root, 'tiny-imagenet', 'train_dataset.pkl'))    
     val_loader = load_val_data(batch_size, os.path.join(root, 'tiny-imagenet', 'val_dataset.pkl'))
-    return train_loader, val_loader
+    return [train_loader], val_loader   # NOTE only supporting centralized training
