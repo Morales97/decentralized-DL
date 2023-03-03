@@ -344,8 +344,7 @@ def train(args, wandb):
             swa_model.update_parameters(models)
             if args.swa_lr > 0:
                 swa_scheduler.step()
-            test_loss, acc = evaluate_model(swa_model, test_loader, device)
-            logger.log_acc(step, epoch, acc*100, name='SWA')
+            update_bn_and_eval(swa_model, test_loader, device, logger, log_name='SWA')
             
             if epoch > epoch_swa_budget:    # compute SWA at budget 1
                 epoch_swa_budget = 1e5 # deactivate
