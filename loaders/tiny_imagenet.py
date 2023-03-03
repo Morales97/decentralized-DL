@@ -41,7 +41,7 @@ def load_train_data(batch_size, file_path):
     transform = transforms.Compose([
         transforms.RandomHorizontalFlip(),
         transforms.RandomCrop((64, 64), 4),
-        transforms.ToTensor(),    
+        #transforms.ToTensor(),    
     ])
     train_dataset = ImageNetDataset(train_data, train_labels.type(torch.LongTensor), transform,
         normalize=transforms.Compose([
@@ -65,7 +65,7 @@ def load_val_data(batch_size, file_path):
     with open(file_path, 'rb') as f:
         val_data, val_labels = pickle.load(f)
     transform = transforms.Compose([
-        transforms.ToTensor(),   
+        #transforms.ToTensor(),   
     ])
     val_dataset = ImageNetDataset(val_data, val_labels.type(torch.LongTensor), transform,
         normalize=transforms.Compose([
