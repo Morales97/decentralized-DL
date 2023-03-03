@@ -158,7 +158,7 @@ def train(args, wandb):
         ]
     )
     traindata = dataset(
-        root=ROOT_LOCAL,
+        root=ROOT_CLUSTER,
         train=True,
         transform=transform,
         download=True,
@@ -252,6 +252,8 @@ def train(args, wandb):
         ts_step = time.time()
         minibatch_loader, microbatch_loader = sampling.get_data_loaders(**training_parameters)
         for X_minibatch, y_minibatch in minibatch_loader(traindata):
+            X_minibatch = X_minibatch.to(device)
+            y_minibatch = y_minibatch.to(device)
             opts[0].zero_grad()
             for X_microbatch, y_microbatch in microbatch_loader(TensorDataset(X_minibatch, y_minibatch)):
                 opts[0].zero_microbatch_grad()
@@ -444,5 +446,5 @@ if __name__ == '__main__':
     else:
         train(args, None)
 
-# python train_cifar_DP.py --dataset=cifar10 --wandb=False --local_exec=True --alpha 0.999 0.995 --net=vgg16
+# python train_cifar_DP.py --dataset=cifar10 --wandb=False --alpha 0.999 0.995 --net=vgg16
 
