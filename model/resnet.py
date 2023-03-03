@@ -174,7 +174,7 @@ class ResNet(ResNetBase):
     def __init__(self, dataset, resnet_size):
         super(ResNet, self).__init__()
         self.dataset = dataset
-        self.small_input = True if ['cifar', 'tiny'] in self.dataset else False   # CIFAR is 32x32, not 224x224
+        self.small_input = True if self.dataset in ['cifar10', 'cifar100', 'tiny-in'] else False   # CIFAR is 32x32, not 224x224
 
         # define model param.
         model_params = {
