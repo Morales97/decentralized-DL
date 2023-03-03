@@ -183,7 +183,7 @@ def train(args, wandb):
         # A generic selection for this value is 1/(N^1.1), but it's very application dependent.
         'delta': 1e-5,
         # The number of minibatches to process in the training loop.
-        'iterations': 390*200,
+        'iterations': 390*20,
     }
 
     # init nodes
@@ -416,12 +416,12 @@ def train(args, wandb):
     #     update_bn_and_eval(swa_model3, train_loader, test_loader, device, logger, log_name='SWA phase ' + str(lr_decay_phase))
     if len(args.alpha) == 1:
         update_bn_and_eval(ema_model, train_loader, test_loader, device, logger, log_name='EMA Acc (after BN)')
-    update_bn_and_eval(swa_model2, train_loader, test_loader, device, logger, log_name='MA Acc (after BN)')
+    # update_bn_and_eval(swa_model2, train_loader, test_loader, device, logger, log_name='MA Acc (after BN)')
     update_bn_and_eval(get_average_model(device, models), train_loader, test_loader, device, logger, log_name='Student Acc (after BN)') # TODO check if cumulative moving average BN is better than using running average
 
     # save avg_index
-    if args.avg_index:
-        torch.save(index.state_dict(), os.path.join(index_save_dir, f'index_{index._index._uuid}_{step}.pt'))
+    # if args.avg_index:
+        # torch.save(index.state_dict(), os.path.join(index_save_dir, f'index_{index._index._uuid}_{step}.pt'))
 
     if args.viz_weights:
         # viz_weights(models[0].linear.weight.detach().numpy())
@@ -447,4 +447,5 @@ if __name__ == '__main__':
         train(args, None)
 
 # python train_cifar_DP.py --dataset=cifar10 --wandb=False --alpha 0.999 0.995 --net=vgg16
+# python train_cifar_DP.py --dataset=cifar10 --expt_name=vgg_DP --alpha 0.999 0.995 --net=vgg16
 
