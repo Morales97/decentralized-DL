@@ -181,7 +181,7 @@ def train(args, wandb):
         'microbatch_size': 1,
         # The usual privacy parameter for (ε,δ)-Differential Privacy.
         # A generic selection for this value is 1/(N^1.1), but it's very application dependent.
-        'delta': 1e-5,
+        'delta': 1e-8,
         # The number of minibatches to process in the training loop.
         'iterations': 390*100,
     }
