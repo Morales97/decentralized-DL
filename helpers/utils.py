@@ -163,10 +163,25 @@ class MultiAccuracyTracker(object):
     def get(self, key):
         return self.max_acc[key]
 
-def save_checkpoint(state, filename, is_best=False):
-    torch.save(state, filename)
-    if is_best:
-        shutil.copyfile(filename, 'model_best.pth.tar')
+def save_checkpoint(args, models, ema_models, opts, schedulers, epoch, step):
+    for i in range(len(models)):
+        state = {
+            'epoch': epoch,
+            'step': step,
+            'net': args.net,
+            'state_dict': models[i].state_dict(),
+            'ema_state_dict': ema_models[args.alpha[-1]][i].state_dict(),
+            'optimizer' : opts[i].state_dict(),
+            'scheduler': schedulers[i].state_dict()
+        }
+        torch.save(state, filename=os.path.join(args.save_dir, args.dataset, args.net, args.expt_name, f'checkpoint_m{i}_{step}.pth.tar'))
+
+        # if args.wandb:
+        #     model_artifact = wandb.Artifact('ckpt_m' + str(i), type='model')
+        #     model_artifact.add_file(filename=SAVE_DIR + 'checkpoint_m' + str(i) + '.pth.tar')
+        #     wandb.log_artifact(model_artifact)
+    print('Checkpoint(s) saved!')
+
 
 if __name__ == '__main__':
     # config = {'test': 1}

@@ -9,7 +9,7 @@ sys.path.insert(0, os.path.join(sys.path[0], '..'))
 from helpers.parser import parse_args
 from loaders.data import get_data, ROOT_CLUSTER
 from loaders.cifar import get_cifar_filtered_samples
-from avg_index.avg_index import UniformAvgIndex, ModelAvgIndex, TriangleAvgIndex
+from avg_index import UniformAvgIndex, ModelAvgIndex, TriangleAvgIndex
 from model.model import get_model
 
 @torch.no_grad()
@@ -294,6 +294,7 @@ if __name__ == '__main__':
             _index,
             include_buffers=True,
         )
+    index._index._checkpoint_dir = save_dir
 
     # compute all accuracies in advance and store
     accs = {}

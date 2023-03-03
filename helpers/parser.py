@@ -30,7 +30,9 @@ def get_parser(parser=None):
                         help='If not set, checkpoints will not be saved')
     parser.add_argument('--save_interval', type=int, default=1000,
                         help='step interval to save checkpoint') 
-                        
+    parser.add_argument('--save_final_model', type=boolfromstr, default=True,
+                        help='save final model') 
+
     # model
     parser.add_argument('--net', type=str, default='rn20',
                         help='choice of architecture') 

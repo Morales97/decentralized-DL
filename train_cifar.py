@@ -424,24 +424,11 @@ def train(args, wandb):
 
         # save checkpoint
         if args.save_model and (step-1) % args.save_interval == 0:
-            # if not args.multiprocessing_distributed or (args.multiprocessing_distributed and args.rank % ngpus_per_node == 0):
-            for i in range(len(models)):
-                save_checkpoint({
-                    'epoch': epoch,
-                    'step': step,
-                    'net': args.net,
-                    'state_dict': models[i].state_dict(),
-                    'ema_state_dict': ema_models[args.alpha[-1]][i].state_dict(),
-                    'optimizer' : opts[i].state_dict(),
-                    'scheduler': schedulers[i].state_dict()
-                }, filename=os.path.join(args.save_dir, args.dataset, args.net, args.expt_name, f'checkpoint_m{i}_{step}.pth.tar'))
+            save_checkpoint(args, models, ema_models, opts, schedulers, epoch, step)
 
-                # if args.wandb:
-                #     model_artifact = wandb.Artifact('ckpt_m' + str(i), type='model')
-                #     model_artifact.add_file(filename=SAVE_DIR + 'checkpoint_m' + str(i) + '.pth.tar')
-                #     wandb.log_artifact(model_artifact)
-            print('Checkpoint(s) saved!')
-
+    if args.save_final_model:
+        save_checkpoint(args, models, ema_models, opts, schedulers, epoch, step)
+        
     logger.log_single_acc(max_acc.get('Student'), log_as='Max Accuracy')
     logger.log_single_acc(max_acc.get('EMA'), log_as='Max EMA Accuracy')
     logger.log_single_acc(max_acc.get('Late EMA'), log_as='Max Late EMA Accuracy')
