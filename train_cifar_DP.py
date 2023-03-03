@@ -183,7 +183,7 @@ def train(args, wandb):
         # A generic selection for this value is 1/(N^1.1), but it's very application dependent.
         'delta': 1e-5,
         # The number of minibatches to process in the training loop.
-        'iterations': 390*20,
+        'iterations': 390*100,
     }
 
     # init nodes
@@ -193,7 +193,7 @@ def train(args, wandb):
     # opts = [get_optimizer(args, model) for model in models]
     opts = [optim.DPSGD(params=models[0].parameters(), lr=args.lr[0], wd=args.wd, momentum=args.momentum, **training_parameters)]  # only support solo
     epsilon = analysis.epsilon(batch_size=training_parameters['minibatch_size'], **training_parameters)
-
+    print(epsilon)
     schedulers = [get_lr_schedulers(args, n_samples, opt) for opt in opts]   
 
     ema_models, ema_opts = {}, {}
@@ -447,5 +447,5 @@ if __name__ == '__main__':
         train(args, None)
 
 # python train_cifar_DP.py --dataset=cifar10 --wandb=False --alpha 0.999 0.995 --net=vgg16
-# python train_cifar_DP.py --dataset=cifar10 --expt_name=vgg_DP --alpha 0.999 0.995 --net=vgg16
+# python train_cifar_DP.py --dataset=cifar10 --expt_name=vgg_DP --alpha 0.999 0.995 --net=vgg16 --epochs=100 --lr_decay_as=cosine
 
