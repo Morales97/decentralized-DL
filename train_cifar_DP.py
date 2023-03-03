@@ -261,135 +261,135 @@ def train(args, wandb):
                 loss.backward()
                 opts[0].microbatch_step()
             opts[0].step()
-        # for every node
-        # for i in range(len(models)):
-        #     if args.data_split:
-        #         input, target = next(train_loader_iter[i])
-        #     else:
-        #         input, target = next(iter(train_loader))
-        #     input = input.to(device)
-        #     target = target.to(device)
-        #     # Forward pass
-        #     models[i].train()
-        #     output = models[i](input)
-        #     # Back-prop
-        #     opts[i].zero_grad()
-        #     loss = F.cross_entropy(output, target)
-        #     loss.backward()
-        #     opts[i].step()
-        #     schedulers[i].step()
-            
-        #     train_loss += loss.item()
-        #     pred = output.argmax(dim=1, keepdim=True)
-        #     correct += pred.eq(target.view_as(pred)).sum().item()
-
-            # EMA updates
-            if len(args.alpha) > 0 and step % args.ema_interval == 0:
-                for alpha in args.alpha:
-                    ema_opts[alpha][0].update()
-                # if args.late_ema_epoch > 0 and epoch > args.late_ema_epoch:
-                #     if not late_ema_active:
-                #         late_ema_active = True
-                #     late_ema_opts[i].update()
-
-        step +=1
-        epoch += n_nodes * batch_size / n_samples
-        train_loss /= n_nodes
-        train_acc = correct / (n_nodes * batch_size) * 100
-        logger.log_step(step, epoch, train_loss, train_acc, ts_total, ts_step)
-        
-        # EMA train log
-        # if args.log_train_ema:
-        #     ema_model = get_average_model(device, ema_models[args.alpha[-1]])   
-        #     with torch.no_grad():
-        #         output = ema_model(input)
-        #         ema_loss = F.cross_entropy(output, target)
-        #         pred = output.argmax(dim=1, keepdim=True)
-        #         ema_acc = pred.eq(target.view_as(pred)).sum().item() / batch_size * 100
-        #         logger.log_quantity(step, epoch, ema_loss.item(), name='EMA Train Loss')
-        #         logger.log_quantity(step, epoch, ema_acc, name='EMA Train Acc')
-
-        # gossip
-        # diffuse(args, phase, comm_matrix, models, step)
-        
-        # SWA update
-        # if epoch > epoch_swa:
-        #     epoch_swa += 1
-        #     swa_model.update_parameters(models)
-        #     if args.swa_lr > 0:
-        #         swa_scheduler.step()
-        #     update_bn_and_eval(swa_model, test_loader, device, logger, log_name='SWA')
-            
-        #     if epoch > epoch_swa_budget:    # compute SWA at budget 1
-        #         epoch_swa_budget = 1e5 # deactivate
-        #         update_bn_and_eval(swa_model, train_loader, test_loader, device, logger, log_name='SWA Budget 1')
-
-        # if args.swa_per_phase and epoch > epoch_swa3:   # TODO improve how to keep track of epoch end
-        #     epoch_swa3 += 1
-        #     swa_model3.update_parameters(models)
-
-
-        # # MA update (SWA but every step)
-        # if epoch > args.epoch_swa:
-        #     swa_model2.update_parameters(models)
-
-        # # index model average
-        # if args.avg_index:
-        #     index.record_step()
-
-        # evaluate 
-        if (not args.eval_after_epoch and step % args.steps_eval == 0) or epoch >= args.epochs or (args.eval_after_epoch and epoch > prev_epoch):
-            prev_epoch += 1
-            with torch.no_grad():
-                ts_eval = time.time()
+            # for every node
+            # for i in range(len(models)):
+            #     if args.data_split:
+            #         input, target = next(train_loader_iter[i])
+            #     else:
+            #         input, target = next(iter(train_loader))
+            #     input = input.to(device)
+            #     target = target.to(device)
+            #     # Forward pass
+            #     models[i].train()
+            #     output = models[i](input)
+            #     # Back-prop
+            #     opts[i].zero_grad()
+            #     loss = F.cross_entropy(output, target)
+            #     loss.backward()
+            #     opts[i].step()
+            #     schedulers[i].step()
                 
-                # evaluate on average of EMA models
-                best_ema_acc = 0
-                best_ema_loss = 1e5
-                for alpha in args.alpha: 
-                    ema_model = get_average_model(device, ema_models[alpha])
-                    ema_loss, ema_acc = evaluate_model(ema_model, test_loader, device)
-                    logger.log_acc(step, epoch, ema_acc*100, ema_loss, name='EMA ' + str(alpha))
-                    max_acc.update(ema_acc, alpha)
-                    best_ema_acc = max(best_ema_acc, ema_acc)
-                    best_ema_loss = min(best_ema_loss, ema_loss)
-                max_acc.update(best_ema_acc, 'EMA')
-                logger.log_acc(step, epoch, best_ema_acc*100, best_ema_loss, name='EMA')  
-                logger.log_acc(step, epoch, best_ema_acc*100, name='Multi-EMA Best')
-                # # Late EMA
-                # if late_ema_active:
-                #     late_ema_model = get_average_model(device, late_ema_models)
-                #     late_ema_loss, late_ema_acc = evaluate_model(late_ema_model, test_loader, device)
-                #     logger.log_acc(step, epoch, late_ema_acc*100, late_ema_loss, name='Late EMA') 
-                #     max_acc.update(late_ema_acc, 'Late EMA')
-                # # Moving Average
-                # if epoch > args.epoch_swa:
-                #     swa2_loss, swa2_acc = evaluate_model(swa_model2, test_loader, device)
-                #     logger.log_acc(step, epoch, swa2_acc*100, swa2_loss, name='MA') 
-                #     max_acc.update(swa2_acc, 'MA')
+            #     train_loss += loss.item()
+            #     pred = output.argmax(dim=1, keepdim=True)
+            #     correct += pred.eq(target.view_as(pred)).sum().item()
+
+                # EMA updates
+                if len(args.alpha) > 0 and step % args.ema_interval == 0:
+                    for alpha in args.alpha:
+                        ema_opts[alpha][0].update()
+                    # if args.late_ema_epoch > 0 and epoch > args.late_ema_epoch:
+                    #     if not late_ema_active:
+                    #         late_ema_active = True
+                    #     late_ema_opts[i].update()
+
+            step +=1
+            epoch += n_nodes * batch_size / n_samples
+            train_loss /= n_nodes
+            train_acc = correct / (n_nodes * batch_size) * 100
+            logger.log_step(step, epoch, train_loss, train_acc, ts_total, ts_step)
+            
+            # EMA train log
+            # if args.log_train_ema:
+            #     ema_model = get_average_model(device, ema_models[args.alpha[-1]])   
+            #     with torch.no_grad():
+            #         output = ema_model(input)
+            #         ema_loss = F.cross_entropy(output, target)
+            #         pred = output.argmax(dim=1, keepdim=True)
+            #         ema_acc = pred.eq(target.view_as(pred)).sum().item() / batch_size * 100
+            #         logger.log_quantity(step, epoch, ema_loss.item(), name='EMA Train Loss')
+            #         logger.log_quantity(step, epoch, ema_acc, name='EMA Train Acc')
+
+            # gossip
+            # diffuse(args, phase, comm_matrix, models, step)
+            
+            # SWA update
+            # if epoch > epoch_swa:
+            #     epoch_swa += 1
+            #     swa_model.update_parameters(models)
+            #     if args.swa_lr > 0:
+            #         swa_scheduler.step()
+            #     update_bn_and_eval(swa_model, test_loader, device, logger, log_name='SWA')
+                
+            #     if epoch > epoch_swa_budget:    # compute SWA at budget 1
+            #         epoch_swa_budget = 1e5 # deactivate
+            #         update_bn_and_eval(swa_model, train_loader, test_loader, device, logger, log_name='SWA Budget 1')
+
+            # if args.swa_per_phase and epoch > epoch_swa3:   # TODO improve how to keep track of epoch end
+            #     epoch_swa3 += 1
+            #     swa_model3.update_parameters(models)
 
 
-                # evaluate on averaged model
-                if args.eval_on_average_model:
+            # # MA update (SWA but every step)
+            # if epoch > args.epoch_swa:
+            #     swa_model2.update_parameters(models)
+
+            # # index model average
+            # if args.avg_index:
+            #     index.record_step()
+
+            # evaluate 
+            if (not args.eval_after_epoch and step % args.steps_eval == 0) or epoch >= args.epochs or (args.eval_after_epoch and epoch > prev_epoch):
+                prev_epoch += 1
+                with torch.no_grad():
                     ts_eval = time.time()
-                    model = get_average_model(device, models)
-                    test_loss, acc = evaluate_model(model, test_loader, device)
-                    logger.log_eval(step, epoch, float(acc*100), test_loss, ts_eval, ts_steps_eval)
-                    print('Epoch %.3f (Step %d) -- Test accuracy: %.2f -- EMA accuracy: %.2f -- Test loss: %.3f -- Train loss: %.3f -- Time (total/last/eval): %.2f / %.2f / %.2f s' %
-                        (epoch, step, float(acc*100), float(ema_acc*100), test_loss, train_loss, time.time() - ts_total, time.time() - ts_steps_eval, time.time() - ts_eval))
                     
-                # evaluate on all models
-                else:
-                    acc, test_loss, acc_workers, loss_workers, acc_avg, test_loss_avg = eval_all_models(args, models, test_loader, device)
-                    logger.log_eval_per_node(step, epoch, acc, test_loss, acc_workers, loss_workers, acc_avg, test_loss_avg, ts_eval, ts_steps_eval)
-                    print('Epoch %.3f (Step %d) -- Test accuracy: %.2f -- EMA accuracy: %.2f -- Test loss: %.3f -- Train loss: %.3f -- Time (total/last/eval): %.2f / %.2f / %.2f s' %
-                        (epoch, step, acc, float(ema_acc*100), test_loss, train_loss, time.time() - ts_total, time.time() - ts_steps_eval, time.time() - ts_eval))
-                    acc = acc_avg
+                    # evaluate on average of EMA models
+                    best_ema_acc = 0
+                    best_ema_loss = 1e5
+                    for alpha in args.alpha: 
+                        ema_model = get_average_model(device, ema_models[alpha])
+                        ema_loss, ema_acc = evaluate_model(ema_model, test_loader, device)
+                        logger.log_acc(step, epoch, ema_acc*100, ema_loss, name='EMA ' + str(alpha))
+                        max_acc.update(ema_acc, alpha)
+                        best_ema_acc = max(best_ema_acc, ema_acc)
+                        best_ema_loss = min(best_ema_loss, ema_loss)
+                    max_acc.update(best_ema_acc, 'EMA')
+                    logger.log_acc(step, epoch, best_ema_acc*100, best_ema_loss, name='EMA')  
+                    logger.log_acc(step, epoch, best_ema_acc*100, name='Multi-EMA Best')
+                    # # Late EMA
+                    # if late_ema_active:
+                    #     late_ema_model = get_average_model(device, late_ema_models)
+                    #     late_ema_loss, late_ema_acc = evaluate_model(late_ema_model, test_loader, device)
+                    #     logger.log_acc(step, epoch, late_ema_acc*100, late_ema_loss, name='Late EMA') 
+                    #     max_acc.update(late_ema_acc, 'Late EMA')
+                    # # Moving Average
+                    # if epoch > args.epoch_swa:
+                    #     swa2_loss, swa2_acc = evaluate_model(swa_model2, test_loader, device)
+                    #     logger.log_acc(step, epoch, swa2_acc*100, swa2_loss, name='MA') 
+                    #     max_acc.update(swa2_acc, 'MA')
 
-                max_acc.update(acc, 'Student')
-                ts_steps_eval = time.time()
-                if args.viz_weights:
-                    viz_weights_and_ema(models[0].linear.weight.detach().numpy(), ema_models[args.alpha[0]][0].linear.weight.detach().numpy(), save=True, epoch=epoch)
+
+                    # evaluate on averaged model
+                    if args.eval_on_average_model:
+                        ts_eval = time.time()
+                        model = get_average_model(device, models)
+                        test_loss, acc = evaluate_model(model, test_loader, device)
+                        logger.log_eval(step, epoch, float(acc*100), test_loss, ts_eval, ts_steps_eval)
+                        print('Epoch %.3f (Step %d) -- Test accuracy: %.2f -- EMA accuracy: %.2f -- Test loss: %.3f -- Train loss: %.3f -- Time (total/last/eval): %.2f / %.2f / %.2f s' %
+                            (epoch, step, float(acc*100), float(ema_acc*100), test_loss, train_loss, time.time() - ts_total, time.time() - ts_steps_eval, time.time() - ts_eval))
+                        
+                    # evaluate on all models
+                    else:
+                        acc, test_loss, acc_workers, loss_workers, acc_avg, test_loss_avg = eval_all_models(args, models, test_loader, device)
+                        logger.log_eval_per_node(step, epoch, acc, test_loss, acc_workers, loss_workers, acc_avg, test_loss_avg, ts_eval, ts_steps_eval)
+                        print('Epoch %.3f (Step %d) -- Test accuracy: %.2f -- EMA accuracy: %.2f -- Test loss: %.3f -- Train loss: %.3f -- Time (total/last/eval): %.2f / %.2f / %.2f s' %
+                            (epoch, step, acc, float(ema_acc*100), test_loss, train_loss, time.time() - ts_total, time.time() - ts_steps_eval, time.time() - ts_eval))
+                        acc = acc_avg
+
+                    max_acc.update(acc, 'Student')
+                    ts_steps_eval = time.time()
+                    if args.viz_weights:
+                        viz_weights_and_ema(models[0].linear.weight.detach().numpy(), ema_models[args.alpha[0]][0].linear.weight.detach().numpy(), save=True, epoch=epoch)
 
         # log consensus distance, weight norm
     #     if step % args.tracking_interval == 0:
