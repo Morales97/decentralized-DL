@@ -3,6 +3,7 @@ import torch.nn.functional as F
 import numpy as np
 import pdb
 
+import pathlib
 import sys
 import os
 sys.path.insert(0, os.path.join(sys.path[0], '..'))
@@ -294,7 +295,7 @@ if __name__ == '__main__':
             _index,
             include_buffers=True,
         )
-    index._index._checkpoint_dir = save_dir
+    index._index._checkpoint_dir = pathlib.Path(save_dir)
 
     # compute all accuracies in advance and store
     accs = {}
