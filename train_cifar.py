@@ -164,7 +164,7 @@ def train(args, wandb):
     swa_scheduler = SWALR(opts[0], anneal_strategy="linear", anneal_epochs=5, swa_lr=args.swa_lr)
 
     if args.avg_index:
-        index_save_dir = os.path.join(args.save_dir, args.expt_name)
+        index_save_dir = os.path.join(args.save_dir, args.dataset, args.net, args.expt_name)
         if not os.path.exists(index_save_dir):
             os.makedirs(index_save_dir)
         index = ModelAvgIndex(
@@ -434,7 +434,7 @@ def train(args, wandb):
                     'ema_state_dict': ema_models[args.alpha[-1]][i].state_dict(),
                     'optimizer' : opts[i].state_dict(),
                     'scheduler': schedulers[i].state_dict()
-                }, filename=os.path.join(SAVE_DIR, args.expt_name, f'checkpoint_m{i}_{step}.pth.tar'))
+                }, filename=os.path.join(args.save_dir, args.dataset, args.net, args.expt_name, f'checkpoint_m{i}_{step}.pth.tar'))
 
                 # if args.wandb:
                 #     model_artifact = wandb.Artifact('ckpt_m' + str(i), type='model')
@@ -474,8 +474,8 @@ if __name__ == '__main__':
 
     if not args.expt_name:
         args.expt_name = get_expt_name(args)
-    if args.save_model and not os.path.exists(os.path.join(SAVE_DIR, args.expt_name)):
-        os.makedirs(os.path.join(SAVE_DIR, args.expt_name))
+    if args.save_model and not os.path.exists(os.path.join(args.save_dir, args.dataset, args.net, args.expt_name)):
+        os.makedirs(os.path.join(args.save_dir, args.dataset, args.net, args.expt_name))
 
 
     if args.wandb:

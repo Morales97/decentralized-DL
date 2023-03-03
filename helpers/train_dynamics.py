@@ -90,9 +90,9 @@ def get_prediction_disagreement_and_correctness(model1, model2, loader, device):
 
     return distance/len(loader.dataset), (1-agree_count/len(loader.dataset))*100, correct_correct/len(loader.dataset)*100, correct_incorrect/len(loader.dataset)*100, incorrect_incorrect_same/len(loader.dataset)*100, incorrect_incorrect_different/len(loader.dataset)*100
 
-def get_train_metrics(args):
+def get_train_metrics(args, folder_path):
     # Get checkpoints of experiment
-    ckpt_files = recursive_glob(os.path.join(SAVE_DIR, args.expt_name), prefix='checkpoint')
+    ckpt_files = recursive_glob(folder_path, prefix='checkpoint')
     ckpt_steps, file_root = get_ckpt_steps(ckpt_files)
 
     # data
@@ -130,7 +130,8 @@ def get_train_metrics(args):
     return cosine_similarities, pred_distance, pred_disagreement
 
 def get_pca(args):
-    ckpt_files = recursive_glob(os.path.join(SAVE_DIR, args.expt_name), prefix='checkpoint')
+    folder_path = os.path.join(args.save_dir, args.dataset, args.net, args.expt_name)
+    ckpt_files = recursive_glob(folder_path, prefix='checkpoint')
     ckpt_steps, file_root = get_ckpt_steps(ckpt_files)
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
@@ -151,15 +152,15 @@ if __name__ == '__main__':
     args = parse_args()
 
     # models_pca = get_pca(args)
-    cos_sim, pred_dist, pred_disag = get_train_metrics(args)
+    cos_sim, pred_dist, pred_disag = get_train_metrics(args, folder_path)
 
-    # np.save(os.path.join(SAVE_DIR, args.expt_name, 'models_pca'), models_pca)
-    # np.save(os.path.join(SAVE_DIR, args.expt_name, 'cosine_similarity'), cos_sim)
-    # np.save(os.path.join(SAVE_DIR, args.expt_name, 'prediction_distance'), pred_dist)
-    # np.save(os.path.join(SAVE_DIR, args.expt_name, 'prediction_disagreement'), pred_disag)
-    np.save(os.path.join(SAVE_DIR, args.expt_name, 'cosine_similarity_ema'), cos_sim)
-    np.save(os.path.join(SAVE_DIR, args.expt_name, 'prediction_distance_ema'), pred_dist)
-    np.save(os.path.join(SAVE_DIR, args.expt_name, 'prediction_disagreement_ema'), pred_disag)
+    # np.save(folder_path, 'models_pca'), models_pca)
+    # np.save(folder_path, 'cosine_similarity'), cos_sim)
+    # np.save(folder_path, 'prediction_distance'), pred_dist)
+    # np.save(folder_path, 'prediction_disagreement'), pred_disag)
+    np.save(folder_path, 'cosine_similarity_ema'), cos_sim)
+    np.save(folder_path, 'prediction_distance_ema'), pred_dist)
+    np.save(folder_path, 'prediction_disagreement_ema'), pred_disag)
 
 
 # python helpers/train_dynamics.py --net=convnet_rgb --dataset=cifar10 --expt_name=CNN_lr0.04_decay2
