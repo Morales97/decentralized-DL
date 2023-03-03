@@ -283,14 +283,14 @@ def train(args, wandb):
             #     pred = output.argmax(dim=1, keepdim=True)
             #     correct += pred.eq(target.view_as(pred)).sum().item()
 
-                # EMA updates
-                if len(args.alpha) > 0 and step % args.ema_interval == 0:
-                    for alpha in args.alpha:
-                        ema_opts[alpha][0].update()
-                    # if args.late_ema_epoch > 0 and epoch > args.late_ema_epoch:
-                    #     if not late_ema_active:
-                    #         late_ema_active = True
-                    #     late_ema_opts[i].update()
+            # EMA updates
+            if len(args.alpha) > 0 and step % args.ema_interval == 0:
+                for alpha in args.alpha:
+                    ema_opts[alpha][0].update()
+                # if args.late_ema_epoch > 0 and epoch > args.late_ema_epoch:
+                #     if not late_ema_active:
+                #         late_ema_active = True
+                #     late_ema_opts[i].update()
 
             step +=1
             epoch += n_nodes * batch_size / n_samples
