@@ -149,21 +149,30 @@ class AccuracyTracker(object):
 
 class MultiAccuracyTracker(object):
     def __init__(self, keys):
-        self.max_acc = {}
+        self._max_acc = {}
+        self._is_best = {}
         for key in keys:
-            self.max_acc[key] = 0
+            self._max_acc[key] = 0
+            self._is_best[key] = False
 
     def init(self, keys):
         for key in keys:
-            self.max_acc[key] = 0
+            self._max_acc[key] = 0
 
     def update(self, acc, key):
-        self.max_acc[key] = max(self.max_acc[key], acc)
+        if acc > self._max_acc[key]:
+            self._max_acc[key] = acc
+            self._is_best[key] = True
+        else:
+            self._is_best[key] = False
 
     def get(self, key):
-        return self.max_acc[key]
+        return self._max_acc[key]
 
-def save_checkpoint(args, models, ema_models, opts, schedulers, epoch, step):
+    def is_best(self, key):
+        return self._is_best[key]
+
+def save_checkpoint(args, models, ema_models, opts, schedulers, epoch, step, name=None):
     for i in range(len(models)):
         state = {
             'epoch': epoch,
@@ -174,7 +183,10 @@ def save_checkpoint(args, models, ema_models, opts, schedulers, epoch, step):
             'optimizer' : opts[i].state_dict(),
             'scheduler': schedulers[i].state_dict()
         }
-        torch.save(state, filename=os.path.join(args.save_dir, args.dataset, args.net, args.expt_name, f'checkpoint_m{i}_{step}.pth.tar'))
+        if name:
+            torch.save(state, filename=os.path.join(args.save_dir, args.dataset, args.net, args.expt_name, f'checkpoint_m{i}_{name}.pth.tar'))    
+        else:
+            torch.save(state, filename=os.path.join(args.save_dir, args.dataset, args.net, args.expt_name, f'checkpoint_m{i}_{step}.pth.tar'))
 
         # if args.wandb:
         #     model_artifact = wandb.Artifact('ckpt_m' + str(i), type='model')

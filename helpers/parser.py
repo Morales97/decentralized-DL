@@ -32,7 +32,8 @@ def get_parser(parser=None):
                         help='step interval to save checkpoint') 
     parser.add_argument('--save_final_model', type=boolfromstr, default=True,
                         help='save final model') 
-
+    parser.add_argument('--save_best_model', type=boolfromstr, default=True,
+                        help='save models with best accuracy') 
     # model
     parser.add_argument('--net', type=str, default='rn20',
                         help='choice of architecture') 
@@ -72,8 +73,6 @@ def get_parser(parser=None):
                         help='Final constant LR for SWA. If -1, do not use SWA scheduler')   
     parser.add_argument('--swa_per_phase', action='store_true', 
                         help='Compute SWA for each LR phase')
-    parser.add_argument('--late_ema_epoch', type=int, default=100,
-                        help='epoch when to start Late EMA') 
     parser.add_argument('--custom_a', type=float, default=0,
                         help='coefficient for custom SGD')  
     parser.add_argument('--custom_b', type=float, default=1,

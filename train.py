@@ -154,9 +154,6 @@ def train(args, wandb):
         ema_model_alpha, ema_opt_alpha = get_ema_models(args, models, device, alpha)
         ema_models[alpha] = ema_model_alpha
         ema_opts[alpha] = ema_opt_alpha
-    if args.late_ema_epoch > 0:
-        late_ema_models, late_ema_opts = get_ema_models(args, models, device, alpha=0.995)
-        late_ema_active = False   # indicate when to init step_offset
     swa_model = AveragedModel(models[0], device, use_buffers=True)
     swa_model2 = AveragedModel(models[0], device, use_buffers=True) # average every step, not every epoch (Moving Average)
     if args.swa_per_phase:
@@ -194,7 +191,7 @@ def train(args, wandb):
     step = 0
     epoch = 0
     prev_epoch = 1
-    max_acc = MultiAccuracyTracker(['Student', 'EMA', 'Late EMA', 'MA'])
+    max_acc = MultiAccuracyTracker(['Student', 'EMA', 'MA'])
     max_acc.init(args.alpha)
     epoch_swa = args.epoch_swa # epoch to start SWA averaging (default: 100)
     epoch_swa_budget = args.epoch_swa_budget
@@ -268,8 +265,6 @@ def train(args, wandb):
                     models, opts = initialize_nodes_no_mom(args, models, n_nodes, device)
 
                 ema_models, ema_opts = init_nodes_EMA(args, models, ema_models, device)  # does not support len(args.alpha) > 1
-                if args.late_ema_epoch > 0:
-                    late_ema_models, late_ema_opts = init_nodes_EMA(args, models, late_ema_models, device, ramp_up=(not late_ema_active))
 
             # optionally, update lr
             if len(args.lr) > 1:
@@ -313,10 +308,6 @@ def train(args, wandb):
             if len(args.alpha) > 0 and step % args.ema_interval == 0:
                 for alpha in args.alpha:
                     ema_opts[alpha][i].update()
-                if args.late_ema_epoch > 0 and epoch > args.late_ema_epoch:
-                    if not late_ema_active:
-                        late_ema_active = True
-                    late_ema_opts[i].update()
 
         step +=1
         epoch += n_nodes * batch_size / n_samples
@@ -344,7 +335,7 @@ def train(args, wandb):
             swa_model.update_parameters(models)
             if args.swa_lr > 0:
                 swa_scheduler.step()
-            update_bn_and_eval(swa_model, test_loader, device, logger, log_name='SWA')
+            update_bn_and_eval(swa_model, train_loader, test_loader, device, logger, log_name='SWA')
             
             if epoch > epoch_swa_budget:    # compute SWA at budget 1
                 epoch_swa_budget = 1e5 # deactivate
@@ -382,18 +373,11 @@ def train(args, wandb):
                 max_acc.update(best_ema_acc, 'EMA')
                 logger.log_acc(step, epoch, best_ema_acc*100, best_ema_loss, name='EMA')  
                 logger.log_acc(step, epoch, best_ema_acc*100, name='Multi-EMA Best')
-                # Late EMA
-                if late_ema_active:
-                    late_ema_model = get_average_model(device, late_ema_models)
-                    late_ema_loss, late_ema_acc = evaluate_model(late_ema_model, test_loader, device)
-                    logger.log_acc(step, epoch, late_ema_acc*100, late_ema_loss, name='Late EMA') 
-                    max_acc.update(late_ema_acc, 'Late EMA')
                 # Moving Average
                 if epoch > args.epoch_swa:
                     swa2_loss, swa2_acc = evaluate_model(swa_model2, test_loader, device)
                     logger.log_acc(step, epoch, swa2_acc*100, swa2_loss, name='MA') 
                     max_acc.update(swa2_acc, 'MA')
-
 
                 # evaluate on averaged model
                 if args.eval_on_average_model:
@@ -422,16 +406,23 @@ def train(args, wandb):
             # get_prediction_disagreement(models[0], ema_models[args.alpha[-1]][0], test_loader, device)
             compute_model_tracking_metrics(args, logger, models, ema_models, opts, step, epoch, device, init_model)
 
-        # save checkpoint
+        # save checkpoint periodically
         if args.save_model and (step-1) % args.save_interval == 0:
             save_checkpoint(args, models, ema_models, opts, schedulers, epoch, step)
+
+        # save best checkpoints
+        if args.save_best_model:
+            if max_acc.is_best('Student'):
+                save_checkpoint(args, models, ema_models, opts, schedulers, epoch, step, name='max_acc_student')
+            if max_acc.is_best('EMA'):
+                save_checkpoint(args, models, ema_models, opts, schedulers, epoch, step, name='max_acc_EMA')
+            # TODO save also with lowest val loss
 
     if args.save_final_model:
         save_checkpoint(args, models, ema_models, opts, schedulers, epoch, step)
         
     logger.log_single_acc(max_acc.get('Student'), log_as='Max Accuracy')
     logger.log_single_acc(max_acc.get('EMA'), log_as='Max EMA Accuracy')
-    logger.log_single_acc(max_acc.get('Late EMA'), log_as='Max Late EMA Accuracy')
     # logger.log_single_acc(max_acc.get('MA'), log_as='Max MA Accuracy')
 
     # Make a full pass over EMA and SWA models to update 
