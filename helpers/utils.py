@@ -184,9 +184,9 @@ def save_checkpoint(args, models, ema_models, opts, schedulers, epoch, step, nam
             'scheduler': schedulers[i].state_dict()
         }
         if name:
-            torch.save(state, filename=os.path.join(args.save_dir, args.dataset, args.net, args.expt_name, f'checkpoint_m{i}_{name}.pth.tar'))    
+            torch.save(state, os.path.join(args.save_dir, args.dataset, args.net, args.expt_name, f'checkpoint_m{i}_{name}.pth.tar'))    
         else:
-            torch.save(state, filename=os.path.join(args.save_dir, args.dataset, args.net, args.expt_name, f'checkpoint_m{i}_{step}.pth.tar'))
+            torch.save(state, os.path.join(args.save_dir, args.dataset, args.net, args.expt_name, f'checkpoint_m{i}_{step}.pth.tar'))
 
         # if args.wandb:
         #     model_artifact = wandb.Artifact('ckpt_m' + str(i), type='model')
