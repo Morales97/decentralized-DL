@@ -139,39 +139,65 @@ def load_sweep_results(path):
 
 class AccuracyTracker(object):
     def __init__(self):
-        self.max_acc = 0
+        self.max_correct = 0
 
     def update(self, acc):
-        if acc > self.max_acc:
-            self.max_acc = acc
+        if acc > self.max_correct:
+            self.max_correct = acc
 
     def get(self):
-        return self.max_acc
+        return self.max_correct
 
 class MultiAccuracyTracker(object):
     def __init__(self, keys):
-        self._max_acc = {}
+        self._max_correct = {}
         self._is_best = {}
         for key in keys:
-            self._max_acc[key] = 0
+            self._max_correct[key] = 0
             self._is_best[key] = False
 
     def init(self, keys):
         for key in keys:
-            self._max_acc[key] = 0
+            self._max_correct[key] = 0
 
     def update(self, acc, key):
-        if acc > self._max_acc[key]:
-            self._max_acc[key] = acc
+        if acc > self._max_correct[key]:
+            self._max_correct[key] = acc
             self._is_best[key] = True
         else:
             self._is_best[key] = False
 
     def get(self, key):
-        return self._max_acc[key]
+        return self._max_correct[key]
 
     def is_best(self, key):
         return self._is_best[key]
+
+class TrainMetricsTracker(object):
+    def __init__(self, keys):
+        self._correct = {}
+        self._loss = {}
+        self._n = {}
+        for key in keys:
+            self.reset(key)
+
+    def reset(self, key):
+        self._correct[key] = 0
+        self._loss[key] = 0
+        self._n[key] = 0     
+
+    def update(self, correct, loss, n):
+        self._correct += correct
+        self._loss += loss
+        self._n += n
+
+    def get(self, key):
+        acc = self._correct / self._n * 100
+        loss = self._loss / self._n
+        self.reset(key)
+
+        return acc, loss
+
 
 def save_checkpoint(args, models, ema_models, opts, schedulers, epoch, step, name=None):
     if not isinstance(models, list):

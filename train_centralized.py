@@ -7,7 +7,7 @@ import time
 import torch
 from model.model import get_model, get_ema_model
 import torch.nn.functional as F
-from helpers.utils import save_experiment, get_expt_name, MultiAccuracyTracker, save_checkpoint
+from helpers.utils import TrainMetricsTracker, save_experiment, get_expt_name, MultiAccuracyTracker, save_checkpoint
 from helpers.logger import Logger
 from helpers.parser import parse_args
 from optimizer.optimizer import get_optimizer
@@ -122,6 +122,7 @@ def train(args, wandb):
     train_loss, correct = 0, 0
     max_acc = MultiAccuracyTracker(['Student', 'EMA'])
     max_acc.init(args.alpha)
+    train_tracker = TrainMetricsTracker(['Student', 'EMA', *args.alpha])
 
     # Load checkpoint
     if args.resume:
@@ -157,9 +158,9 @@ def train(args, wandb):
             opt.step()
             scheduler.step()    # NOTE could change scheduler to epoch-wise, which could simplify it (but complicate warmup...)
             
-            train_loss += loss.item()
             pred = output.argmax(dim=1, keepdim=True)
-            correct += pred.eq(target.view_as(pred)).sum().item()
+            correct = pred.eq(target.view_as(pred)).sum().item()
+            train_tracker.update('Student', loss.item(), correct, input.shape[0])
 
             # EMA updates
             if len(args.alpha) > 0 and step % args.ema_interval == 0:
@@ -174,21 +175,31 @@ def train(args, wandb):
             epoch += input.shape[0] / n_samples
             logger.log_time_step(ts_step)
 
+            if args.log_train_ema: 
+                with torch.no_grad():
+                    for alpha in args.alpha:
+                        output = ema_models[args.alpha[-1]](input) # TODO for every EMA
+                        loss = F.cross_entropy(output, target)
+                        pred = output.argmax(dim=1, keepdim=True)
+                        correct = pred.eq(target.view_as(pred)).sum().item() 
+                        train_tracker.update(alpha, loss.item(), correct, input.shape[0])
+
             # Log train metrics
             if step % args.train_log_interval == 0:
-                train_loss /= args.train_log_interval
-                train_acc = correct / (batch_size * args.train_log_interval) * 100
+                train_acc, train_loss = train_tracker.get('Student')
                 logger.log_step(step, epoch, train_loss, train_acc, ts_total)
         
                 # Log EMA train 
-                if args.log_train_ema: 
-                    with torch.no_grad():
-                        output = ema_models[args.alpha[-1]](input) # TODO for every EMA
-                        ema_loss = F.cross_entropy(output, target)
-                        pred = output.argmax(dim=1, keepdim=True)
-                        ema_acc = pred.eq(target.view_as(pred)).sum().item() / batch_size * 100
-                        logger.log_quantity(step, epoch, ema_loss.item(), name='EMA Train Loss')
-                        logger.log_quantity(step, epoch, ema_acc, name='EMA Train Acc')
+                if args.log_train_ema:
+                    best_ema_acc, best_ema_loss = 0, 1e5
+                    for alpha in args.alpha:
+                        ema_acc, ema_loss = train_tracker.get(alpha)
+                        logger.log_quantity(step, epoch, ema_acc, name=f'EMA {alpha} Train Acc')
+                        logger.log_quantity(step, epoch, ema_loss, name=f'EMA {alpha} Train Loss')
+                        best_ema_acc = max(best_ema_acc, ema_acc)
+                        best_ema_loss = max(best_ema_loss, ema_loss)
+                    logger.log_quantity(step, epoch, best_ema_acc, name=f'Multi-EMA Train Acc')
+                    logger.log_quantity(step, epoch, best_ema_loss, name=f'Multi-EMA Train Loss')
 
             # log model tracking
             if step % args.tracking_interval == 0:
