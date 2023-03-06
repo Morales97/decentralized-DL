@@ -175,31 +175,40 @@ class MultiAccuracyTracker(object):
 
 def save_checkpoint(args, models, ema_models, opts, schedulers, epoch, step, name=None):
     if not isinstance(models, list):
-        models = [models]
-        for alpha in args.alpha:
-            ema_models[alpha] = [ema_models[alpha]]
-        opts = [opts]
-        schedulers = [schedulers]
-    pdb.set_trace()
-    for i in range(len(models)):
         state = {
             'epoch': epoch,
             'step': step,
             'net': args.net,
-            'state_dict': models[i].state_dict(),
-            'ema_state_dict': ema_models[args.alpha[-1]][i].state_dict(),
-            'optimizer' : opts[i].state_dict(),
-            'scheduler': schedulers[i].state_dict()
+            'state_dict': models.state_dict(),
+            'ema_state_dict': ema_models[args.alpha[-1]].state_dict(),
+            'optimizer' : opts.state_dict(),
+            'scheduler': schedulers.state_dict()
         }
         if name:
-            torch.save(state, os.path.join(args.save_dir, args.dataset, args.net, args.expt_name, f'checkpoint_m{i}_{name}.pth.tar'))    
+            torch.save(state, os.path.join(args.save_dir, args.dataset, args.net, args.expt_name, f'checkpoint_{name}.pth.tar'))    
         else:
-            torch.save(state, os.path.join(args.save_dir, args.dataset, args.net, args.expt_name, f'checkpoint_m{i}_{step}.pth.tar'))
+            torch.save(state, os.path.join(args.save_dir, args.dataset, args.net, args.expt_name, f'checkpoint_{step}.pth.tar'))
 
-        # if args.wandb:
-        #     model_artifact = wandb.Artifact('ckpt_m' + str(i), type='model')
-        #     model_artifact.add_file(filename=SAVE_DIR + 'checkpoint_m' + str(i) + '.pth.tar')
-        #     wandb.log_artifact(model_artifact)
+    else:
+        for i in range(len(models)):
+            state = {
+                'epoch': epoch,
+                'step': step,
+                'net': args.net,
+                'state_dict': models[i].state_dict(),
+                'ema_state_dict': ema_models[args.alpha[-1]][i].state_dict(),
+                'optimizer' : opts[i].state_dict(),
+                'scheduler': schedulers[i].state_dict()
+            }
+            if name:
+                torch.save(state, os.path.join(args.save_dir, args.dataset, args.net, args.expt_name, f'checkpoint_m{i}_{name}.pth.tar'))    
+            else:
+                torch.save(state, os.path.join(args.save_dir, args.dataset, args.net, args.expt_name, f'checkpoint_m{i}_{step}.pth.tar'))
+
+            # if args.wandb:
+            #     model_artifact = wandb.Artifact('ckpt_m' + str(i), type='model')
+            #     model_artifact.add_file(filename=SAVE_DIR + 'checkpoint_m' + str(i) + '.pth.tar')
+            #     wandb.log_artifact(model_artifact)
     print('Checkpoint(s) saved!')
 
 
