@@ -116,10 +116,8 @@ def train(args, wandb):
     ts_total = time.time()
     ts_steps_eval = time.time()
 
-    batch_size = args.batch_size[0]
     step = 0
     epoch = 0
-    train_loss, correct = 0, 0
     max_acc = MultiAccuracyTracker(['Student', 'EMA'])
     max_acc.init(args.alpha)
     train_tracker = TrainMetricsTracker(['Student', *args.alpha])
