@@ -256,7 +256,7 @@ if __name__ == '__main__':
 
     if not args.expt_name:
         args.expt_name = get_expt_name(args)
-    if args.save_model and not os.path.exists(os.path.join(args.save_dir, args.dataset, args.net, args.expt_name)):
+    if not os.path.exists(os.path.join(args.save_dir, args.dataset, args.net, args.expt_name)):
         os.makedirs(os.path.join(args.save_dir, args.dataset, args.net, args.expt_name))
 
 
