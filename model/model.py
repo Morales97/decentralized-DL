@@ -58,9 +58,12 @@ def get_ema_models(args, models, device, alpha=0.995, ema_init=None, ramp_up=Tru
 
     return ema_models, ema_opts
 
-def add_noise_to_models(models, std, device):
-    for model in models:
-        for param in model.parameters():
-            noise = torch.randn(*param.size()) * std    # Gaussian noise N(0, std^2) with param's size
-            with torch.no_grad():
-                param.add_(noise.to(device))
+def get_ema_model(args, model, device, alpha=0.995, ema_init=None, ramp_up=True):
+    ema_model = get_model(args, device)
+    if ema_init is not None:
+        ema_model.load_state_dict(ema_init.state_dict())
+    for param in ema_model.parameters():
+        param.detach_()
+    ema_opt = OptimizerEMA(model, ema_model, alpha=alpha, ramp_up=ramp_up)
+
+    return ema_model, ema_opt

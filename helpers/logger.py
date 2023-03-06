@@ -3,22 +3,21 @@ import time
 class Logger:
     def __init__(self, wandb):
         self.wandb = wandb
-        self.accuracies = []
-        self.accuracies_per_node = []
-        self.test_losses = []
-        self.test_losses_per_node = []
-        self.train_losses = []
-        self.weight_distance = []
-        self.consensus = []
 
-    def log_step(self, step, epoch, train_loss, train_acc, ts_total, ts_step):
-        self.train_losses.append(train_loss)
+    def log_step(self, step, epoch, train_loss, train_acc, ts_total, ts_step=None):
         log = {
             'Train Loss': train_loss,
             'Train Acc': train_acc,
             'Iteration': step,
             'Epoch': epoch,
             'Total time': time.time() - ts_total,
+        }
+        if ts_step:
+            log['Time/step'] = time.time() - ts_step,
+        if self.wandb: self.wandb.log(log)
+
+    def log_time_step(self, ts_step):
+        log = {
             'Time/step': time.time() - ts_step,
         }
         if self.wandb: self.wandb.log(log)
@@ -34,8 +33,6 @@ class Logger:
         if self.wandb: self.wandb.log(log) 
 
     def log_eval(self, step, epoch, acc, test_loss, ts_eval, ts_steps_eval):
-        self.accuracies.append(acc)
-        self.test_losses.append(test_loss)
         log = {
             'Iteration': step,
             'Epoch': epoch,
@@ -59,8 +56,6 @@ class Logger:
         if self.wandb: self.wandb.log(log)
 
     def log_eval_random_node(self, step, epoch, acc, test_loss):
-        self.accuracies.append(acc)
-        self.test_losses.append(test_loss)
         log = {
             'Iteration': step,
             'Epoch': epoch,
@@ -70,8 +65,6 @@ class Logger:
         if self.wandb: self.wandb.log(log)
 
     def log_eval_per_node(self, step, epoch, acc, test_loss, acc_nodes, loss_nodes, acc_avg, loss_avg, ts_eval, ts_steps_eval):
-        self.accuracies.append(acc)
-        self.test_losses.append(test_loss)
         log = {
             'Iteration': step,
             'Epoch': epoch,
@@ -97,7 +90,6 @@ class Logger:
         if self.wandb: self.wandb.log(log)
 
     def log_weight_distance(self, step, epoch, weight_dist):
-        self.weight_distance.append(weight_dist)
         log = {
             'Iteration': step,
             'Epoch': epoch,
@@ -114,7 +106,6 @@ class Logger:
         if self.wandb: self.wandb.log(log)
 
     def log_consensus(self, step, epoch, L2_dist):
-        self.consensus.append(L2_dist)
         log = {
             'Iteration': step,
             'Epoch': epoch,

@@ -10,7 +10,7 @@ from loaders.mnist import viz_weights, viz_weights_and_ema
 from topology import get_gossip_matrix, diffuse, get_average_model, get_average_opt
 import time
 import torch
-from model.model import add_noise_to_models, get_model, get_ema_models
+from model.model import get_model, get_ema_models
 import torch.nn.functional as F
 from helpers.utils import save_experiment, get_expt_name, MultiAccuracyTracker, save_checkpoint
 from helpers.logger import Logger
@@ -21,7 +21,7 @@ from helpers.train_dynamics import get_cosine_similarity, get_prediction_disagre
 from helpers.evaluate import eval_all_models, evaluate_model
 from helpers.wa import AveragedModel, update_bn, SWALR
 from avg_index.avg_index import TriangleAvgIndex, UniformAvgIndex, ModelAvgIndex
-from helpers.lr_scheduler import get_lr_schedulers
+from helpers.lr_scheduler import get_lr_scheduler
 import wandb
 import os
 
@@ -194,7 +194,7 @@ def train(args, wandb):
     opts = [optim.DPSGD(params=models[0].parameters(), lr=args.lr[0], wd=args.wd, momentum=args.momentum, **training_parameters)]  # only support solo
     epsilon = analysis.epsilon(batch_size=training_parameters['minibatch_size'], **training_parameters)
     print(epsilon)
-    schedulers = [get_lr_schedulers(args, n_samples, opt) for opt in opts]   
+    schedulers = [get_lr_scheduler(args, n_samples, opt) for opt in opts]   
 
     ema_models, ema_opts = {}, {}
     for alpha in args.alpha:

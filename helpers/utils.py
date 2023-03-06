@@ -1,5 +1,6 @@
 import json
 import pdb
+import sched
 import shutil
 import time
 import numpy as np
@@ -173,6 +174,12 @@ class MultiAccuracyTracker(object):
         return self._is_best[key]
 
 def save_checkpoint(args, models, ema_models, opts, schedulers, epoch, step, name=None):
+    if not isinstance(models, list):
+        models = [models]
+        for alpha in args.alpha:
+            ema_models[alpha] = [ema_models[alpha]]
+        opts = [opts]
+        schedulers = [schedulers]
     for i in range(len(models)):
         state = {
             'epoch': epoch,

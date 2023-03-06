@@ -21,7 +21,7 @@ def evaluate_model(model, data_loader, device):
             correct += pred.eq(target.view_as(pred)).sum().item()
 
     loss /= len(data_loader.dataset)
-    acc = correct / len(data_loader.dataset)
+    acc = correct / len(data_loader.dataset) * 100
 
     return loss, acc
 

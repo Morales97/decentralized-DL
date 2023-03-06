@@ -6,7 +6,7 @@ from loaders.mnist import viz_weights, viz_weights_and_ema
 from topology import get_gossip_matrix, diffuse, get_average_model, get_average_opt
 import time
 import torch
-from model.model import add_noise_to_models, get_model, get_ema_models
+from model.model import get_model, get_ema_models
 import torch.nn.functional as F
 from helpers.utils import save_experiment, get_expt_name, MultiAccuracyTracker, save_checkpoint
 from helpers.logger import Logger
@@ -17,7 +17,7 @@ from helpers.train_dynamics import get_cosine_similarity, get_prediction_disagre
 from helpers.evaluate import eval_all_models, evaluate_model
 from helpers.wa import AveragedModel, update_bn, SWALR
 from avg_index.avg_index import UniformAvgIndex, ModelAvgIndex
-from helpers.lr_scheduler import get_lr_schedulers
+from helpers.lr_scheduler import get_lr_scheduler
 import wandb
 from optimizer.custom_sgd import CustomSGD
 import os
@@ -156,7 +156,7 @@ def train(args, wandb):
     else:
         models = [get_model(args, device) for _ in range(n_nodes)]
         opts = [get_optimizer(args, model) for model in models]
-        schedulers = get_lr_schedulers(args, n_samples, opts)   
+        schedulers = get_lr_scheduler(args, n_samples, opts)   
     if args.same_init:
         for i in range(1, len(models)):
             models[i].load_state_dict(models[0].state_dict())
@@ -262,8 +262,6 @@ def train(args, wandb):
             # print('[Epoch %d] Changing to phase %d. Nodes: %d. Topology: %s. Local steps: %s.' % (epoch, phase, args.n_nodes[phase], args.topology[phase], args.local_steps[phase]))
             print('[Epoch %d] Changing to phase %d.' % (epoch, phase))
 
-        if args.model_std > 0:
-            add_noise_to_models(models, args.model_std, device)
 
         train_loss = 0
         correct = 0

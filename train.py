@@ -6,7 +6,7 @@ from loaders.mnist import viz_weights, viz_weights_and_ema
 from topology import get_gossip_matrix, diffuse, get_average_model, get_average_opt
 import time
 import torch
-from model.model import add_noise_to_models, get_model, get_ema_models
+from model.model import get_model, get_ema_models
 import torch.nn.functional as F
 from helpers.utils import save_experiment, get_expt_name, MultiAccuracyTracker, save_checkpoint
 from helpers.logger import Logger
@@ -17,7 +17,7 @@ from helpers.train_dynamics import get_cosine_similarity, get_prediction_disagre
 from helpers.evaluate import eval_all_models, evaluate_model
 from helpers.wa import AveragedModel, update_bn, SWALR
 from avg_index.avg_index import TriangleAvgIndex, UniformAvgIndex, ModelAvgIndex
-from helpers.lr_scheduler import get_lr_schedulers
+from helpers.lr_scheduler import get_lr_scheduler
 import wandb
 import os
 
@@ -51,20 +51,6 @@ def init_nodes_EMA(args, models, ema_models, device, ramp_up=False):
     ema_avg_model = get_average_model(device, ema_models)
     new_ema_models, new_ema_opts = get_ema_models(args, models, device, ema_init=ema_avg_model, ramp_up=ramp_up)
     return new_ema_models, new_ema_opts
-
-def update_SWA(args, swa_model, models, device, n):
-    avg_model = get_average_model(device, models)
-    if swa_model is None:
-        swa_model = get_model(args, device)
-        swa_model.load_state_dict(avg_model.state_dict())
-    else:
-        # difference to original implementation: they update BN parameters with a pass over data, we use the parameters at each point
-        for swa_param, avg_param in zip(swa_model.state_dict().values(), avg_model.state_dict().values()):
-            if swa_param.dtype == torch.float32:
-                swa_param.mul_(n/(n+1))
-                swa_param.add_(avg_param /(n+1))  
-    n += 1
-    return swa_model, n
 
 def compute_model_tracking_metrics(args, logger, models, ema_models, opts, step, epoch, device, model_init=None):
     # consensus distance
@@ -115,7 +101,6 @@ def update_bn_and_eval(model, train_loader, test_loader, device, logger, step=0,
     update_bn(args, train_loader, _model, device)
     _, acc = evaluate_model(_model, test_loader, device)
     logger.log_quantity(step, epoch, acc, name=log_name)
-    print(log_name + ' Accuracy: %.2f' % acc)
 
 ########################################################################################
 
@@ -141,7 +126,7 @@ def train(args, wandb):
     n_nodes = args.n_nodes[0]
     models = [get_model(args, device) for _ in range(n_nodes)]
     opts = [get_optimizer(args, model) for model in models]
-    schedulers = [get_lr_schedulers(args, n_samples, opt) for opt in opts]   
+    schedulers = [get_lr_scheduler(args, n_samples, opt) for opt in opts]   
     if args.same_init:
         for i in range(1, len(models)):
             models[i].load_state_dict(models[0].state_dict())
@@ -161,17 +146,19 @@ def train(args, wandb):
     swa_scheduler = SWALR(opts[0], anneal_strategy="linear", anneal_epochs=5, swa_lr=args.swa_lr)
 
     if args.avg_index:
+        checkpoint_period = np.ceil(n_samples/args.batch_size[0]) * 2   # Saving index every 2 epochs -- empirically, this is more than often enough
+
         index_save_dir = os.path.join(args.save_dir, args.dataset, args.net, args.expt_name)
         if not os.path.exists(index_save_dir):
             os.makedirs(index_save_dir)
         index = ModelAvgIndex(
             models[0],              # NOTE only supported with solo mode now.
-            UniformAvgIndex(index_save_dir, checkpoint_period=args.steps_eval),
+            UniformAvgIndex(index_save_dir, checkpoint_period=checkpoint_period),
             include_buffers=True,
         )
         # index = ModelAvgIndex(
         #     models[0],              # NOTE only supported with solo mode now.
-        #     TriangleAvgIndex(index_save_dir, checkpoint_period=args.steps_eval),
+        #     TriangleAvgIndex(index_save_dir, checkpoint_period=checkpoint_period),
         #     include_buffers=True,
         # )
 
@@ -275,8 +262,6 @@ def train(args, wandb):
             # print('[Epoch %d] Changing to phase %d. Nodes: %d. Topology: %s. Local steps: %s.' % (epoch, phase, args.n_nodes[phase], args.topology[phase], args.local_steps[phase]))
             print('[Epoch %d] Changing to phase %d.' % (epoch, phase))
 
-        if args.model_std > 0:
-            add_noise_to_models(models, args.model_std, device)
 
         train_loss = 0
         correct = 0
@@ -361,17 +346,17 @@ def train(args, wandb):
                 for alpha in args.alpha: 
                     ema_model = get_average_model(device, ema_models[alpha])
                     ema_loss, ema_acc = evaluate_model(ema_model, test_loader, device)
-                    logger.log_acc(step, epoch, ema_acc*100, ema_loss, name='EMA ' + str(alpha))
+                    logger.log_acc(step, epoch, ema_acc, ema_loss, name='EMA ' + str(alpha))
                     max_acc.update(ema_acc, alpha)
                     best_ema_acc = max(best_ema_acc, ema_acc)
                     best_ema_loss = min(best_ema_loss, ema_loss)
                 max_acc.update(best_ema_acc, 'EMA')
-                logger.log_acc(step, epoch, best_ema_acc*100, best_ema_loss, name='EMA')  
-                logger.log_acc(step, epoch, best_ema_acc*100, name='Multi-EMA Best')
+                logger.log_acc(step, epoch, best_ema_acc, best_ema_loss, name='EMA')  
+                logger.log_acc(step, epoch, best_ema_acc, name='Multi-EMA Best')   
                 # Moving Average
                 if epoch > args.epoch_swa:
                     swa2_loss, swa2_acc = evaluate_model(swa_model2, test_loader, device)
-                    logger.log_acc(step, epoch, swa2_acc*100, swa2_loss, name='MA') 
+                    logger.log_acc(step, epoch, swa2_acc, swa2_loss, name='MA') 
                     max_acc.update(swa2_acc, 'MA')
 
                 # evaluate on averaged model
@@ -379,16 +364,16 @@ def train(args, wandb):
                     ts_eval = time.time()
                     model = get_average_model(device, models)
                     test_loss, acc = evaluate_model(model, test_loader, device)
-                    logger.log_eval(step, epoch, float(acc*100), test_loss, ts_eval, ts_steps_eval)
+                    logger.log_eval(step, epoch, float(acc), test_loss, ts_eval, ts_steps_eval)
                     print('Epoch %.3f (Step %d) -- Test accuracy: %.2f -- EMA accuracy: %.2f -- Test loss: %.3f -- Train loss: %.3f -- Time (total/last/eval): %.2f / %.2f / %.2f s' %
-                        (epoch, step, float(acc*100), float(ema_acc*100), test_loss, train_loss, time.time() - ts_total, time.time() - ts_steps_eval, time.time() - ts_eval))
+                        (epoch, step, float(acc), float(ema_acc), test_loss, train_loss, time.time() - ts_total, time.time() - ts_steps_eval, time.time() - ts_eval))
                     
                 # evaluate on all models
                 else:
                     acc, test_loss, acc_workers, loss_workers, acc_avg, test_loss_avg = eval_all_models(args, models, test_loader, device)
                     logger.log_eval_per_node(step, epoch, acc, test_loss, acc_workers, loss_workers, acc_avg, test_loss_avg, ts_eval, ts_steps_eval)
                     print('Epoch %.3f (Step %d) -- Test accuracy: %.2f -- EMA accuracy: %.2f -- Test loss: %.3f -- Train loss: %.3f -- Time (total/last/eval): %.2f / %.2f / %.2f s' %
-                        (epoch, step, acc, float(ema_acc*100), test_loss, train_loss, time.time() - ts_total, time.time() - ts_steps_eval, time.time() - ts_eval))
+                        (epoch, step, acc, float(ema_acc), test_loss, train_loss, time.time() - ts_total, time.time() - ts_steps_eval, time.time() - ts_eval))
                     acc = acc_avg
 
                 max_acc.update(acc, 'Student')

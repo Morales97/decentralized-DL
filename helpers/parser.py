@@ -55,8 +55,6 @@ def get_parser(parser=None):
                         help='start epoch for each training phase. If [0], only one training phase') 
     parser.add_argument('--init_momentum', type=boolfromstr, default=True,
                         help='when increasing n_nodes, whether to init momentum')
-    parser.add_argument('--model_std', type=float, default=0,
-                        help='standard deviation for noise applied to each model`s parameters')  
 
     # model averaging
     parser.add_argument('--alpha', type=float, nargs='+', default=[0.995],
@@ -89,8 +87,8 @@ def get_parser(parser=None):
                         help='batch size for a single node')
     parser.add_argument('--lr', type=float, nargs='+', default=[0.2],
                         help='learning rate')   
-    parser.add_argument('--lr_decay_as', type=str, default='step',
-                        help='type of lr decay (step/cosine)')               
+    parser.add_argument('--lr_decay_as', type=str, default='cosine',
+                        help='type of lr decay (step/cosine/linear)')               
     parser.add_argument('--lr_decay', type=int, nargs='+', default=[150, 225],
                         help='decay lr by factor at the listed fractions of training')                                       
     parser.add_argument('--lr_decay_factor', type=float, default=10,
@@ -137,6 +135,8 @@ def get_parser(parser=None):
     # evaluation
     parser.add_argument('--eval_on_average_model', type=boolfromstr, default=True,
                         help='evaluate on the average of all workers models (true), or separate and report mean accuracy (false)')
+    parser.add_argument('--train_log_interval', type=int, default=100,
+                        help='log train metrics every x number of steps')
     parser.add_argument('--steps_eval', type=int, default=400,
                         help='evaluate every x number of steps')
     parser.add_argument('--tracking_interval', type=int, default=200,

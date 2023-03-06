@@ -3,7 +3,7 @@ from torch.optim import lr_scheduler as lrs
 import numpy as np
 import pdb 
 
-def get_lr_schedulers(args, n_samples, opt):
+def get_lr_scheduler(args, n_samples, opt):
     ''' WARNING only to be used with fixed batch size and n_nodes (i.e., fixed number of steps per epoch'''
 
     gamma = 1 / args.lr_decay_factor
