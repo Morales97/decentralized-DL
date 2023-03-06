@@ -158,7 +158,7 @@ def train(args, wandb):
             
             pred = output.argmax(dim=1, keepdim=True)
             correct = pred.eq(target.view_as(pred)).sum().item()
-            train_tracker.update('Student', loss.item(), correct, input.shape[0])
+            train_tracker.update('Student', correct, loss.item(), input.shape[0])
 
             # EMA updates
             if len(args.alpha) > 0 and step % args.ema_interval == 0:
@@ -180,7 +180,7 @@ def train(args, wandb):
                         loss = F.cross_entropy(output, target)
                         pred = output.argmax(dim=1, keepdim=True)
                         correct = pred.eq(target.view_as(pred)).sum().item() 
-                        train_tracker.update(alpha, loss.item(), correct, input.shape[0])
+                        train_tracker.update(alpha, correct, loss.item(), input.shape[0])
 
             # Log train metrics
             if step % args.train_log_interval == 0:
@@ -195,7 +195,7 @@ def train(args, wandb):
                         logger.log_quantity(step, epoch, ema_acc, name=f'EMA {alpha} Train Acc')
                         logger.log_quantity(step, epoch, ema_loss, name=f'EMA {alpha} Train Loss')
                         best_ema_acc = max(best_ema_acc, ema_acc)
-                        best_ema_loss = max(best_ema_loss, ema_loss)
+                        best_ema_loss = min(best_ema_loss, ema_loss)
                     logger.log_quantity(step, epoch, best_ema_acc, name=f'Multi-EMA Train Acc')
                     logger.log_quantity(step, epoch, best_ema_loss, name=f'Multi-EMA Train Loss')
 
