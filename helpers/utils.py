@@ -180,6 +180,7 @@ def save_checkpoint(args, models, ema_models, opts, schedulers, epoch, step, nam
             ema_models[alpha] = [ema_models[alpha]]
         opts = [opts]
         schedulers = [schedulers]
+    pdb.set_trace()
     for i in range(len(models)):
         state = {
             'epoch': epoch,
