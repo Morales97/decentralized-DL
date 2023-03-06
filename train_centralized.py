@@ -176,7 +176,7 @@ def train(args, wandb):
             if args.log_train_ema: 
                 with torch.no_grad():
                     for alpha in args.alpha:
-                        output = ema_models[args.alpha[-1]](input) # TODO for every EMA
+                        output = ema_models[alpha](input)
                         loss = F.cross_entropy(output, target)
                         pred = output.argmax(dim=1, keepdim=True)
                         correct = pred.eq(target.view_as(pred)).sum().item() 
