@@ -110,11 +110,11 @@ def compute_model_tracking_metrics(args, logger, models, ema_models, opts, step,
     lr = opts[0].param_groups[0]['lr']
     logger.log_quantity(step, epoch, lr, name='Learing rate')
 
-def update_bn_and_eval(model, train_loader, test_loader, device, logger, log_name=''):
+def update_bn_and_eval(model, train_loader, test_loader, device, logger, step=0, epoch=0, log_name=''):
     _model = deepcopy(model)
     update_bn(args, train_loader, _model, device)
     _, acc = evaluate_model(_model, test_loader, device)
-    logger.log_single_acc(acc, log_as=log_name)
+    logger.log_quantity(step, epoch, acc, name=log_name)
     print(log_name + ' Accuracy: %.2f' % acc)
 
 ########################################################################################
@@ -194,7 +194,6 @@ def train(args, wandb):
     max_acc = MultiAccuracyTracker(['Student', 'EMA', 'MA'])
     max_acc.init(args.alpha)
     epoch_swa = args.epoch_swa # epoch to start SWA averaging (default: 100)
-    epoch_swa_budget = args.epoch_swa_budget
     epoch_swa3 = 0
 
     # Load checkpoint
@@ -335,11 +334,7 @@ def train(args, wandb):
             swa_model.update_parameters(models)
             if args.swa_lr > 0:
                 swa_scheduler.step()
-            update_bn_and_eval(swa_model, train_loader, test_loader, device, logger, log_name='SWA')
-            
-            if epoch > epoch_swa_budget:    # compute SWA at budget 1
-                epoch_swa_budget = 1e5 # deactivate
-                update_bn_and_eval(swa_model, train_loader, test_loader, device, logger, log_name='SWA Budget 1')
+            update_bn_and_eval(swa_model, train_loader, test_loader, device, logger, step, epoch, log_name='SWA')
 
         if args.swa_per_phase and epoch > epoch_swa3:   # TODO improve how to keep track of epoch end
             epoch_swa3 += 1

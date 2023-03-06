@@ -65,8 +65,6 @@ def get_parser(parser=None):
                         help='period of steps to perform EMA update')                    
     parser.add_argument('--epoch_swa', type=int, default=100,
                         help='epoch when to start SWA averaging')
-    parser.add_argument('--epoch_swa_budget', type=int, default=1e5,
-                        help='epoch when to FINISH SWA averaging for budget 1')
     parser.add_argument('--swa', action='store_true', 
                         help='Use SWA as in Izmailov et al.')
     parser.add_argument('--swa_lr', type=float, default=-1,
