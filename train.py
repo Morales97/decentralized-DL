@@ -2,12 +2,11 @@ from copy import deepcopy
 import numpy as np
 import pdb
 from loaders.data import get_data
-from topology import get_gossip_matrix, diffuse, get_average_model, get_average_opt
 import time
 import torch
 from model.model import get_model, get_ema_model
 import torch.nn.functional as F
-from helpers.utils import TrainMetricsTracker, copy_checkpoint, save_experiment, get_expt_name, MultiAccuracyTracker, save_checkpoint
+from helpers.utils import TrainMetricsTracker, copy_checkpoint, get_folder_name, save_experiment, get_expt_name, MultiAccuracyTracker, save_checkpoint
 from helpers.logger import Logger
 from helpers.parser import parse_args
 from optimizer.optimizer import get_optimizer
@@ -95,19 +94,16 @@ def train(args, wandb):
 
     # Average Index
     if args.avg_index:
-        checkpoint_period = np.ceil(n_samples/args.batch_size[0]) * 2   # Saving index every 2 epochs -- empirically, this is more than often enough
+        checkpoint_period = np.ceil(n_samples/args.batch_size[0]) * 2 // args.ema_period   # Saving index every 2 epochs -- empirically, this is more than often enough
 
-        index_save_dir = os.path.join(args.save_dir, args.dataset, args.net, args.expt_name)
-        if not os.path.exists(index_save_dir):
-            os.makedirs(index_save_dir)
         index = ModelAvgIndex(
             model,              
-            UniformAvgIndex(index_save_dir, checkpoint_period=checkpoint_period),
+            UniformAvgIndex(get_folder_name(args), checkpoint_period=checkpoint_period),
             include_buffers=True,
         )
         # index = ModelAvgIndex(
         #     model,             
-        #     TriangleAvgIndex(index_save_dir, checkpoint_period=checkpoint_period),
+        #     TriangleAvgIndex(get_folder_name(args), checkpoint_period=checkpoint_period),
         #     include_buffers=True,
         # )
 
@@ -160,12 +156,12 @@ def train(args, wandb):
             train_tracker.update('Student', correct, loss.item(), input.shape[0])
 
             # EMA updates
-            if len(args.alpha) > 0 and step % args.ema_interval == 0:
+            if len(args.alpha) > 0 and step % args.ema_period == 0:
                 for alpha in args.alpha:
                     ema_opts[alpha].update()
             
             # index model average
-            if args.avg_index:
+            if args.avg_index and step % args.ema_period == 0:
                 index.record_step()
 
             step +=1
@@ -195,8 +191,8 @@ def train(args, wandb):
                         logger.log_quantity(step, epoch, ema_loss, name=f'EMA {alpha} Train Loss')
                         best_ema_acc = max(best_ema_acc, ema_acc)
                         best_ema_loss = min(best_ema_loss, ema_loss)
-                    logger.log_quantity(step, epoch, best_ema_acc, name=f'Multi-EMA Train Acc')
-                    logger.log_quantity(step, epoch, best_ema_loss, name=f'Multi-EMA Train Loss')
+                    logger.log_quantity(step, epoch, best_ema_acc, name=f'EMA Train Acc')
+                    logger.log_quantity(step, epoch, best_ema_loss, name=f'EMA Train Loss')
 
             # log model tracking
             if step % args.tracking_interval == 0:
@@ -221,7 +217,6 @@ def train(args, wandb):
                 best_ema_loss = min(best_ema_loss, ema_loss)
             max_acc.update(best_ema_acc, best_ema_loss, 'EMA')
             logger.log_acc(step, epoch, best_ema_acc, best_ema_loss, name='EMA')  
-            logger.log_acc(step, epoch, best_ema_acc, name='Multi-EMA Best') # TODO duplicate
             
             # SWA
             if epoch > args.epoch_swa:
@@ -255,13 +250,10 @@ def train(args, wandb):
     # Make a full pass over EMA and SWA models to update 
     if epoch > args.epoch_swa:
         update_bn_and_eval(swa_model, train_loader, test_loader, device, logger, log_name='SWA Acc (after BN)')
-    if len(args.alpha) == 1: # TODO do we need this? should we update BN for all EMAs?
-        pass 
-        #update_bn_and_eval(ema_model, train_loader, test_loader, device, logger, log_name='EMA Acc (after BN)')
 
     # save avg_index
     if args.avg_index:
-        torch.save(index.state_dict(), os.path.join(index_save_dir, f'index_{index._index._uuid}_{step}.pt'))
+        torch.save(index.state_dict(), os.path.join(get_folder_name(args), f'index_{index._index._uuid}_{step}.pt'))
 
 if __name__ == '__main__':
     from helpers.parser import SCRATCH_DIR, SAVE_DIR
@@ -270,8 +262,8 @@ if __name__ == '__main__':
 
     if not args.expt_name:
         args.expt_name = get_expt_name(args)
-    if not os.path.exists(os.path.join(args.save_dir, args.dataset, args.net, args.expt_name)):
-        os.makedirs(os.path.join(args.save_dir, args.dataset, args.net, args.expt_name))
+    if not os.path.exists(get_folder_name(args)):
+        os.makedirs(get_folder_name(args))
 
 
     if args.wandb:

@@ -61,7 +61,7 @@ def get_parser(parser=None):
     # model averaging
     parser.add_argument('--alpha', type=float, nargs='+', default=[0.995],
                         help='EMA decay. Can specify many to keep multiple EMAs')   
-    parser.add_argument('--ema_interval', type=int, default=1,
+    parser.add_argument('--ema_period', type=int, default=1,
                         help='period of steps to perform EMA update')                    
     parser.add_argument('--epoch_swa', type=int, default=100,
                         help='epoch when to start SWA averaging')
@@ -113,10 +113,6 @@ def get_parser(parser=None):
                         help='use nesterov momentum')
     parser.add_argument('--wd', type=float, default=1e-4,
                         help='weight decay, L2 regularization')
-    parser.add_argument('--wd_drop', type=int, default=0,
-                        help='[Experimental] Epoch where weight decay is dropped. If 0, do not drop') 
-    parser.add_argument('--momentum_drop', type=int, default=0,
-                        help='[Experimental] Epoch where momentum is dropped. If 0, do not drop') 
 
     # data
     parser.add_argument('--dataset', type=str, default='cifar10',

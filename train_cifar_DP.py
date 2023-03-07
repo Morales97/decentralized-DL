@@ -284,7 +284,7 @@ def train(args, wandb):
             #     correct += pred.eq(target.view_as(pred)).sum().item()
 
             # EMA updates
-            if len(args.alpha) > 0 and step % args.ema_interval == 0:
+            if len(args.alpha) > 0 and step % args.ema_period == 0:
                 for alpha in args.alpha:
                     ema_opts[alpha][0].update()
                 # if args.late_ema_epoch > 0 and epoch > args.late_ema_epoch:
