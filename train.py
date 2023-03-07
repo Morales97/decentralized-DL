@@ -210,7 +210,7 @@ def train(args, wandb):
             best_ema_acc = 0
             best_ema_loss = 1e5
             for alpha in args.alpha: 
-                ema_loss, ema_acc = evaluate_model(ema_models[alpha], test_loader, device)
+                ema_loss, ema_acc = evaluate_model(ema_models[alpha], val_loader, device)
                 logger.log_acc(step, epoch, ema_acc, ema_loss, name='EMA ' + str(alpha))
                 max_acc.update(ema_acc, ema_loss, alpha)
                 best_ema_acc = max(best_ema_acc, ema_acc)
@@ -220,14 +220,14 @@ def train(args, wandb):
             
             # SWA
             if epoch > args.epoch_swa:
-                update_bn_and_eval(swa_model, train_loader, test_loader, device, logger, step, epoch, log_name='SWA')
+                update_bn_and_eval(swa_model, train_loader, val_loader, device, logger, step, epoch, log_name='SWA')
 
             # eval Student
-            test_loss, acc = evaluate_model(model, test_loader, device)
-            logger.log_eval(step, epoch, float(acc), test_loss, ts_eval, ts_steps_eval)
-            print('Epoch %.3f (Step %d) -- Test accuracy: %.2f -- EMA accuracy: %.2f -- Test loss: %.3f -- Train loss: %.3f -- Time (total/last/eval): %.2f / %.2f / %.2f s' %
-                (epoch, step, float(acc), float(ema_acc), test_loss, train_loss, time.time() - ts_total, time.time() - ts_steps_eval, time.time() - ts_eval))
-            max_acc.update(acc, test_loss, 'Student')
+            val_loss, acc = evaluate_model(model, val_loader, device)
+            logger.log_eval(step, epoch, float(acc), val_loss, ts_eval, ts_steps_eval)
+            print('Epoch %.3f (Step %d) -- Val accuracy: %.2f -- EMA accuracy: %.2f -- Val loss: %.3f -- Train loss: %.3f -- Time (total/last/eval): %.2f / %.2f / %.2f s' %
+                (epoch, step, float(acc), float(ema_acc), val_loss, train_loss, time.time() - ts_total, time.time() - ts_steps_eval, time.time() - ts_eval))
+            max_acc.update(acc, val_loss, 'Student')
             ts_steps_eval = time.time()
 
         # save checkpoint periodically
@@ -249,7 +249,7 @@ def train(args, wandb):
 
     # Make a full pass over EMA and SWA models to update 
     if epoch > args.epoch_swa:
-        update_bn_and_eval(swa_model, train_loader, test_loader, device, logger, log_name='SWA Acc (after BN)')
+        update_bn_and_eval(swa_model, train_loader, val_loader, device, logger, log_name='SWA Acc (after BN)')
 
     # save avg_index
     if args.avg_index:
