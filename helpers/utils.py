@@ -257,7 +257,7 @@ def save_checkpoint(args, models, ema_models, opts, schedulers, epoch, step, nam
             #     wandb.log_artifact(model_artifact)
     print('Checkpoint(s) saved!')
 
-def copy_checkpoint(args, ckpt_name='checkpoint_last.pth.tar', new_name='model_best.pth.tar')
+def copy_checkpoint(args, ckpt_name='checkpoint_last.pth.tar', new_name='model_best.pth.tar'):
     path = os.path.join(args.save_dir, args.dataset, args.net, args.expt_name)
     ckpt_file = os.path.join(path, ckpt_name)
     new_ckpt_file = os.path.join(path, new_name)
