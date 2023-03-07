@@ -7,7 +7,11 @@ import torch
 import torch.utils.data as data
 
 
-def get_cifar_test(args, root):
+def get_cifar_test(args, root, val=0, batch_size=100):
+    '''
+    Get CIFAR test set. 
+    If val > 0, split into validation and test
+    '''
 
     # decide normalize parameter.
     if args.dataset == "cifar10":
@@ -30,10 +34,19 @@ def get_cifar_test(args, root):
         download=True,
     )
 
-    return data.DataLoader(dataset, batch_size=100, shuffle=False)
+    if val > 0:
+        n_samples = int(np.floor(len(dataset) * val))
+        data_split = data.random_split(dataset, [n_samples, len(dataset)-n_samples], generator=torch.Generator().manual_seed(42))     # NOTE manual seed fixed for reproducible results
+        val_loader = data.DataLoader(data_split[0], batch_size=batch_size, shuffle=False)     
+        test_loader = data.DataLoader(data_split[1], batch_size=batch_size, shuffle=False)     
+        return val_loader, test_loader
+    else:
+        test_loader = data.DataLoader(dataset, batch_size=batch_size, shuffle=False)     
+        return None, test_loader
 
 
-def get_cifar(args, root, batch_size, iid=True, fraction=-1, noisy=False):
+
+def get_cifar(args, root, batch_size, val_fraction, iid=False, fraction=-1, noisy=False):
     '''
     Return CIFAR-10 or CIFAR-100 data loaders
     Optionally, return a subset (if fraction in [0,1])
@@ -102,8 +115,8 @@ def get_cifar(args, root, batch_size, iid=True, fraction=-1, noisy=False):
             train_loader = [data.DataLoader(
                 x, batch_size=batch_size, shuffle=True) for x in traindata_split]
 
-    test_loader = get_cifar_test(args, root)
-    return train_loader, test_loader
+    val_loader, test_loader = get_cifar_test(args, root, val_fraction)
+    return train_loader, val_loader, test_loader
 
 def get_cifar_filtered_samples(args, root, teacher_model, samples_selected=None):
     '''

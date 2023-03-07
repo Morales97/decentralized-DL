@@ -51,7 +51,7 @@ def evaluate(model, test_loader, adv=True, epsilon=8./255):
 if __name__ == '__main__':
     args = parse_args()
 
-    train_loader, test_loader = get_data(args, args.batch_size[0], args.data_fraction)
+    train_loader, _, test_loader = get_data(args, args.batch_size[0], args.data_fraction)
     
     # dataset_loader = datasets.CIFAR100
     # transform = transforms.Compose([transforms.ToTensor(), transforms.Normalize((0.5071, 0.4867, 0.4408), (0.2675, 0.2565, 0.2761))])

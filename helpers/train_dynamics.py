@@ -96,7 +96,7 @@ def get_train_metrics(args, folder_path):
     ckpt_steps, file_root = get_ckpt_steps(ckpt_files)
 
     # data
-    _, test_loader = get_data(args, batch_size=100)
+    _, _, test_loader = get_data(args, batch_size=100)
 
     # init
     cosine_similarities = np.zeros((len(ckpt_steps), len(ckpt_steps))) 

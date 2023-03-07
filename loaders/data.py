@@ -22,7 +22,7 @@ def _get_mnist(args, root, n_nodes, batch_size):
         return get_mnist_iid(root, batch_size)
 
 
-def _get_cifar(args, root, batch_size, fraction):
+def _get_cifar(args, root, batch_size, val_fraction, fraction):
     
     if args.p_label_skew > 0:
         raise Exception('Heterogeneous CIFAR not supported yet')
@@ -31,7 +31,7 @@ def _get_cifar(args, root, batch_size, fraction):
         select_samples = np.load(os.path.join(root, args.select_samples + '.npy'))
         return get_cifar_filtered_samples(args, root, None, select_samples)
     elif args.data_split:
-        return get_cifar(args, root, batch_size, iid=False, fraction=fraction, noisy=args.label_noise)
+        return get_cifar(args, root, batch_size, val_fraction=val_fraction, iid=False, fraction=fraction, noisy=args.label_noise)
     else:
         return get_cifar(args, root, batch_size, iid=True, fraction=fraction, noisy=args.label_noise)
 
@@ -40,7 +40,7 @@ def _get_tiny_imagenet(args, root, batch_size):
     return get_tinyimagenet(args, root, batch_size)
 
 
-def get_data(args, batch_size, fraction=-1):
+def get_data(args, batch_size, fraction=-1, val_fraction=0):
     if args.local_exec:
         root = ROOT_LOCAL
     else:
@@ -49,7 +49,7 @@ def get_data(args, batch_size, fraction=-1):
     if args.dataset == 'mnist':
         return _get_mnist(args, root, args.n_nodes[0], batch_size)
     elif args.dataset in ['cifar10', 'cifar100']:
-        return _get_cifar(args, root, batch_size, fraction)
+        return _get_cifar(args, root, batch_size, val_fraction,fraction)
     elif args.dataset == 'tiny-in':
         return _get_tiny_imagenet(args, root, batch_size)
     else:

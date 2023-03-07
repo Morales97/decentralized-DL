@@ -6,7 +6,7 @@ import time
 import torch
 from model.model import get_model, get_ema_model
 import torch.nn.functional as F
-from helpers.utils import TrainMetricsTracker, copy_checkpoint, get_folder_name, save_experiment, get_expt_name, MultiAccuracyTracker, save_checkpoint
+from helpers.utils import TrainMetricsTracker, copy_checkpoint, get_folder_name, get_expt_name, MultiAccuracyTracker, save_checkpoint
 from helpers.logger import Logger
 from helpers.parser import parse_args
 from optimizer.optimizer import get_optimizer
@@ -76,7 +76,7 @@ def train(args, wandb):
     print('Random seed: ', args.seed)
 
     # data
-    train_loader, test_loader = get_data(args, args.batch_size[0], args.data_fraction)
+    train_loader, val_loader, test_loader = get_data(args, args.batch_size[0], args.data_fraction, args.val_fraction)
     train_loader = train_loader[0]
     n_samples = len(train_loader.dataset)
 
@@ -256,15 +256,12 @@ def train(args, wandb):
         torch.save(index.state_dict(), os.path.join(get_folder_name(args), f'index_{index._index._uuid}_{step}.pt'))
 
 if __name__ == '__main__':
-    from helpers.parser import SCRATCH_DIR, SAVE_DIR
     args = parse_args()
-    #os.environ['WANDB_CACHE_DIR'] = SCRATCH_DIR # NOTE this should be a directory periodically deleted. Otherwise, delete manually
 
     if not args.expt_name:
         args.expt_name = get_expt_name(args)
     if not os.path.exists(get_folder_name(args)):
         os.makedirs(get_folder_name(args))
-
 
     if args.wandb:
         wandb.init(name=args.expt_name, dir=args.save_dir, config=args, project=args.project, entity=args.entity)

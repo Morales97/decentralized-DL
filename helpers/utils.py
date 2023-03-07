@@ -30,7 +30,9 @@ def get_expt_name(args, warmup=False):
     return name
 
 def get_folder_name(args):
-    os.path.join(args.save_dir, args.dataset, args.net, args.expt_name, '_s' + args.seed)
+    if args.local_exec:
+        return os.getcwd()
+    return os.path.join(args.save_dir, args.dataset, args.net, args.expt_name, '_s' + str(args.seed))
 
 
 def load_results(path):
@@ -130,6 +132,8 @@ class TrainMetricsTracker(object):
 
 
 def save_checkpoint(args, models, ema_models, opts, schedulers, epoch, step, name=None):
+    if args.local_exec: return
+
     if not isinstance(models, list):
         state = {
             'epoch': epoch,
@@ -141,9 +145,9 @@ def save_checkpoint(args, models, ema_models, opts, schedulers, epoch, step, nam
             'scheduler': schedulers.state_dict()
         }
         if name:
-            torch.save(state, os.path.join(args.save_dir, args.dataset, args.net, args.expt_name, f'checkpoint_{name}.pth.tar'))    
+            torch.save(state, os.path.join(get_folder_name(args), f'checkpoint_{name}.pth.tar'))    
         else:
-            torch.save(state, os.path.join(args.save_dir, args.dataset, args.net, args.expt_name, f'checkpoint_{step}.pth.tar'))
+            torch.save(state, os.path.join(get_folder_name(args), f'checkpoint_{step}.pth.tar'))
 
     else:
         for i in range(len(models)):
@@ -157,9 +161,9 @@ def save_checkpoint(args, models, ema_models, opts, schedulers, epoch, step, nam
                 'scheduler': schedulers[i].state_dict()
             }
             if name:
-                torch.save(state, os.path.join(args.save_dir, args.dataset, args.net, args.expt_name, f'checkpoint_m{i}_{name}.pth.tar'))    
+                torch.save(state, os.path.join(get_folder_name(args), f'checkpoint_m{i}_{name}.pth.tar'))    
             else:
-                torch.save(state, os.path.join(args.save_dir, args.dataset, args.net, args.expt_name, f'checkpoint_m{i}_{step}.pth.tar'))
+                torch.save(state, os.path.join(get_folder_name(args), f'checkpoint_m{i}_{step}.pth.tar'))
 
             # if args.wandb:
             #     model_artifact = wandb.Artifact('ckpt_m' + str(i), type='model')

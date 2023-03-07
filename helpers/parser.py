@@ -18,7 +18,7 @@ def get_parser(parser=None):
                         help='Name of the experiment for wandb')
     parser.add_argument('--wandb', type=boolfromstr, default=True,
                         help='whether or not to use wandb')  
-    parser.add_argument('--local_exec', type=boolfromstr, default=False,
+    parser.add_argument('--local_exec', action='store_true',
                         help='local or cluster execution')  
     parser.add_argument('--project', type=str, default='MLO-CIFAR10',
                         help='wandb project to use')
@@ -123,6 +123,8 @@ def get_parser(parser=None):
                         help='Label skew for heterogeneity. Requires --data_split True.')    
     parser.add_argument('--data_fraction', type=float, default=-1,
                         help='Set between 0 and 1 to use a random subset of dataset with selected fraction of samples')
+    parser.add_argument('--val_fraction', type=float, default=0.5,
+                        help='Fraction for val/test split of test set')
     parser.add_argument('--viz_weights', action='store_true',
                         help='For Logistic regression, viz weights for each class')
     parser.add_argument('--label_noise', action='store_true',

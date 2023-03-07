@@ -252,7 +252,7 @@ def get_avg_model(args, start=0.5, end=1, expt_name=None):
         expt_name = args.expt_name
 
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
-    train_loader, test_loader = get_data(args, args.batch_size[0], args.data_fraction)
+    train_loader, _, test_loader = get_data(args, args.batch_size[0], args.data_fraction)
     save_dir = os.path.join(args.save_dir, args.dataset, args.net, expt_name)
     index_ckpt_file, step = find_index_ckpt(save_dir)
     state_dir = os.path.join(save_dir, index_ckpt_file)
@@ -278,7 +278,7 @@ if __name__ == '__main__':
     ''' For debugging purposes '''
     args = parse_args()
 
-    train_loader, test_loader = get_data(args, args.batch_size[0], args.data_fraction)
+    train_loader, _, test_loader = get_data(args, args.batch_size[0], args.data_fraction)
     train_loader = train_loader[0]
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
     save_dir = os.path.join(args.save_dir, args.dataset, args.net, args.expt_name)

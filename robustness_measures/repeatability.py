@@ -33,7 +33,7 @@ if __name__ == '__main__':
     args = parse_args(parser)
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
-    train_loader, test_loader = get_data(args, args.batch_size[0], args.data_fraction)
+    train_loader, _, test_loader = get_data(args, args.batch_size[0], args.data_fraction)
     # val_logits, val_confidence, val_correct, val_labels = get_net_results(val_loader, in_dist=True)   # NOTE need to split train in train-val
 
     if args.resume:

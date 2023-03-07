@@ -8,7 +8,7 @@ import time
 import torch
 from model.model import get_model, get_ema_models
 import torch.nn.functional as F
-from helpers.utils import save_experiment, get_expt_name, MultiAccuracyTracker, save_checkpoint
+from helpers.utils import get_expt_name, MultiAccuracyTracker, save_checkpoint
 from helpers.logger import Logger
 from helpers.parser import parse_args
 from optimizer.optimizer import get_optimizer
@@ -112,7 +112,7 @@ def train(args, wandb):
     print('Random seed: ', args.seed)
 
     # data
-    train_loader, test_loader = get_data(args, args.batch_size[0], args.data_fraction)
+    train_loader, _, test_loader = get_data(args, args.batch_size[0], args.data_fraction)
     if args.data_split:
         train_loader_lengths = [len(t) for t in train_loader]
         train_loader_iter = [iter(t) for t in train_loader]
@@ -235,7 +235,7 @@ def train(args, wandb):
             
             if len(args.batch_size) > 1:
                 print('batch_size updated to: ' + str(args.batch_size[phase]))
-                train_loader, _ = get_data(args, args.batch_size[phase])
+                train_loader, _, _ = get_data(args, args.batch_size[phase])
                 if args.data_split:
                     train_loader_lengths = [len(train_loader[0])]
                     train_loader_iter[0] = iter(train_loader[0])
