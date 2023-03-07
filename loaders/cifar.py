@@ -36,6 +36,7 @@ def get_cifar_test(args, root, val=0, batch_size=100):
 
     if val > 0:
         n_samples = int(np.floor(len(dataset) * val))
+        print(f'Splitting test set into val/test, with {n_samples}/{len(dataset)-n_samples} samples respectively')
         data_split = data.random_split(dataset, [n_samples, len(dataset)-n_samples], generator=torch.Generator().manual_seed(42))     # NOTE manual seed fixed for reproducible results
         val_loader = data.DataLoader(data_split[0], batch_size=batch_size, shuffle=False)     
         test_loader = data.DataLoader(data_split[1], batch_size=batch_size, shuffle=False)     

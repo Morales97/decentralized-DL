@@ -32,7 +32,7 @@ def get_expt_name(args, warmup=False):
 def get_folder_name(args):
     if args.local_exec:
         return os.getcwd()
-    return os.path.join(args.save_dir, args.dataset, args.net, args.expt_name, '_s' + str(args.seed))
+    return os.path.join(args.save_dir, args.dataset, args.net, args.expt_name + '_s' + str(args.seed))
 
 
 def load_results(path):
