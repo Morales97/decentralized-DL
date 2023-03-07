@@ -7,7 +7,7 @@ import time
 import torch
 from model.model import get_model, get_ema_model
 import torch.nn.functional as F
-from helpers.utils import TrainMetricsTracker, save_experiment, get_expt_name, MultiAccuracyTracker, save_checkpoint
+from helpers.utils import TrainMetricsTracker, copy_checkpoint, save_experiment, get_expt_name, MultiAccuracyTracker, save_checkpoint
 from helpers.logger import Logger
 from helpers.parser import parse_args
 from optimizer.optimizer import get_optimizer
@@ -217,10 +217,10 @@ def train(args, wandb):
             for alpha in args.alpha: 
                 ema_loss, ema_acc = evaluate_model(ema_models[alpha], test_loader, device)
                 logger.log_acc(step, epoch, ema_acc, ema_loss, name='EMA ' + str(alpha))
-                max_acc.update(ema_acc, alpha)
+                max_acc.update(ema_acc, ema_loss, alpha)
                 best_ema_acc = max(best_ema_acc, ema_acc)
                 best_ema_loss = min(best_ema_loss, ema_loss)
-            max_acc.update(best_ema_acc, 'EMA')
+            max_acc.update(best_ema_acc, best_ema_loss, 'EMA')
             logger.log_acc(step, epoch, best_ema_acc, best_ema_loss, name='EMA')  
             logger.log_acc(step, epoch, best_ema_acc, name='Multi-EMA Best') # TODO duplicate
             
@@ -233,19 +233,25 @@ def train(args, wandb):
             logger.log_eval(step, epoch, float(acc), test_loss, ts_eval, ts_steps_eval)
             print('Epoch %.3f (Step %d) -- Test accuracy: %.2f -- EMA accuracy: %.2f -- Test loss: %.3f -- Train loss: %.3f -- Time (total/last/eval): %.2f / %.2f / %.2f s' %
                 (epoch, step, float(acc), float(ema_acc), test_loss, train_loss, time.time() - ts_total, time.time() - ts_steps_eval, time.time() - ts_eval))
-            max_acc.update(acc, 'Student')
+            max_acc.update(acc, test_loss, 'Student')
             ts_steps_eval = time.time()
 
-        # save best checkpoints
-        if args.save_best_model:
-            if max_acc.is_best('Student'):
-                save_checkpoint(args, model, ema_models, opt, scheduler, epoch, step, name='max_acc_student')
-            if max_acc.is_best('EMA'):
-                save_checkpoint(args, model, ema_models, opt, scheduler, epoch, step, name='max_acc_EMA')
-            # TODO save also with lowest val loss
+        # save checkpoint periodically
+        if args.save_model and np.round(epoch).astype(int) % args.save_epoch_interval == 0:
+            save_checkpoint(args, model, ema_models, opt, scheduler, epoch, step, name='last')
+
+            # save best checkpoints
+            if max_acc.is_best_acc('Student'):
+                copy_checkpoint(args, new_name='best_student_acc.pth.tar')
+            if max_acc.is_best_acc('EMA'):
+                copy_checkpoint(args, new_name='best_ema_acc.pth.tar')
+            if max_acc.is_best_loss('Student'):
+                copy_checkpoint(args, new_name='best_student_loss.pth.tar')
+            if max_acc.is_best_loss('EMA'):
+                copy_checkpoint(args, new_name='best_ema_loss.pth.tar')
         
-    logger.log_single_acc(max_acc.get('Student'), log_as='Max Accuracy')
-    logger.log_single_acc(max_acc.get('EMA'), log_as='Max EMA Accuracy')
+    logger.log_single_acc(max_acc.get_acc('Student'), log_as='Max Accuracy')
+    logger.log_single_acc(max_acc.get_acc('EMA'), log_as='Max EMA Accuracy')
 
     # Make a full pass over EMA and SWA models to update 
     if epoch > args.epoch_swa:

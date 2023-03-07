@@ -94,7 +94,7 @@ def update_bn(args, loader, model, device=None):
         module.momentum = None
         module.num_batches_tracked *= 0
 
-    if args.data_split:
+    if isinstance(loader, list):
         loader = loader[0]
     for input in loader:
         if isinstance(input, (list, tuple)):

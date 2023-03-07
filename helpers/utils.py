@@ -149,29 +149,49 @@ class AccuracyTracker(object):
         return self.max_correct
 
 class MultiAccuracyTracker(object):
+    ''''
+    Track best test accuracy and loss, and wheter current model is best
+    '''
     def __init__(self, keys):
-        self._max_correct = {}
-        self._is_best = {}
-        for key in keys:
-            self._max_correct[key] = 0
-            self._is_best[key] = False
+        self._max_acc = {}
+        self._min_loss = {}
+        self._is_best_acc = {}
+        self._is_best_loss = {}
+        self._init(keys)
 
-    def init(self, keys):
+    def _init(self, keys):
         for key in keys:
-            self._max_correct[key] = 0
+            self._max_acc[key] = 0
+            self._min_loss[key] = 1e5
+            self._is_best_acc[key] = False
+            self._is_best_loss[key] = False
 
-    def update(self, acc, key):
-        if acc > self._max_correct[key]:
-            self._max_correct[key] = acc
-            self._is_best[key] = True
+    def update(self, acc, loss, key):
+        # acc
+        if acc > self._max_acc[key]:
+            self._max_acc[key] = acc
+            self._is_best_acc[key] = True
         else:
-            self._is_best[key] = False
+            self._is_best_acc[key] = False
+        
+        # loss
+        if loss < self._min_loss[key]:
+            self._min_loss[key] = loss
+            self._is_best_loss[key] = True
+        else:
+            self._is_best_loss[key] = False
 
-    def get(self, key):
-        return self._max_correct[key]
+    def get_acc(self, key):
+        return self._max_acc[key]
 
-    def is_best(self, key):
-        return self._is_best[key]
+    def get_loss(self, key):
+        return self._min_loss[key]
+
+    def is_best_acc(self, key):
+        return self._is_best_acc[key]
+
+    def is_best_loss(self, key):
+        return self._is_best_loss[key]
 
 class TrainMetricsTracker(object):
     def __init__(self, keys):
@@ -237,6 +257,11 @@ def save_checkpoint(args, models, ema_models, opts, schedulers, epoch, step, nam
             #     wandb.log_artifact(model_artifact)
     print('Checkpoint(s) saved!')
 
+def copy_checkpoint(args, ckpt_name='checkpoint_last.pth.tar', new_name='model_best.pth.tar')
+    path = os.path.join(args.save_dir, args.dataset, args.net, args.expt_name)
+    ckpt_file = os.path.join(path, ckpt_name)
+    new_ckpt_file = os.path.join(path, new_name)
+    shutil.copyfile(ckpt_file, new_ckpt_file)
 
 if __name__ == '__main__':
     # config = {'test': 1}

@@ -26,10 +26,12 @@ def get_parser(parser=None):
                         help='wandb entity to use')
     parser.add_argument('--save_dir', type=str, default=SAVE_DIR,
                         help='local directory to save experiment results to')
-    parser.add_argument('--save_model', action='store_true',
+    parser.add_argument('--save_model', type=boolfromstr, default=True,
                         help='If not set, checkpoints will not be saved')
     parser.add_argument('--save_interval', type=int, default=1000,
                         help='step interval to save checkpoint') 
+    parser.add_argument('--save_epoch_interval', type=int, default=1,
+                        help='epoch interval to save checkpoint') 
     parser.add_argument('--save_final_model', type=boolfromstr, default=True,
                         help='save final model') 
     parser.add_argument('--save_best_model', type=boolfromstr, default=True,
