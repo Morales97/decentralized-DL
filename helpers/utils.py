@@ -172,7 +172,7 @@ def save_checkpoint(args, models, ema_models, opts, schedulers, epoch, step, nam
     print('Checkpoint(s) saved!')
 
 def copy_checkpoint(args, ckpt_name='checkpoint_last.pth.tar', new_name='model_best.pth.tar'):
-    path = os.path.join(args.save_dir, args.dataset, args.net, args.expt_name)
+    path = os.path.join(get_folder_name(args))
     ckpt_file = os.path.join(path, ckpt_name)
     new_ckpt_file = os.path.join(path, new_name)
     shutil.copyfile(ckpt_file, new_ckpt_file)
