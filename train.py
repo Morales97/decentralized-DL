@@ -264,7 +264,7 @@ def train(args, wandb):
         epoch = ckpt['epoch']
         loss, acc = evaluate_model(model, test_loader, device)
         logger.log_single_acc(acc, log_as='Max Test Accuracy')
-        print(f'Best student (not-averaged) model, from step {ckpt["step"]} (Epoch: {ckpt["epoch"]}) \tTest Accuracy: {acc} \tTest Loss: {loss}')
+        print(f'Best student (not-averaged) model, from step {ckpt["step"]} (Epoch: {ckpt["epoch"]:.2f}) \tTest Accuracy: {acc} \tTest Loss: {loss:.3f}')
         
         # EMA
         ckpt = torch.load(os.path.join(get_folder_name(args), 'best_ema_acc.pth.tar'))
@@ -273,7 +273,7 @@ def train(args, wandb):
         epoch = ckpt['epoch']
         loss, acc = evaluate_model(model, test_loader, device)
         logger.log_single_acc(acc, log_as='Max EMA Test Accuracy')
-        print(f'Best EMA model, alpha={alpha} at epoch {epoch} \tTest Accuracy: {acc} \tTest Loss: {loss}')
+        print(f'Best EMA model, alpha={alpha} at epoch {ckpt["epoch"]:.2f} \tTest Accuracy: {acc} \tTest Loss: {loss:.3f}')
 
 
 if __name__ == '__main__':
