@@ -139,9 +139,13 @@ def train(args, wandb):
         print(f'Resuming from step {step} (epoch {epoch}) ...')
 
     if args.pretrained:
-        ckpt = torch.load(args.resume)
-        pdb.set_trace()
+        ckpt = torch.load(args.pretrained)
+        state_dict = ckpt['state_dict']
+        state_dict.pop('fc.weight')
+        state_dict.pop('fc.bias')
+
         model.load_state_dict(ckpt['state_dict'])
+        pdb.set_trace()
 
     # TRAIN LOOP
     while epoch < args.epochs:
