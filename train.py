@@ -130,10 +130,18 @@ def train(args, wandb):
         if 'prn164_SWA' in args.expt_name:
             scheduler_state['_schedulers'][1]['end_factor'] = args.final_lr / args.lr[0]   # NOTE change the end LR. Ad-hoc for SWA experiments
 
-        scheduler.load_state_dict(scheduler_state)
+        if args.lr_decay_as == 'constant':
+            scheduler = torch.optim.lr_scheduler.ConstantLR(opt, factor=1, total_iters=0)   # Keep current LR in opt constant
+        else:
+            scheduler.load_state_dict(scheduler_state)  # continue training with same LR schedule
         epoch = ckpt['epoch']
         step = ckpt['step']
         print(f'Resuming from step {step} (epoch {epoch}) ...')
+
+    if args.pretrained:
+        ckpt = torch.load(args.resume)
+        pdb.set_trace()
+        model.load_state_dict(ckpt['state_dict'])
 
     # TRAIN LOOP
     while epoch < args.epochs:
@@ -151,7 +159,7 @@ def train(args, wandb):
             loss.backward()
             opt.step()
             scheduler.step()   
-            pdb.set_trace()
+            
             pred = output.argmax(dim=1, keepdim=True)
             correct = pred.eq(target.view_as(pred)).sum().item()
             train_tracker.update('Student', correct, loss.item())

@@ -41,6 +41,8 @@ def get_parser(parser=None):
                         help='choice of architecture') 
     parser.add_argument('--resume', type=str, default='',
                         help='path to checkpoint to resume from')
+    parser.add_argument('--pretrained', type=str, default='',
+                        help='path to checkpoint pretrained model')
 
     # decentralized
     parser.add_argument('--n_nodes', type=int, nargs='+', default=[1],
