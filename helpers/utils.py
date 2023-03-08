@@ -144,7 +144,7 @@ def save_checkpoint(args, models, ema_models, opts, schedulers, epoch, step, nam
             'scheduler': schedulers.state_dict(),
         }
         for alpha in ema_models.keys():
-            state['ema_state_dict' + str(alpha)] = ema_models[alpha].state_dict(),
+            state['ema_state_dict_' + str(alpha)] = ema_models[alpha].state_dict(),
         if best_alpha:
             state['best_alpha'] = best_alpha
         if name:
