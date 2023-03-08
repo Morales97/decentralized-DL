@@ -266,6 +266,9 @@ def train(args, wandb):
             if max_acc.is_best_loss('EMA'):
                 copy_checkpoint(args, new_name='best_ema_loss.pth.tar')
         
+            if np.round(epoch).astype(int) == 150:
+                 copy_checkpoint(args, ckpt_name='best_ema_acc.pth.tar', new_name='best_ema_acc_epoch150.pth.tar')  # NOTE saving best EMA at epoch 150, for experiments with best early EMA
+
     # save avg_index
     if args.avg_index:
         torch.save(index.state_dict(), os.path.join(get_folder_name(args), f'index_{index._index._uuid}_{step}.pt'))
