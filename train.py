@@ -264,7 +264,7 @@ def train(args, wandb):
         epoch = ckpt['epoch']
         loss, acc = evaluate_model(model, test_loader, device)
         logger.log_single_acc(acc, log_as='Max Test Accuracy')
-        print(f'Best student (not-averaged) model, from step {ckpt['step']} (Epoch: {ckpt['epoch']}) \tTest Accuracy: {acc} \tTest Loss: {loss}')
+        print(f'Best student (not-averaged) model, from step {ckpt["step"]} (Epoch: {ckpt["epoch"]}) \tTest Accuracy: {acc} \tTest Loss: {loss}')
         
         # EMA
         ckpt = torch.load(os.path.join(get_folder_name(args), 'best_ema_acc.pth.tar'))
