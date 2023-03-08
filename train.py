@@ -147,7 +147,10 @@ def train(args, wandb):
             if 'fc' in key:     # replace the last linear layer to fine-tune
                 state_dict[key] = model_sd[key]
         model.load_state_dict(ckpt['state_dict'])
-        pdb.set_trace()
+        
+        if args.freeze:
+            for param in model.parameters():
+                pdb.set_trace()
 
     # TRAIN LOOP
     while epoch < args.epochs:

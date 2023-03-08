@@ -43,6 +43,8 @@ def get_parser(parser=None):
                         help='path to checkpoint to resume from')
     parser.add_argument('--pretrained', type=str, default='',
                         help='path to checkpoint pretrained model')
+    parser.add_argument('--freeze', action='store_true',
+                        help='path to checkpoint pretrained model')
 
     # decentralized
     parser.add_argument('--n_nodes', type=int, nargs='+', default=[1],
