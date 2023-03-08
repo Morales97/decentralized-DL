@@ -12,7 +12,7 @@ def get_lr_scheduler(args, n_samples, opt):
     phases_steps_1 = [steps_per_epoch * phase for phase in args.lr_decay]                   # to use in SequentialLR
     phases_steps_2 = [steps_per_epoch * phase - warmup_steps for phase in args.lr_decay]    # to use in MultiStepLR
     
-    if not args.lr_scheduler:
+    if not args.lr_scheduler or args.lr_decay_as == 'constant':
         return lrs.ConstantLR(opt, 1, total_iters=0)        # NOTE to not interfere with outside tuning of LR
 
     if args.lr_decay_as == 'step':
@@ -38,6 +38,7 @@ def get_lr_scheduler(args, n_samples, opt):
         warmup = lrs.LinearLR(opt, start_factor=1e-8, end_factor=1, total_iters=warmup_steps) 
         linear = lrs.LinearLR(opt, start_factor=1, end_factor=args.final_lr/args.lr[0], total_iters=steps_per_epoch*args.lr_linear_decay_epochs)
         scheduler = lrs.SequentialLR(opt, [warmup, linear], milestones=phases_steps_1)
+    
     else:
         raise ValueError('LR decay type not supported')
 

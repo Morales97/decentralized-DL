@@ -150,8 +150,8 @@ def train(args, wandb):
             loss = F.cross_entropy(output, target)
             loss.backward()
             opt.step()
-            scheduler.step()    # NOTE could change scheduler to epoch-wise, which could simplify it (but complicate warmup...)
-            
+            scheduler.step()   
+            pdb.set_trace()
             pred = output.argmax(dim=1, keepdim=True)
             correct = pred.eq(target.view_as(pred)).sum().item()
             train_tracker.update('Student', correct, loss.item())
