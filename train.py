@@ -115,7 +115,7 @@ def train(args, wandb):
     step = 0
     epoch = 0
     max_acc = MultiAccuracyTracker(['Student', 'EMA', *args.alpha])
-    train_tracker = TrainMetricsTracker(['Student', *args.alpha], n_samples=n_samples)
+    train_tracker = TrainMetricsTracker(['Student', *args.alpha])
 
     # Load checkpoint
     if args.resume:
