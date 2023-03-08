@@ -141,9 +141,11 @@ def train(args, wandb):
     if args.pretrained:
         ckpt = torch.load(args.pretrained)
         state_dict = ckpt['state_dict']
-        state_dict.pop('fc.weight')
-        state_dict.pop('fc.bias')
+        model_sd = model.state_dict()
 
+        for key in state_dict:
+            if 'fc' in key:     # replace the last linear layer to fine-tune
+                state_dict[key] = model_sd[key]
         model.load_state_dict(ckpt['state_dict'])
         pdb.set_trace()
 
