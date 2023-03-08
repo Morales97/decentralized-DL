@@ -122,7 +122,8 @@ def train(args, wandb):
         ckpt = torch.load(args.resume)
         
         model.load_state_dict(ckpt['state_dict'])
-        ema_models[args.alpha[-1]].load_state_dict(ckpt['ema_state_dict'])  # TODO save and load other EMA
+        for alpha in args.alpha:
+            ema_models[alpha].load_state_dict(ckpt['ema_state_dict_' + str(alpha)])
         opt.load_state_dict(ckpt['optimizer'])
         
         scheduler_state = ckpt['scheduler'] # NOTE if changing the LR scheduler (e.g., choosing a different final_lr), need to overwrite certain keys in the scheduler state_dict
