@@ -110,6 +110,7 @@ class TrainMetricsTracker(object):
         self._correct = {}
         self._loss = {}
         self._n = {}
+        self._counter = {}
         for key in keys:
             self._reset(key)
 
@@ -117,15 +118,17 @@ class TrainMetricsTracker(object):
         self._correct[key] = 0
         self._loss[key] = 0
         self._n[key] = 0     
+        self._counter[key] = 0     
 
-    def update(self, key, correct, loss):
+    def update(self, key, correct, loss, n):
         self._correct[key] += correct
         self._loss[key] += loss
-        self._n[key] += 1
+        self._n[key] += n
+        self._counter[key] += 1
 
     def get(self, key):
         acc = self._correct[key] / self._n[key] * 100
-        loss = self._loss[key] / self._n[key]
+        loss = self._loss[key] / self._counter[key]
         self._reset(key)
 
         return acc, loss

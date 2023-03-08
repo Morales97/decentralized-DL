@@ -115,7 +115,7 @@ def train(args, wandb):
     step = 0
     epoch = 0
     max_acc = MultiAccuracyTracker(['Student', 'EMA', *args.alpha])
-    train_tracker = TrainMetricsTracker(['Student', *args.alpha])
+    train_tracker = TrainMetricsTracker(['Student', *args.alpha], n_samples=n_samples)
 
     # Load checkpoint
     if args.resume:
@@ -173,7 +173,7 @@ def train(args, wandb):
             
             pred = output.argmax(dim=1, keepdim=True)
             correct = pred.eq(target.view_as(pred)).sum().item()
-            train_tracker.update('Student', correct, loss.item())
+            train_tracker.update('Student', correct, loss.item(), input.shape[0])
 
             # EMA updates
             if len(args.alpha) > 0 and step % args.ema_period == 0:
