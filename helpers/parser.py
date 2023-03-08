@@ -95,8 +95,8 @@ def get_parser(parser=None):
                         help='learning rate')   
     parser.add_argument('--lr_decay', type=str, default='cosine',
                         help='type of lr decay (step/cosine/linear)')               
-    parser.add_argument('--lr_decay', type=int, nargs='+', default=[150, 225],
-                        help='decay lr by factor at the listed fractions of training')                                       
+    # parser.add_argument('--lr_decay', type=int, nargs='+', default=[150, 225],
+    #                     help='decay lr by factor at the listed fractions of training')                                       
     parser.add_argument('--lr_decay_factor', type=float, default=10,
                         help='lr decay factor') 
     parser.add_argument('--lr_warmup_epochs', type=int, default=5,
