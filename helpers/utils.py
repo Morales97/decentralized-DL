@@ -118,10 +118,10 @@ class TrainMetricsTracker(object):
         self._loss[key] = 0
         self._n[key] = 0     
 
-    def update(self, key, correct, loss, n):
+    def update(self, key, correct, loss):
         self._correct[key] += correct
         self._loss[key] += loss
-        self._n[key] += n
+        self._n[key] += 1
 
     def get(self, key):
         acc = self._correct[key] / self._n[key] * 100
@@ -131,7 +131,7 @@ class TrainMetricsTracker(object):
         return acc, loss
 
 
-def save_checkpoint(args, models, ema_models, opts, schedulers, epoch, step, name=None):
+def save_checkpoint(args, models, ema_models, opts, schedulers, epoch, step, name=None, best_alpha=None):
     if args.local_exec: return
 
     if not isinstance(models, list):
@@ -140,10 +140,13 @@ def save_checkpoint(args, models, ema_models, opts, schedulers, epoch, step, nam
             'step': step,
             'net': args.net,
             'state_dict': models.state_dict(),
-            'ema_state_dict': ema_models[args.alpha[-1]].state_dict(),
             'optimizer' : opts.state_dict(),
-            'scheduler': schedulers.state_dict()
+            'scheduler': schedulers.state_dict(),
         }
+        for alpha in ema_models.keys():
+            state['ema_state_dict' + str(alpha)] = ema_models[alpha].state_dict(),
+        if best_alpha:
+            state['best_alpha'] = best_alpha
         if name:
             torch.save(state, os.path.join(get_folder_name(args), f'checkpoint_{name}.pth.tar'))    
         else:

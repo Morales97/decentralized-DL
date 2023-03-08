@@ -143,6 +143,8 @@ def get_parser(parser=None):
                         help='evaluate L2 distance of model conensus every x number of steps')
     parser.add_argument('--eval_after_epoch', action='store_true',
                         help='evaluate after each epoch or at step evaluation interval')
+    parser.add_argument('--eval_on_test', type=boolfromstr, default=True,
+                        help='evaluate best models on test set')
     return parser 
 
 def check_assertions(args):

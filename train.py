@@ -153,7 +153,7 @@ def train(args, wandb):
             
             pred = output.argmax(dim=1, keepdim=True)
             correct = pred.eq(target.view_as(pred)).sum().item()
-            train_tracker.update('Student', correct, loss.item(), input.shape[0])
+            train_tracker.update('Student', correct, loss.item())
 
             # EMA updates
             if len(args.alpha) > 0 and step % args.ema_period == 0:
@@ -175,7 +175,7 @@ def train(args, wandb):
                         loss = F.cross_entropy(output, target)
                         pred = output.argmax(dim=1, keepdim=True)
                         correct = pred.eq(target.view_as(pred)).sum().item() 
-                        train_tracker.update(alpha, correct, loss.item(), input.shape[0])
+                        train_tracker.update(alpha, correct, loss.item())
 
             # Log train metrics
             if step % args.train_log_interval == 0:
@@ -213,7 +213,9 @@ def train(args, wandb):
                 ema_loss, ema_acc = evaluate_model(ema_models[alpha], val_loader, device)
                 logger.log_acc(step, epoch, ema_acc, ema_loss, name='EMA ' + str(alpha))
                 max_acc.update(ema_acc, ema_loss, alpha)
-                best_ema_acc = max(best_ema_acc, ema_acc)
+                if ema_acc > best_ema_acc:
+                    best_ema_acc = ema_acc
+                    best_alpha = alpha
                 best_ema_loss = min(best_ema_loss, ema_loss)
             max_acc.update(best_ema_acc, best_ema_loss, 'EMA')
             logger.log_acc(step, epoch, best_ema_acc, best_ema_loss, name='EMA')  
@@ -232,7 +234,7 @@ def train(args, wandb):
 
         # save checkpoint periodically
         if args.save_model and np.round(epoch).astype(int) % args.save_epoch_interval == 0:
-            save_checkpoint(args, model, ema_models, opt, scheduler, epoch, step, name='last')
+            save_checkpoint(args, model, ema_models, opt, scheduler, epoch, step, name='last', best_alpha=best_alpha)
 
             # save best checkpoints
             if max_acc.is_best_acc('Student'):
@@ -244,16 +246,35 @@ def train(args, wandb):
             if max_acc.is_best_loss('EMA'):
                 copy_checkpoint(args, new_name='best_ema_loss.pth.tar')
         
-    logger.log_single_acc(max_acc.get_acc('Student'), log_as='Max Accuracy')
-    logger.log_single_acc(max_acc.get_acc('EMA'), log_as='Max EMA Accuracy')
-
-    # Make a full pass over EMA and SWA models to update 
-    if epoch > args.epoch_swa:
-        update_bn_and_eval(swa_model, train_loader, val_loader, device, logger, log_name='SWA Acc (after BN)')
-
     # save avg_index
     if args.avg_index:
         torch.save(index.state_dict(), os.path.join(get_folder_name(args), f'index_{index._index._uuid}_{step}.pt'))
+
+    logger.log_single_acc(max_acc.get_acc('Student'), log_as='Max Val Accuracy')
+    logger.log_single_acc(max_acc.get_acc('EMA'), log_as='Max EMA Val Accuracy')
+
+    if epoch > args.epoch_swa:
+        update_bn_and_eval(swa_model, train_loader, val_loader, device, logger, log_name='SWA Acc (after BN)')
+
+    # eval best models on test set
+    if args.eval_on_test:
+        # student
+        ckpt = torch.load(os.path.join(get_folder_name(args), 'best_student_acc.pth.tar'))
+        model.load_state_dict(ckpt['state_dict'])
+        epoch = ckpt['epoch']
+        loss, acc = evaluate_model(model, test_loader, device)
+        logger.log_single_acc(acc, log_as='Max Test Accuracy')
+        print(f'Best student (not-averaged) model, from epoch {epoch} \tTest Accuracy: {acc} \tTest Loss: {loss}')
+        
+        # EMA
+        ckpt = torch.load(os.path.join(get_folder_name(args), 'best_ema_acc.pth.tar'))
+        alpha = ckpt['best_alpha']
+        model.load_state_dict(ckpt['ema_state_dict' + str(alpha)])
+        epoch = ckpt['epoch']
+        loss, acc = evaluate_model(model, test_loader, device)
+        logger.log_single_acc(acc, log_as='Max EMA Test Accuracy')
+        print(f'Best EMA model, alpha={alpha} at epoch {epoch} \tTest Accuracy: {acc} \tTest Loss: {loss}')
+
 
 if __name__ == '__main__':
     args = parse_args()
