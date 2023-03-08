@@ -93,7 +93,7 @@ def get_parser(parser=None):
                         help='batch size for a single node')
     parser.add_argument('--lr', type=float, nargs='+', default=[0.2],
                         help='learning rate')   
-    parser.add_argument('--lr_decay_as', type=str, default='cosine',
+    parser.add_argument('--lr_decay', type=str, default='cosine',
                         help='type of lr decay (step/cosine/linear)')               
     parser.add_argument('--lr_decay', type=int, nargs='+', default=[150, 225],
                         help='decay lr by factor at the listed fractions of training')                                       

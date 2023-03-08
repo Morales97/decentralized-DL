@@ -12,10 +12,10 @@ def get_lr_scheduler(args, n_samples, opt):
     phases_steps_1 = [steps_per_epoch * phase for phase in args.lr_decay]                   # to use in SequentialLR
     phases_steps_2 = [steps_per_epoch * phase - warmup_steps for phase in args.lr_decay]    # to use in MultiStepLR
     
-    if not args.lr_scheduler or args.lr_decay_as == 'constant':
+    if not args.lr_scheduler or args.lr_decay == 'constant':
         return lrs.ConstantLR(opt, 1, total_iters=0)        # NOTE to not interfere with outside tuning of LR
 
-    if args.lr_decay_as == 'step':
+    if args.lr_decay == 'step':
         # warmup + (linear decay + constant) x times
         if args.lr_linear_decay_epochs > 0:
             lr_factors = [gamma**i for i in range(len(phases_steps_1)+1)]
@@ -30,11 +30,11 @@ def get_lr_scheduler(args, n_samples, opt):
             warmup = lrs.LinearLR(opt, start_factor=1e-8, end_factor=1, total_iters=warmup_steps)    
             multistep = lrs.MultiStepLR(opt, milestones=phases_steps_2, gamma=1/args.lr_decay_factor)   
             scheduler = lrs.SequentialLR(opt, [warmup, multistep], milestones=[warmup_steps])
-    elif args.lr_decay_as == 'cosine':
+    elif args.lr_decay == 'cosine':
         warmup = lrs.LinearLR(opt, start_factor=1e-8, end_factor=1, total_iters=warmup_steps)  
         cosine = lrs.CosineAnnealingLR(opt, steps_per_epoch * args.epochs - warmup_steps)
         scheduler = lrs.SequentialLR(opt, [warmup, cosine], milestones=[warmup_steps])
-    elif args.lr_decay_as == 'linear':
+    elif args.lr_decay == 'linear':
         warmup = lrs.LinearLR(opt, start_factor=1e-8, end_factor=1, total_iters=warmup_steps) 
         linear = lrs.LinearLR(opt, start_factor=1, end_factor=args.final_lr/args.lr[0], total_iters=steps_per_epoch*args.lr_linear_decay_epochs)
         scheduler = lrs.SequentialLR(opt, [warmup, linear], milestones=phases_steps_1)

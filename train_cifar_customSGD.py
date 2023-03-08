@@ -468,7 +468,7 @@ if __name__ == '__main__':
     else:
         train(args, None)
 
-# python train_cifar_customSGD.py --wandb=False --local_exec=True --opt=customSGD --variant=2 --custom_a=0.1 --custom_b=0.5 --epochs=50 --lr=0.1 --lr_warmup_epochs=0 --lr_decay_as=step --lr_decay=50 --net=rn20
+# python train_cifar_customSGD.py --wandb=False --local_exec=True --opt=customSGD --variant=2 --custom_a=0.1 --custom_b=0.5 --epochs=50 --lr=0.1 --lr_warmup_epochs=0 --lr_decay=step --lr_decay=50 --net=rn20
 
 # python train_cifar_customSGD.py --wandb=False --expt_name=new_a0_b1 --project=MLO-optimizer --opt=customSGD --momentum=0.9 --custom_a=0.1 --custom_b=0.5 --lr=0.1 --epochs=50 --lr_decay=100 --lr_warmup_epochs=0 --net=rn18
 # python train_cifar_customSGD.py --wandb=False --expt_name=SGD --project=MLO-optimizer --momentum=0 --nesterov=False --wd=0 --lr=0.1 --epochs=50 --lr_decay=100 --lr_warmup_epochs=0 --net=rn18

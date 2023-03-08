@@ -130,7 +130,7 @@ def train(args, wandb):
         if 'prn164_SWA' in args.expt_name:
             scheduler_state['_schedulers'][1]['end_factor'] = args.final_lr / args.lr[0]   # NOTE change the end LR. Ad-hoc for SWA experiments
 
-        if args.lr_decay_as == 'constant':
+        if args.lr_decay == 'constant':
             scheduler = torch.optim.lr_scheduler.ConstantLR(opt, factor=1, total_iters=0)   # Keep current LR in opt constant
         else:
             scheduler.load_state_dict(scheduler_state)  # continue training with same LR schedule
@@ -149,8 +149,10 @@ def train(args, wandb):
         model.load_state_dict(ckpt['state_dict'])
         
         if args.freeze:
-            for param in model.parameters():
-                pdb.set_trace()
+            for param in model.parameters():        # Freeze all layers
+                param.requires_grad = False
+            for param in model.fc.parameters():     # Unfreeze last linear layer
+                param.requires_grad = True
 
     # TRAIN LOOP
     while epoch < args.epochs:

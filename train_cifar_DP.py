@@ -447,5 +447,5 @@ if __name__ == '__main__':
         train(args, None)
 
 # python train_cifar_DP.py --dataset=cifar10 --wandb=False --alpha 0.999 0.995 --net=vgg16
-# python train_cifar_DP.py --dataset=cifar10 --expt_name=vgg_DP --alpha 0.999 0.995 --net=vgg16 --epochs=100 --lr_decay_as=cosine
+# python train_cifar_DP.py --dataset=cifar10 --expt_name=vgg_DP --alpha 0.999 0.995 --net=vgg16 --epochs=100 --lr_decay=cosine
 
