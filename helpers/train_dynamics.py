@@ -62,6 +62,7 @@ def JS_div(logits1, logits2):
     loss = 0.0
     loss += F.kl_div(F.log_softmax(probs1, dim=0), total_m, reduction="batchmean") 
     loss += F.kl_div(F.log_softmax(probs2, dim=0), total_m, reduction="batchmean") 
+    pdb.set_trace()
     return loss / 2
 
 @torch.no_grad()
@@ -113,8 +114,8 @@ def get_prediction_disagreement_and_correctness(model1, model2, loader, device, 
     if disagreement_fine:
         results['correct-correct'] = correct_correct/len(loader.dataset)*100
         results['correct-incorrect'] = correct_incorrect/len(loader.dataset)*100
-        results['incorrect-icorrect-same'] = incorrect_incorrect_same/len(loader.dataset)*100
-        results['incorrect-icorrect-different'] = incorrect_incorrect_different/len(loader.dataset)*100
+        results['incorrect-incorrect-same'] = incorrect_incorrect_same/len(loader.dataset)*100
+        results['incorrect-incorrect-different'] = incorrect_incorrect_different/len(loader.dataset)*100
 
     pdb.set_trace()
     return distance/len(loader.dataset), (1-agree_count/len(loader.dataset))*100, correct_correct/len(loader.dataset)*100, correct_incorrect/len(loader.dataset)*100, incorrect_incorrect_same/len(loader.dataset)*100, incorrect_incorrect_different/len(loader.dataset)*100
