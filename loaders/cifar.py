@@ -114,7 +114,7 @@ def get_cifar(args, root, batch_size, val_fraction, iid=False, fraction=-1, nois
             traindata_split = data.random_split(
                 traindata, [int(traindata.data.shape[0] / args.n_nodes[0]) for _ in range(args.n_nodes[0])])
             train_loader = [data.DataLoader(
-                x, batch_size=batch_size, shuffle=True, drop_last=True) for x in traindata_split]
+                x, batch_size=batch_size, shuffle=True) for x in traindata_split]
 
     val_loader, test_loader = get_cifar_test(args, root, val_fraction)
     return train_loader, val_loader, test_loader
