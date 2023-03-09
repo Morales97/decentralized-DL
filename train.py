@@ -280,7 +280,7 @@ def train(args, wandb):
         update_bn_and_eval(swa_model, train_loader, val_loader, device, logger, log_name='SWA Acc (after BN)')
 
     # eval best models on test set
-    if args.eval_on_test:
+    if args.eval_on_test and args.val_fraction > 0:
         # student
         ckpt = torch.load(os.path.join(get_folder_name(args), 'best_student_acc.pth.tar'))
         model.load_state_dict(ckpt['state_dict'])
@@ -297,6 +297,9 @@ def train(args, wandb):
         loss, acc = evaluate_model(model, test_loader, device)
         logger.log_single_acc(acc, log_as='Max EMA Test Accuracy')
         print(f'Best EMA model, alpha={alpha} at epoch {ckpt["epoch"]:.2f} \tTest Accuracy: {acc} \tTest Loss: {loss:.3f}')
+
+        # SWA
+        update_bn_and_eval(swa_model, train_loader, test_loader, device, logger, log_name='SWA Acc (after BN)')
 
 
 if __name__ == '__main__':
