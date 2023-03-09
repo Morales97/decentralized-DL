@@ -53,17 +53,16 @@ def get_prediction_disagreement(model1, model2, loader, device):
         agree_count += pred1.eq(pred2).sum().item()
     return distance/len(loader.dataset), 1-agree_count/len(loader.dataset)
 
-def JS_div(logits1, logits2):
+def JS_div(logits1, logits2, eps=1e-8):
     probs1 = F.softmax(logits1, dim=0)
     probs2 = F.softmax(logits2, dim=0)
     
-    total_m = (probs1 + probs2) / 2
-    
-    loss = 0.0
-    loss += F.kl_div(F.log_softmax(probs1, dim=0), total_m, reduction="batchmean") 
-    loss += F.kl_div(F.log_softmax(probs2, dim=0), total_m, reduction="batchmean") 
+    m = (probs1 + probs2)/2
+    kl1 = F.kl_div((probs1 + eps).log(), m, reduction='batchmean')   
+    kl2 = F.kl_div((probs2 + eps).log(), m, reduction='batchmean')
+    loss = (kl1 + kl2)/2
     pdb.set_trace()
-    return loss / 2
+    return loss
 
 @torch.no_grad()
 def get_prediction_disagreement_and_correctness(model1, model2, loader, device, l2=True, jensen_shannon=True, disagreement=True, disagreement_fine=False):
