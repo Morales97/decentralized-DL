@@ -53,8 +53,19 @@ def get_prediction_disagreement(model1, model2, loader, device):
         agree_count += pred1.eq(pred2).sum().item()
     return distance/len(loader.dataset), 1-agree_count/len(loader.dataset)
 
+def JS_div(logits1, logits2):
+    probs1 = F.softmax(logits1, dim=0)
+    probs2 = F.softmax(logits2, dim=0)
+    
+    total_m = (probs1 + probs2) / 2
+    
+    loss = 0.0
+    loss += F.kl_div(F.log_softmax(probs1, dim=0), total_m, reduction="batchmean") 
+    loss += F.kl_div(F.log_softmax(probs2, dim=0), total_m, reduction="batchmean") 
+    return loss / 2
+
 @torch.no_grad()
-def get_prediction_disagreement_and_correctness(model1, model2, loader, device):
+def get_prediction_disagreement_and_correctness(model1, model2, loader, device, l2=True, jensen_shannon=True, disagreement=True, disagreement_fine=False):
     '''
     also check if predictions agreed/disagreed where correct
     '''
@@ -62,32 +73,50 @@ def get_prediction_disagreement_and_correctness(model1, model2, loader, device):
     model2.eval()
     agree_count = 0
     distance = 0
+    js_div = 0
     correct_correct = 0
     correct_incorrect = 0
     incorrect_incorrect_same = 0
     incorrect_incorrect_different = 0
+    results = {}
 
     for data, target in loader:
         data, target = data.to(device), target.to(device)
         output1 = model1(data)
         output2 = model2(data)
-        distance += torch.linalg.norm((output1 - output2), dim=1).sum()  # Using L2 norm as distance. Could also use JS
+        if l2:
+            distance += torch.linalg.norm((output1 - output2), dim=1).sum()  # Using L2 norm as distance. Could also use JS
+        if jensen_shannon:
+            js_div += JS_div(output1, output2)
 
-        pred1 = output1.argmax(dim=1, keepdim=True)
-        pred2 = output2.argmax(dim=1, keepdim=True)
+        if disagreement:
+            pred1 = output1.argmax(dim=1, keepdim=True)
+            pred2 = output2.argmax(dim=1, keepdim=True)
 
-        agree_count += pred1.eq(pred2).sum().item()
-        
-        agreed = pred1.eq(pred2)
-        agreed_correct = pred1[agreed].eq(target.view_as(pred1)[agreed]).sum().item()
-        correct_correct += agreed_correct
-        incorrect_incorrect_same += agreed.sum().item() - agreed_correct
+            agree_count += pred1.eq(pred2).sum().item()
+            
+        if disagreement_fine:
+            agreed = pred1.eq(pred2)
+            agreed_correct = pred1[agreed].eq(target.view_as(pred1)[agreed]).sum().item()
+            correct_correct += agreed_correct
+            incorrect_incorrect_same += agreed.sum().item() - agreed_correct
 
-        disagreed = ~pred1.eq(pred2)
-        disagreed_correct = pred1[disagreed].eq(target.view_as(pred1)[disagreed]).sum().item() + pred2[disagreed].eq(target.view_as(pred2)[disagreed]).sum().item()
-        correct_incorrect += disagreed_correct
-        incorrect_incorrect_different += disagreed.sum().item() - disagreed_correct
+            disagreed = ~pred1.eq(pred2)
+            disagreed_correct = pred1[disagreed].eq(target.view_as(pred1)[disagreed]).sum().item() + pred2[disagreed].eq(target.view_as(pred2)[disagreed]).sum().item()
+            correct_incorrect += disagreed_correct
+            incorrect_incorrect_different += disagreed.sum().item() - disagreed_correct
 
+    if l2:
+        results['L2'] = distance/len(loader.dataset)
+    if disagreement:
+        results['disagreement'] = (1-agree_count/len(loader.dataset))*100
+    if disagreement_fine:
+        results['correct-correct'] = correct_correct/len(loader.dataset)*100
+        results['correct-incorrect'] = correct_incorrect/len(loader.dataset)*100
+        results['incorrect-icorrect-same'] = incorrect_incorrect_same/len(loader.dataset)*100
+        results['incorrect-icorrect-different'] = incorrect_incorrect_different/len(loader.dataset)*100
+
+    pdb.set_trace()
     return distance/len(loader.dataset), (1-agree_count/len(loader.dataset))*100, correct_correct/len(loader.dataset)*100, correct_incorrect/len(loader.dataset)*100, incorrect_incorrect_same/len(loader.dataset)*100, incorrect_incorrect_different/len(loader.dataset)*100
 
 def get_train_metrics(args, folder_path):
