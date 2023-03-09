@@ -5,7 +5,6 @@ import numpy as np
 import os
 import sys
 
-from model.resnet import resnet50
 sys.path.insert(0, os.path.join(sys.path[0], '..'))
 from helpers.parser import parse_args
 from avg_index.search_avg import get_avg_model
