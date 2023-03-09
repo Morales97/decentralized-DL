@@ -76,7 +76,7 @@ if __name__ == '__main__':
             
             results = get_agreement_metrics(model_i, model_j, test_loader, device)
             pred_distance[i,j] = results['L2']
-            pred_js_div[i,j] = results['JS_div'], 3
+            pred_js_div[i,j] = results['JS_div']
             pred_disagreement[i,j] = results['disagreement']
             # corr_corr[i,j] = results['correct-correct']
             # incorr_corr[i,j] = results['correct-incorrect']
