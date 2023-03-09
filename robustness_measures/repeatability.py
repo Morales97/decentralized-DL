@@ -4,13 +4,15 @@ import numpy as np
 
 import os
 import sys
+
+from model.resnet import resnet50
 sys.path.insert(0, os.path.join(sys.path[0], '..'))
 from helpers.parser import parse_args
 from avg_index.search_avg import get_avg_model
 from model.model import get_model
 from loaders.data import get_data, ROOT_CLUSTER
 from helpers.evaluate import evaluate_model, eval_ensemble
-from helpers.train_dynamics import get_prediction_disagreement, get_prediction_disagreement_and_correctness
+from helpers.train_dynamics import get_agreement_metrics
 import argparse
 import pdb
 
@@ -55,6 +57,7 @@ if __name__ == '__main__':
 
     pred_disagreement = np.zeros((len(models), len(models)))
     pred_distance = np.zeros((len(models), len(models)))
+    pred_js_div = np.zeros((len(models), len(models)))
     corr_corr = np.zeros((len(models), len(models)))
     incorr_corr = np.zeros((len(models), len(models)))
     incorr_incorr_same = np.zeros((len(models), len(models)))
@@ -70,9 +73,17 @@ if __name__ == '__main__':
 
         for j, model_j in enumerate(models[i+1:]):
             j = j+i+1
-            #pred_distance[i,j], pred_disagreement[i,j] = get_prediction_disagreement(model_i, model_j, test_loader, device)
-            pred_distance[i,j], pred_disagreement[i,j], corr_corr[i,j], incorr_corr[i,j], incorr_incorr_same[i,j], incorr_incorr_diff[i,j] = get_prediction_disagreement_and_correctness(model_i, model_j, test_loader, device)
-            pred_distance[j,i], pred_disagreement[j,i] = pred_distance[i,j], pred_disagreement[i,j]
+            
+            results = get_agreement_metrics(model_i, model_j, test_loader, device)
+            pred_distance[i,j] = results['L2']
+            pred_js_div[i,j] = results['JS']
+            pred_disagreement[i,j] = results['disagreement']
+            # corr_corr[i,j] = results['correct-correct']
+            # incorr_corr[i,j] = results['correct-incorrect']
+            # incorr_incorr_same[i,j] = results['incorrect-incorrect-same']
+            # incorr_incorr_diff[i,j] = results['incorrect-incorrect-different']
+
+            
 
     print('\n ~~~ Prediction disagreement ~~~')
     print('Fraction of test samples prediction with a different class')
@@ -82,18 +93,22 @@ if __name__ == '__main__':
     print('Average L2 norm of (prob1 - prob2) in test samples')
     print(pred_distance)
 
-    print('\nCorrect-Correct')
-    print(corr_corr)
-    print('Incorrect-Correct')
-    print(incorr_corr)
-    print('Incorrect-Incorrect, same prediction')
-    print(incorr_incorr_same)
-    print('Incorrect-Incorrect, different prediction')
-    print(incorr_incorr_diff)
+    print('\n ~~~ Prediction JS divergence ~~~')
+    print('Average JS divergence of (prob1 - prob2) in test samples')
+    print(pred_js_div)
+
+    # print('\nCorrect-Correct')
+    # print(corr_corr)
+    # print('Incorrect-Correct')
+    # print(incorr_corr)
+    # print('Incorrect-Incorrect, same prediction')
+    # print(incorr_incorr_same)
+    # print('Incorrect-Incorrect, different prediction')
+    # print(incorr_incorr_diff)
 
 
 # python robustness_measures/repeatability.py --net=rn18 --dataset=cifar100 --resume=/mloraw1/danmoral/checkpoints/C4.3_lr0.8_cosine/checkpoint_m0_117001.pth.tar --resume2=/mloraw1/danmoral/checkpoints/C4.3_lr0.8_cosine_1/checkpoint_m0_117001.pth.tar --resume3=/mloraw1/danmoral/checkpoints/C4.3_lr0.8_cosine_2/checkpoint_m0_117001.pth.tar
-# python robustness_measures/repeatability.py --net=rn18 --dataset=cifar100 --resume=/mloraw1/danmoral/checkpoints/cifar100/rn18/search_0.8_s1/best_student_acc.pth.tar --resume2=/mloraw1/danmoral/checkpoints/cifar100/rn18/search_0.8_s1/best_student_acc.pth.tar --resume3=/mloraw1/danmoral/checkpoints/cifar100/rn18/search_0.8_s2/best_student_acc.pth.tar
+# python robustness_measures/repeatability.py --net=rn18 --dataset=cifar100 --resume=/mloraw1/danmoral/checkpoints/cifar100/rn18/search_0.8_s0/best_student_acc.pth.tar --resume2=/mloraw1/danmoral/checkpoints/cifar100/rn18/search_0.8_s1/best_student_acc.pth.tar --resume3=/mloraw1/danmoral/checkpoints/cifar100/rn18/search_0.8_s2/best_student_acc.pth.tar
 # python robustness_measures/repeatability.py --net=rn18 --dataset=cifar100 --resume=/mloraw1/danmoral/checkpoints/C4.3_lr0.8_cosine/checkpoint_m0_60841.pth.tar --resume2=/mloraw1/danmoral/checkpoints/C4.3_lr0.8_cosine_1/checkpoint_m0_60841.pth.tar --resume3=/mloraw1/danmoral/checkpoints/C4.3_lr0.8_cosine_2/checkpoint_m0_60841.pth.tar --load_ema
 # python robustness_measures/repeatability.py --net=rn18 --dataset=cifar100 --resume=/mloraw1/danmoral/checkpoints/C4.3_lr0.8_cosine/checkpoint_m0_88921.pth.tar --resume2=/mloraw1/danmoral/checkpoints/C4.3_lr0.8_cosine_1/checkpoint_m0_88921.pth.tar --resume3=/mloraw1/danmoral/checkpoints/C4.3_lr0.8_cosine_2/checkpoint_m0_88921.pth.tar --load_ema
 # python robustness_measures/repeatability.py --net=rn18 --dataset=cifar100 --resume=/mloraw1/danmoral/checkpoints/C4.3_lr0.8_cosine/checkpoint_m0_60841.pth.tar --resume2=/mloraw1/danmoral/checkpoints/C4.3_lr0.8_cosine_1/checkpoint_m0_88921.pth.tar --resume3=/mloraw1/danmoral/checkpoints/C4.3_lr0.8_cosine_2/checkpoint_m0_117001.pth.tar --load_ema

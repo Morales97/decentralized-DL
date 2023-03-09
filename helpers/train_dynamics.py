@@ -65,7 +65,7 @@ def JS_div(logits1, logits2, eps=1e-8):
     return loss
 
 @torch.no_grad()
-def get_prediction_disagreement_and_correctness(model1, model2, loader, device, l2=True, jensen_shannon=True, disagreement=True, disagreement_fine=False):
+def get_agreement_metrics(model1, model2, loader, device, l2=True, jensen_shannon=True, disagreement=True, disagreement_fine=False):
     '''
     also check if predictions agreed/disagreed where correct
     '''
@@ -108,6 +108,8 @@ def get_prediction_disagreement_and_correctness(model1, model2, loader, device, 
 
     if l2:
         results['L2'] = distance/len(loader.dataset)
+    if js:
+        results['JS_div'] = js_div/len(loader)
     if disagreement:
         results['disagreement'] = (1-agree_count/len(loader.dataset))*100
     if disagreement_fine:
@@ -116,8 +118,7 @@ def get_prediction_disagreement_and_correctness(model1, model2, loader, device, 
         results['incorrect-incorrect-same'] = incorrect_incorrect_same/len(loader.dataset)*100
         results['incorrect-incorrect-different'] = incorrect_incorrect_different/len(loader.dataset)*100
 
-    pdb.set_trace()
-    return distance/len(loader.dataset), (1-agree_count/len(loader.dataset))*100, correct_correct/len(loader.dataset)*100, correct_incorrect/len(loader.dataset)*100, incorrect_incorrect_same/len(loader.dataset)*100, incorrect_incorrect_different/len(loader.dataset)*100
+    return results
 
 def get_train_metrics(args, folder_path):
     # Get checkpoints of experiment
@@ -125,7 +126,7 @@ def get_train_metrics(args, folder_path):
     ckpt_steps, file_root = get_ckpt_steps(ckpt_files)
 
     # data
-    _, _, test_loader = get_data(args, batch_size=100)
+    _, _, test_loader = get_data(args, batch_size=100, val_fraction=args.val_fraction)
 
     # init
     cosine_similarities = np.zeros((len(ckpt_steps), len(ckpt_steps))) 
