@@ -139,7 +139,6 @@ def get_cifar(args, root, batch_size, val_fraction, iid=False, fraction=-1, nois
             data_split = data.random_split(traindata, [n_samples, len(traindata)-n_samples], generator=torch.Generator().manual_seed(42))     # NOTE manual seed fixed for reproducible results
             train_loader = data.DataLoader(data_split[0], batch_size=batch_size, shuffle=True)     
             val_loader = data.DataLoader(data_split[1], batch_size=batch_size, shuffle=False)    
-            pdb.set_trace() 
         else:
             train_loader = data.DataLoader(traindata, batch_size=batch_size, shuffle=True)     
             val_loader = test_loader
