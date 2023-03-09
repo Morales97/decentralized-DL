@@ -61,7 +61,6 @@ def JS_div(logits1, logits2, eps=1e-8):
     kl1 = F.kl_div((probs1 + eps).log(), m, reduction='batchmean')   
     kl2 = F.kl_div((probs2 + eps).log(), m, reduction='batchmean')
     loss = (kl1 + kl2)/2
-    pdb.set_trace()
     return loss
 
 @torch.no_grad()
