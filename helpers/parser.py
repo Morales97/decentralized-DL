@@ -127,7 +127,7 @@ def get_parser(parser=None):
                         help='Label skew for heterogeneity. Requires --data_split True.')    
     parser.add_argument('--data_fraction', type=float, default=-1,
                         help='Set between 0 and 1 to use a random subset of dataset with selected fraction of samples')
-    parser.add_argument('--val_fraction', type=float, default=0.5,
+    parser.add_argument('--val_fraction', type=float, default=0.2,
                         help='Fraction for val/test split of test set')
     parser.add_argument('--viz_weights', action='store_true',
                         help='For Logistic regression, viz weights for each class')

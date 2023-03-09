@@ -401,9 +401,9 @@ def train(args, wandb):
     if args.save_final_model:
         save_checkpoint(args, models, ema_models, opts, schedulers, epoch, step)
         
-    logger.log_single_acc(max_acc.get('Student'), log_as='Max Accuracy')
-    logger.log_single_acc(max_acc.get('EMA'), log_as='Max EMA Accuracy')
-    # logger.log_single_acc(max_acc.get('MA'), log_as='Max MA Accuracy')
+    logger.log_single(max_acc.get('Student'), log_as='Max Accuracy')
+    logger.log_single(max_acc.get('EMA'), log_as='Max EMA Accuracy')
+    # logger.log_single(max_acc.get('MA'), log_as='Max MA Accuracy')
 
     # Make a full pass over EMA and SWA models to update 
     if epoch > args.epoch_swa:

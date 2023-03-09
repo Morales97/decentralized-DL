@@ -391,8 +391,8 @@ def main_worker(gpu, ngpus_per_node, args, wandb):
                 'scheduler' : scheduler.state_dict()
             }, is_best)
 
-    logger.log_single_acc(best_acc1, log_as='Max Top-1 Accuracy')
-    logger.log_single_acc(ema_best_acc1, log_as='Max EMA Top-1 Accuracy')
+    logger.log_single(best_acc1, log_as='Max Top-1 Accuracy')
+    logger.log_single(ema_best_acc1, log_as='Max EMA Top-1 Accuracy')
 
 
 def train(train_loader, model, scaler, criterion, optimizer, ema_model, ema_optimizer, epoch, device, args, logger, step, ts_start):

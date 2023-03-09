@@ -154,7 +154,7 @@ class Logger:
             log[name + ' Test Accuracy'] = acc
             if loss is not None:
                 log[name + ' Test loss'] =  loss
-                
+
         if self.wandb: self.wandb.log(log)
 
     def log_acc_IN(self, step, epoch, acc1, acc5, name='placeholder'):
@@ -166,11 +166,9 @@ class Logger:
         }
         if self.wandb: self.wandb.log(log)
 
-    def log_single_acc(self, acc, log_as='placeholder'):
-        if acc < 1:
-            acc *= 100
+    def log_single(self, value, log_as='placeholder'):
         log = {
-            log_as: acc,
+            log_as: value,
         }
         if self.wandb: self.wandb.log(log)
 

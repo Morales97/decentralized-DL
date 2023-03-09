@@ -124,7 +124,7 @@ def update_bn_and_eval(model, train_loader, test_loader, device, logger, log_nam
     _model = deepcopy(model)
     update_bn(args, train_loader, _model, device)
     _, acc = evaluate_model(_model, test_loader, device)
-    logger.log_single_acc(acc, log_as=log_name)
+    logger.log_single(acc, log_as=log_name)
     print(log_name + ' Accuracy: %.2f' % acc)
 
 ########################################################################################
@@ -403,10 +403,10 @@ def train(args, wandb):
     # if args.save_final_model:
     #     save_checkpoint(args, models, ema_models, opts, schedulers, epoch, step)
         
-    logger.log_single_acc(max_acc.get('Student'), log_as='Max Accuracy')
-    logger.log_single_acc(max_acc.get('EMA'), log_as='Max EMA Accuracy')
-    logger.log_single_acc(max_acc.get('Late EMA'), log_as='Max Late EMA Accuracy')
-    # logger.log_single_acc(max_acc.get('MA'), log_as='Max MA Accuracy')
+    logger.log_single(max_acc.get('Student'), log_as='Max Accuracy')
+    logger.log_single(max_acc.get('EMA'), log_as='Max EMA Accuracy')
+    logger.log_single(max_acc.get('Late EMA'), log_as='Max Late EMA Accuracy')
+    # logger.log_single(max_acc.get('MA'), log_as='Max MA Accuracy')
 
     # Make a full pass over EMA and SWA models to update 
     # if epoch > args.epoch_swa:

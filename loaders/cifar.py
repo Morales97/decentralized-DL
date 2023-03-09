@@ -7,8 +7,40 @@ import torch
 import torch.utils.data as data
 
 
-def get_cifar_test(args, root, val=0, batch_size=100):
+def get_cifar_test(args, root, batch_size=100):
     '''
+    Get CIFAR test set. 
+    If val > 0, split into validation and test
+    '''
+
+    # decide normalize parameter.
+    if args.dataset == "cifar10":
+        dataset_loader = datasets.CIFAR10
+        normalize = transforms.Normalize(
+            (0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010)
+        )
+    elif args.dataset == "cifar100":
+        dataset_loader = datasets.CIFAR100
+        normalize = transforms.Normalize(
+            (0.5071, 0.4867, 0.4408), (0.2675, 0.2565, 0.2761)
+        )
+
+    transform = transforms.Compose([transforms.ToTensor(), normalize])
+    
+    dataset = dataset_loader(
+        root=root,
+        train=False,
+        transform=transform,
+        download=True,
+    )
+
+    test_loader = data.DataLoader(dataset, batch_size=batch_size, shuffle=False)     
+    return test_loader, None    # NOTE will return test_loader in slot of val_loader, to use it for evaluation during training
+
+
+def get_cifar_val_test(args, root, val=0, batch_size=100):
+    '''
+    DEPRECATED
     Get CIFAR test set. 
     If val > 0, split into validation and test
     '''
@@ -43,8 +75,7 @@ def get_cifar_test(args, root, val=0, batch_size=100):
         return val_loader, test_loader
     else:
         test_loader = data.DataLoader(dataset, batch_size=batch_size, shuffle=False)     
-        return test_loader, None    # NOTE will return test_loader in slot of val_loader, to use it for evaluation during training
-
+        return None, test_loader
 
 
 def get_cifar(args, root, batch_size, val_fraction, iid=False, fraction=-1, noisy=False):
@@ -52,6 +83,7 @@ def get_cifar(args, root, batch_size, val_fraction, iid=False, fraction=-1, nois
     Return CIFAR-10 or CIFAR-100 data loaders
     Optionally, return a subset (if fraction in [0,1])
     '''
+    assert not (args.n_nodes[0] > 1 and val_fraction > 0), 'validation set for decentralized case not implemented'
 
     # decide normalize parameter.
     if args.dataset == "cifar10":
@@ -82,6 +114,8 @@ def get_cifar(args, root, batch_size, val_fraction, iid=False, fraction=-1, nois
         download=True,
     )
 
+    test_loader = get_cifar_test(args, root)
+
     # Optionally add label noise (CIFAR-100N from http://noisylabels.com/, 40% noisy labels)
     if noisy:
         if args.dataset == 'cifar10':
@@ -96,28 +130,33 @@ def get_cifar(args, root, batch_size, val_fraction, iid=False, fraction=-1, nois
     if fraction > 0:
         assert fraction < 1
         n_samples = int(np.floor(len(traindata) * fraction))
-        traindata_split = data.random_split(traindata, [n_samples, len(traindata)-n_samples], generator=torch.Generator().manual_seed(42))     # manual seed fixed for reproducible results
-        # sampler = data.RandomSampler(traindata_split[0], replacement=True, num_samples=batch_size)  # to sample with replacement (IID)
-        # train_loader = data.DataLoader(traindata_split[0], sampler=sampler, batch_size=batch_size)
-        train_loader = [data.DataLoader(traindata_split[0], batch_size=batch_size, shuffle=True)]     # sample without replacement
+        traindata = data.random_split(traindata, [n_samples, len(traindata)-n_samples], generator=torch.Generator().manual_seed(42))     # reduce size of traindata
 
+    if args.n_nodes[0] == 1:
+        if val_fraction > 0:
+            n_samples = int(np.floor(len(traindata) * (1-val_fraction)))
+            print(f'Splitting training set into train/val, with {n_samples}/{len(traindata)-n_samples} samples respectively')
+            data_split = data.random_split(traindata, [n_samples, len(traindata)-n_samples], generator=torch.Generator().manual_seed(42))     # NOTE manual seed fixed for reproducible results
+            train_loader = data.DataLoader(data_split[0], batch_size=batch_size, shuffle=True)     
+            val_loader = data.DataLoader(data_split[1], batch_size=batch_size, shuffle=False)    
+            pdb.set_trace() 
+        else:
+            train_loader = data.DataLoader(traindata, batch_size=batch_size, shuffle=True)     
+            val_loader = test_loader
 
-    # Use full CIFAR
-    else:
+    else:   # decentralized. Note that train_loaders come in a list
+        val_loader = test_loader
         if iid:
-            sampler = data.RandomSampler(
-                traindata, replacement=True, num_samples=batch_size)
-            train_loader = data.DataLoader(
-                traindata, sampler=sampler, batch_size=batch_size)
+            sampler = data.RandomSampler(traindata, replacement=True, num_samples=batch_size)
+            train_loader = data.DataLoader(traindata, sampler=sampler, batch_size=batch_size)
         else:
             # split train dataset
-            traindata_split = data.random_split(
-                traindata, [int(traindata.data.shape[0] / args.n_nodes[0]) for _ in range(args.n_nodes[0])])
-            train_loader = [data.DataLoader(
-                x, batch_size=batch_size, shuffle=True) for x in traindata_split]
+            traindata_split = data.random_split(traindata, [int(traindata.data.shape[0] / args.n_nodes[0]) for _ in range(args.n_nodes[0])])
+            train_loader = [data.DataLoader(x, batch_size=batch_size, shuffle=True) for x in traindata_split]
 
-    val_loader, test_loader = get_cifar_test(args, root, val_fraction)
     return train_loader, val_loader, test_loader
+
+
 
 def get_cifar_filtered_samples(args, root, teacher_model, samples_selected=None):
     '''

@@ -77,7 +77,6 @@ def train(args, wandb):
 
     # data
     train_loader, val_loader, test_loader = get_data(args, args.batch_size[0], args.data_fraction, args.val_fraction)
-    train_loader = train_loader[0]
     n_samples = len(train_loader.dataset)
 
     # init model
@@ -276,30 +275,39 @@ def train(args, wandb):
     if args.avg_index:
         torch.save(index.state_dict(), os.path.join(get_folder_name(args), f'index_{index._index._uuid}_{step}.pt'))
 
-    logger.log_single_acc(max_acc.get_acc('Student'), log_as='Max Val Accuracy')
-    logger.log_single_acc(max_acc.get_acc('EMA'), log_as='Max EMA Val Accuracy')
+    logger.log_single(max_acc.get_acc('Student'), log_as='Max Val Accuracy')
+    logger.log_single(max_acc.get_acc('EMA'), log_as='Max EMA Val Accuracy')
 
     if epoch > args.epoch_swa:
         update_bn_and_eval(swa_model, train_loader, val_loader, device, logger, log_name='SWA Acc (after BN)')
 
     # eval best models on test set
-    if args.eval_on_test and args.val_fraction > 0:
+    if args.eval_on_test:
         # student
         ckpt = torch.load(os.path.join(get_folder_name(args), 'best_student_acc.pth.tar'))
         model.load_state_dict(ckpt['state_dict'])
         epoch = ckpt['epoch']
         loss, acc = evaluate_model(model, test_loader, device)
-        logger.log_single_acc(acc, log_as='Max Test Accuracy')
+        logger.log_single(acc, log_as='Max Test Accuracy')
         print(f'Best student (not-averaged) model, from step {ckpt["step"]} (Epoch: {ckpt["epoch"]:.2f}) \tTest Accuracy: {acc} \tTest Loss: {loss:.3f}')
         
-        # EMA
+        # EMA best acc
         ckpt = torch.load(os.path.join(get_folder_name(args), 'best_ema_acc.pth.tar'))
         alpha = ckpt['best_alpha']
         model.load_state_dict(ckpt['ema_state_dict_' + str(alpha)])
-        epoch = ckpt['epoch']
         loss, acc = evaluate_model(model, test_loader, device)
-        logger.log_single_acc(acc, log_as='Max EMA Test Accuracy')
-        print(f'Best EMA model, alpha={alpha} at epoch {ckpt["epoch"]:.2f} \tTest Accuracy: {acc} \tTest Loss: {loss:.3f}')
+        logger.log_single(acc, log_as='Max EMA Test Accuracy')
+        logger.log_single(ckpt['step'], log_as='Optimal LR step - Acc')
+        print(f'Best EMA model by accuracy, alpha={alpha} at epoch {ckpt["epoch"]:.2f} \tTest Accuracy: {acc} \tTest Loss: {loss:.3f}')
+
+        # EMA best loss
+        ckpt = torch.load(os.path.join(get_folder_name(args), 'best_ema_loss.pth.tar'))
+        alpha = ckpt['best_alpha']
+        model.load_state_dict(ckpt['ema_state_dict_' + str(alpha)])
+        loss, acc = evaluate_model(model, test_loader, device)
+        # logger.log_single(acc, log_as='Max EMA Test Accuracy')
+        logger.log_single(ckpt['step'], log_as='Optimal LR step - Val')
+        print(f'Best EMA model by loss, alpha={alpha} at epoch {ckpt["epoch"]:.2f} \tTest Accuracy: {acc} \tTest Loss: {loss:.3f}')
 
         # SWA
         update_bn_and_eval(swa_model, train_loader, test_loader, device, logger, log_name='SWA Acc (after BN)')
