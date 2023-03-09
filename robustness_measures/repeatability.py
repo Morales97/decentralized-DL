@@ -76,7 +76,7 @@ if __name__ == '__main__':
             
             results = get_agreement_metrics(model_i, model_j, test_loader, device)
             pred_distance[i,j] = results['L2']
-            pred_js_div[i,j] = np.round(results['JS_div'], 3)
+            pred_js_div[i,j] = results['JS_div'], 3
             pred_disagreement[i,j] = results['disagreement']
             # corr_corr[i,j] = results['correct-correct']
             # incorr_corr[i,j] = results['correct-incorrect']
@@ -109,7 +109,7 @@ if __name__ == '__main__':
 
 # python robustness_measures/repeatability.py --net=rn18 --dataset=cifar100 --resume=/mloraw1/danmoral/checkpoints/C4.3_lr0.8_cosine/checkpoint_m0_117001.pth.tar --resume2=/mloraw1/danmoral/checkpoints/C4.3_lr0.8_cosine_1/checkpoint_m0_117001.pth.tar --resume3=/mloraw1/danmoral/checkpoints/C4.3_lr0.8_cosine_2/checkpoint_m0_117001.pth.tar
 # python robustness_measures/repeatability.py --net=rn18 --dataset=cifar100 --resume=/mloraw1/danmoral/checkpoints/cifar100/rn18/search_0.8_s0/best_student_acc.pth.tar --resume2=/mloraw1/danmoral/checkpoints/cifar100/rn18/search_0.8_s1/best_student_acc.pth.tar --resume3=/mloraw1/danmoral/checkpoints/cifar100/rn18/search_0.8_s2/best_student_acc.pth.tar
-# python robustness_measures/repeatability.py --net=rn18 --dataset=cifar100 --resume=/mloraw1/danmoral/checkpoints/cifar100/rn18/search_0.8_s0/best_ema_acc.pth.tar --resume2=/mloraw1/danmoral/checkpoints/cifar100/rn18/search_0.8_s1/best_ema_acc.pth.tar --resume3=/mloraw1/danmoral/checkpoints/cifar100/rn18/search_0.8_s2/best_ema_acc.pth.tar
+# python robustness_measures/repeatability.py --net=rn18 --dataset=cifar100 --resume=/mloraw1/danmoral/checkpoints/cifar100/rn18/search_0.8_s0/best_ema_acc.pth.tar --resume2=/mloraw1/danmoral/checkpoints/cifar100/rn18/search_0.8_s1/best_ema_acc.pth.tar --resume3=/mloraw1/danmoral/checkpoints/cifar100/rn18/search_0.8_s2/best_ema_acc.pth.tar --load_ema
 # python robustness_measures/repeatability.py --net=rn18 --dataset=cifar100 --resume=/mloraw1/danmoral/checkpoints/C4.3_lr0.8_cosine/checkpoint_m0_60841.pth.tar --resume2=/mloraw1/danmoral/checkpoints/C4.3_lr0.8_cosine_1/checkpoint_m0_60841.pth.tar --resume3=/mloraw1/danmoral/checkpoints/C4.3_lr0.8_cosine_2/checkpoint_m0_60841.pth.tar --load_ema
 # python robustness_measures/repeatability.py --net=rn18 --dataset=cifar100 --resume=/mloraw1/danmoral/checkpoints/C4.3_lr0.8_cosine/checkpoint_m0_88921.pth.tar --resume2=/mloraw1/danmoral/checkpoints/C4.3_lr0.8_cosine_1/checkpoint_m0_88921.pth.tar --resume3=/mloraw1/danmoral/checkpoints/C4.3_lr0.8_cosine_2/checkpoint_m0_88921.pth.tar --load_ema
 # python robustness_measures/repeatability.py --net=rn18 --dataset=cifar100 --resume=/mloraw1/danmoral/checkpoints/C4.3_lr0.8_cosine/checkpoint_m0_60841.pth.tar --resume2=/mloraw1/danmoral/checkpoints/C4.3_lr0.8_cosine_1/checkpoint_m0_88921.pth.tar --resume3=/mloraw1/danmoral/checkpoints/C4.3_lr0.8_cosine_2/checkpoint_m0_117001.pth.tar --load_ema
