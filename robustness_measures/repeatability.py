@@ -33,7 +33,7 @@ if __name__ == '__main__':
     args = parse_args(parser)
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
-    train_loader, _, test_loader = get_data(args, args.batch_size[0], args.data_fraction)
+    train_loader, val_loader, test_loader = get_data(args, args.batch_size[0], args.data_fraction, args.val_fraction)
     # val_logits, val_confidence, val_correct, val_labels = get_net_results(val_loader, in_dist=True)   # NOTE need to split train in train-val
 
     if args.resume:
@@ -93,6 +93,7 @@ if __name__ == '__main__':
 
 
 # python robustness_measures/repeatability.py --net=rn18 --dataset=cifar100 --resume=/mloraw1/danmoral/checkpoints/C4.3_lr0.8_cosine/checkpoint_m0_117001.pth.tar --resume2=/mloraw1/danmoral/checkpoints/C4.3_lr0.8_cosine_1/checkpoint_m0_117001.pth.tar --resume3=/mloraw1/danmoral/checkpoints/C4.3_lr0.8_cosine_2/checkpoint_m0_117001.pth.tar
+# python robustness_measures/repeatability.py --net=rn18 --dataset=cifar100 --resume=/mloraw1/danmoral/checkpoints/cifar100/rn18/search_0.8_s1/best_student_acc.pth.tar --resume2=/mloraw1/danmoral/checkpoints/cifar100/rn18/search_0.8_s1/best_student_acc.pth.tar --resume3=/mloraw1/danmoral/checkpoints/cifar100/rn18/search_0.8_s2/best_student_acc.pth.tar
 # python robustness_measures/repeatability.py --net=rn18 --dataset=cifar100 --resume=/mloraw1/danmoral/checkpoints/C4.3_lr0.8_cosine/checkpoint_m0_60841.pth.tar --resume2=/mloraw1/danmoral/checkpoints/C4.3_lr0.8_cosine_1/checkpoint_m0_60841.pth.tar --resume3=/mloraw1/danmoral/checkpoints/C4.3_lr0.8_cosine_2/checkpoint_m0_60841.pth.tar --load_ema
 # python robustness_measures/repeatability.py --net=rn18 --dataset=cifar100 --resume=/mloraw1/danmoral/checkpoints/C4.3_lr0.8_cosine/checkpoint_m0_88921.pth.tar --resume2=/mloraw1/danmoral/checkpoints/C4.3_lr0.8_cosine_1/checkpoint_m0_88921.pth.tar --resume3=/mloraw1/danmoral/checkpoints/C4.3_lr0.8_cosine_2/checkpoint_m0_88921.pth.tar --load_ema
 # python robustness_measures/repeatability.py --net=rn18 --dataset=cifar100 --resume=/mloraw1/danmoral/checkpoints/C4.3_lr0.8_cosine/checkpoint_m0_60841.pth.tar --resume2=/mloraw1/danmoral/checkpoints/C4.3_lr0.8_cosine_1/checkpoint_m0_88921.pth.tar --resume3=/mloraw1/danmoral/checkpoints/C4.3_lr0.8_cosine_2/checkpoint_m0_117001.pth.tar --load_ema
