@@ -124,8 +124,11 @@ def train(args, wandb):
         model.load_state_dict(ckpt['state_dict'])
         for alpha in args.alpha:
             ema_models[alpha].load_state_dict(ckpt['ema_state_dict_' + str(alpha)])
+            ema_opts[alpha].ramp_up = False     # deactivate EMA ramp-up when resuming
         opt.load_state_dict(ckpt['optimizer'])
         
+
+
         scheduler_state = ckpt['scheduler'] # NOTE if changing the LR scheduler (e.g., choosing a different final_lr), need to overwrite certain keys in the scheduler state_dict
         if 'prn164_SWA' in args.expt_name:
             scheduler_state['_schedulers'][1]['end_factor'] = args.final_lr / args.lr[0]   # NOTE change the end LR. Ad-hoc for SWA experiments
