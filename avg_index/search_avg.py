@@ -278,7 +278,7 @@ if __name__ == '__main__':
     ''' For debugging purposes '''
     args = parse_args()
 
-    train_loader, _, test_loader = get_data(args, args.batch_size[0], args.data_fraction)
+    train_loader, val_loader, test_loader = get_data(args, args.batch_size[0], args.data_fraction, args.val_fraction)
     train_loader = train_loader[0]
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
     save_dir = os.path.join(args.save_dir, args.dataset, args.net, args.expt_name)
@@ -307,14 +307,14 @@ if __name__ == '__main__':
     for ckpt in av_ckpts[:-1]:
         # model = index.avg_from(ckpt, until=av_ckpts[int(3*len(av_ckpts)//6)]) # until start of phase 2 (epoch 150)
         model = index.avg_from(ckpt, until=av_ckpts[-1])
-        _, acc = eval_avg_model(model, train_loader, test_loader)
+        _, acc = eval_avg_model(model, train_loader, val_loader)
         accs[ckpt] = acc
         print(f'Step {ckpt}, acc: {acc}')
     torch.save(accs, os.path.join(save_dir, 'accs_computed.pt'))
     
     accs = torch.load(os.path.join(save_dir, 'accs_computed.pt'))
     # exponential_search(index, train_loader, test_loader, end=38400, start=38000, accs=accs, test=False)
-    three_split_search(index, train_loader, test_loader, end=av_ckpts[-1], start=av_ckpts[0], accs=accs, test=False)
+    three_split_search(index, train_loader, val_loader, end=av_ckpts[-1], start=av_ckpts[0], accs=accs, test=False)
 
     # start = 43200
     # end = 58400
