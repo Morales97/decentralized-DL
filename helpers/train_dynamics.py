@@ -107,7 +107,7 @@ def get_agreement_metrics(model1, model2, loader, device, l2=True, jensen_shanno
 
     if l2:
         results['L2'] = distance/len(loader.dataset)
-    if js:
+    if jensen_shannon:
         results['JS_div'] = js_div/len(loader)
     if disagreement:
         results['disagreement'] = (1-agree_count/len(loader.dataset))*100
