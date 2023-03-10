@@ -304,7 +304,7 @@ def train(args, wandb):
         model.load_state_dict(ckpt['ema_state_dict_' + str(alpha)])
         loss, acc = evaluate_model(model, test_loader, device)
         # logger.log_single(acc, log_as='Max EMA Test Accuracy')
-        logger.log_single(ckpt['step'], log_as='Optimal LR step - Val')
+        logger.log_single(ckpt['epoch'], log_as='Optimal LR epoch - Val')
         print(f'Best EMA model by loss, alpha={alpha} at epoch {ckpt["epoch"]:.2f} \tTest Accuracy: {acc} \tTest Loss: {loss:.3f}')
 
         # SWA
