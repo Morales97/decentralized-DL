@@ -44,6 +44,7 @@ if __name__ == '__main__':
         model3 = load_model(args, args.resume3, device)
         models = [model1, model2, model3]
     else:
+        pass
         # TODO
 
     _, acc, soft_acc, losses, accs, soft_accs = eval_ensemble(models, test_loader, device)
