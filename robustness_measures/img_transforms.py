@@ -9,13 +9,11 @@ import sys
 sys.path.insert(0, os.path.join(sys.path[0], '..'))
 from helpers.parser import parse_args
 from model.model import get_model
-from loaders.data import get_data
+from loaders.data import get_data, ROOT_CLUSTER
 from helpers.evaluate import eval_on_cifar_corrputed_test, evaluate_model, eval_ensemble
 from helpers.train_dynamics import get_agreement_metrics
 import argparse
 import pdb
-
-ROOT_CLUSTER = '/mloraw1/danmoral/data'
 
 
 def load_model(args, path, device):
