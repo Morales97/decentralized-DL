@@ -50,7 +50,7 @@ def get_data(args, batch_size, fraction=-1, val_fraction=0, test_transforms=None
         return _get_mnist(args, root, args.n_nodes[0], batch_size)
     elif args.dataset in ['cifar10', 'cifar100']:
         if test_transforms:
-            return get_cifar_test(args, root, test_transforms)
+            return get_cifar_test(args, root, batch, size, test_transforms)
         return _get_cifar(args, root, batch_size, val_fraction,fraction)
     elif args.dataset == 'tiny-in':
         return _get_tiny_imagenet(args, root, batch_size)
