@@ -1,8 +1,10 @@
 import torch
 import numpy as np
+from loaders.data import ROOT_CLUSTER
 from topology import get_average_model
 import torch.nn.functional as F
 import pdb
+import os
 
 def evaluate_model(model, data_loader, device):
     """Compute loss and accuracy of a single model on a data_loader."""
@@ -92,3 +94,48 @@ def eval_ensemble(models, test_loader, device, avg_model=False):
 
         return None, acc, soft_acc, losses, accs, soft_accs
 
+
+def eval_on_cifar_corrputed_test(model, dataset, device, root=ROOT_CLUSTER):
+    from torchvision import datasets, transforms
+
+    if dataset == "cifar10-C":
+        dataset_loader = datasets.CIFAR10
+        normalize = transforms.Normalize(
+            (0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010)
+        )
+    elif dataset == "cifar100-C":
+        dataset_loader = datasets.CIFAR100
+        normalize = transforms.Normalize(
+            (0.5071, 0.4867, 0.4408), (0.2675, 0.2565, 0.2761)
+        )
+
+    test_data = dataset_loader(
+        root=root,
+        train=False,
+        transform=transforms.Compose([transforms.ToTensor(), normalize]),
+        download=True,
+    )
+
+    distortions = ['gaussian_noise', 'shot_noise', 'impulse_noise',
+                    'defocus_blur', 'glass_blur', 'motion_blur',
+                    'zoom_blur', 'snow', 'frost',
+                    'brightness', 'contrast', 'elastic_transform',
+                    'pixelate', 'jpeg_compression', 'speckle_noise',
+                    'gaussian_blur', 'spatter', 'saturate']
+
+    mean_acc = 0
+    for distortion_name in distortions:
+        full_data_pth = os.path.join(root, dataset, f"{distortion_name}.npy")
+        full_labels_pth = os.path.join(root, dataset, "labels.npy")
+
+        test_data.data = np.load(full_data_pth)
+        test_data.targets = torch.LongTensor(np.load(full_labels_pth))
+
+        test_loader = torch.utils.data.DataLoader(test_data, batch_size=100, shuffle=False)
+
+        loss, acc = evaluate_model(model, test_loader, device)
+        print(f'[{dataset}] - Distorsion: {distortion_name}\t Accuracy: {acc}')
+        mean_acc += acc
+
+    mean_acc /= len(distortions)
+    print(f'[{dataset}] - \t *** Mean Accuracy: {acc} ***')

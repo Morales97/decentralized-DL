@@ -6,6 +6,8 @@ from torchvision import datasets, transforms
 import torch
 import torch.utils.data as data
 
+from loaders.data import ROOT_CLUSTER
+
 
 def get_cifar_test(args, root, batch_size=100, test_transforms=None):
     '''

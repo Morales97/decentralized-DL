@@ -11,7 +11,7 @@ from helpers.parser import parse_args
 from avg_index.search_avg import get_avg_model
 from model.model import get_model
 from loaders.data import get_data, ROOT_CLUSTER
-from helpers.evaluate import evaluate_model, eval_ensemble
+from helpers.evaluate import eval_on_cifar_corrputed_test, evaluate_model, eval_ensemble
 from helpers.train_dynamics import get_agreement_metrics
 import argparse
 import pdb
@@ -54,24 +54,28 @@ if __name__ == '__main__':
         print(f'Model {i}:\tAccuracy: {accs[i]:.2f} \tLoss: {losses[i]:.4f} \tSoft accuracy: {soft_accs[i]:.2f}')
     print(f'(Prediction) Ensemble Accuracy: {acc:.2f} \tSoft accuracy: {soft_acc:.2f}')
 
-    test_loader = get_data(args, batch_size=100, test_transforms='RandAugment')
-    _, acc, soft_acc, losses, accs, soft_accs = eval_ensemble(models, test_loader, device)
-    print('\n ~~~ Models accuracy on augmented Test set 1~~~')
-    for i in range(len(accs)):
-        print(f'Model {i}:\tAccuracy: {accs[i]:.2f} \tLoss: {losses[i]:.4f} \tSoft accuracy: {soft_accs[i]:.2f}')
-    print(f'(Prediction) Ensemble Accuracy: {acc:.2f} \tSoft accuracy: {soft_acc:.2f}')
+    # RAND-AUGMENT
+    # test_loader = get_data(args, batch_size=100, test_transforms='RandAugment')
+    # _, acc, soft_acc, losses, accs, soft_accs = eval_ensemble(models, test_loader, device)
+    # print('\n ~~~ Models accuracy on augmented Test set 1~~~')
+    # for i in range(len(accs)):
+    #     print(f'Model {i}:\tAccuracy: {accs[i]:.2f} \tLoss: {losses[i]:.4f} \tSoft accuracy: {soft_accs[i]:.2f}')
+    # print(f'(Prediction) Ensemble Accuracy: {acc:.2f} \tSoft accuracy: {soft_acc:.2f}')
 
-    _, acc, soft_acc, losses, accs, soft_accs = eval_ensemble(models, test_loader, device)
-    print('\n ~~~ Models accuracy on augmented Test set 2~~~')
-    for i in range(len(accs)):
-        print(f'Model {i}:\tAccuracy: {accs[i]:.2f} \tLoss: {losses[i]:.4f} \tSoft accuracy: {soft_accs[i]:.2f}')
-    print(f'(Prediction) Ensemble Accuracy: {acc:.2f} \tSoft accuracy: {soft_acc:.2f}')
+    # _, acc, soft_acc, losses, accs, soft_accs = eval_ensemble(models, test_loader, device)
+    # print('\n ~~~ Models accuracy on augmented Test set 2~~~')
+    # for i in range(len(accs)):
+    #     print(f'Model {i}:\tAccuracy: {accs[i]:.2f} \tLoss: {losses[i]:.4f} \tSoft accuracy: {soft_accs[i]:.2f}')
+    # print(f'(Prediction) Ensemble Accuracy: {acc:.2f} \tSoft accuracy: {soft_acc:.2f}')
 
-    _, acc, soft_acc, losses, accs, soft_accs = eval_ensemble(models, test_loader, device)
-    print('\n ~~~ Models accuracy on augmented Test set 3~~~')
-    for i in range(len(accs)):
-        print(f'Model {i}:\tAccuracy: {accs[i]:.2f} \tLoss: {losses[i]:.4f} \tSoft accuracy: {soft_accs[i]:.2f}')
-    print(f'(Prediction) Ensemble Accuracy: {acc:.2f} \tSoft accuracy: {soft_acc:.2f}')
+    # _, acc, soft_acc, losses, accs, soft_accs = eval_ensemble(models, test_loader, device)
+    # print('\n ~~~ Models accuracy on augmented Test set 3~~~')
+    # for i in range(len(accs)):
+    #     print(f'Model {i}:\tAccuracy: {accs[i]:.2f} \tLoss: {losses[i]:.4f} \tSoft accuracy: {soft_accs[i]:.2f}')
+    # print(f'(Prediction) Ensemble Accuracy: {acc:.2f} \tSoft accuracy: {soft_acc:.2f}')
+
+    # CORRUPTED CIFAR
+    eval_on_cifar_corrputed_test(model1, 'cifar100-C', device)
 
 # python robustness_measures/img_transforms.py --net=rn18 --dataset=cifar100 --resume=/mloraw1/danmoral/checkpoints/cifar100/rn18/search_0.8_s0/best_student_acc.pth.tar --resume2=/mloraw1/danmoral/checkpoints/cifar100/rn18/search_0.8_s1/best_student_acc.pth.tar --resume3=/mloraw1/danmoral/checkpoints/cifar100/rn18/search_0.8_s2/best_student_acc.pth.tar
 # python robustness_measures/img_transforms.py --net=rn18 --dataset=cifar100 --resume=/mloraw1/danmoral/checkpoints/cifar100/rn18/search_0.8_s0/best_ema_acc.pth.tar --resume2=/mloraw1/danmoral/checkpoints/cifar100/rn18/search_0.8_s1/best_ema_acc.pth.tar --resume3=/mloraw1/danmoral/checkpoints/cifar100/rn18/search_0.8_s2/best_ema_acc.pth.tar --load_ema
