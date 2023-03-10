@@ -1,6 +1,5 @@
 import torch
 import numpy as np
-from loaders.data import ROOT_CLUSTER
 from topology import get_average_model
 import torch.nn.functional as F
 import pdb
@@ -95,7 +94,7 @@ def eval_ensemble(models, test_loader, device, avg_model=False):
         return None, acc, soft_acc, losses, accs, soft_accs
 
 
-def eval_on_cifar_corrputed_test(model, dataset, device, root=ROOT_CLUSTER):
+def eval_on_cifar_corrputed_test(model, dataset, device, root):
     from torchvision import datasets, transforms
 
     if dataset == "cifar10-C":
