@@ -2,11 +2,8 @@ import os
 from re import A
 import numpy as np
 import pdb
-from torchvision import datasets, transforms
-import torch
-import torch.utils.data as data
 from loaders.mnist import get_heterogeneous_mnist, get_mnist_split, get_mnist_iid
-from loaders.cifar import get_cifar, get_cifar_corrputed_test, get_cifar_filtered_samples, get_cifar_test
+from loaders.cifar import get_cifar, get_cifar_filtered_samples, get_cifar_test
 from loaders.tiny_imagenet import get_tinyimagenet
 
 ROOT_LOCAL = './data'
