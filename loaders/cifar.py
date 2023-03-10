@@ -7,7 +7,7 @@ import torch
 import torch.utils.data as data
 
 
-def get_cifar_test(args, root, batch_size=100):
+def get_cifar_test(args, root, batch_size=100, test_transforms=None):
     '''
     Get CIFAR test set. 
     If val > 0, split into validation and test
@@ -25,8 +25,20 @@ def get_cifar_test(args, root, batch_size=100):
             (0.5071, 0.4867, 0.4408), (0.2675, 0.2565, 0.2761)
         )
 
-    transform = transforms.Compose([transforms.ToTensor(), normalize])
-    
+    if test_transforms:
+        # for robustness experiments
+        transform = transforms.Compose([
+            # transforms.RandomHorizontalFlip(),
+            # transforms.RandomCrop((32, 32), 4),
+            transforms.RandAugment(),
+            transforms.ToTensor(), 
+            normalize])
+
+    else:
+        transform = transforms.Compose([transforms.ToTensor(), normalize])
+
+
+
     dataset = dataset_loader(
         root=root,
         train=False,
