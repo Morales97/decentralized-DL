@@ -5,7 +5,6 @@ import numpy as np
 import os
 import sys
 
-from loaders.cifar import get_cifar_test
 
 sys.path.insert(0, os.path.join(sys.path[0], '..'))
 from helpers.parser import parse_args
