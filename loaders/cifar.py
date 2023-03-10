@@ -35,7 +35,7 @@ def get_cifar_test(args, root, batch_size=100):
     )
 
     test_loader = data.DataLoader(dataset, batch_size=batch_size, shuffle=False)     
-    return test_loader, None    # NOTE will return test_loader in slot of val_loader, to use it for evaluation during training
+    return test_loader
 
 
 def get_cifar_val_test(args, root, val=0, batch_size=100):
