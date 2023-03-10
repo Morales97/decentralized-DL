@@ -253,7 +253,8 @@ def train(args, wandb):
             ts_steps_eval = time.time()
 
         # save checkpoint periodically
-        if args.save_model and np.round(epoch).astype(int) % args.save_epoch_interval == 0:
+        epoch_int = np.round(epoch).astype(int)
+        if args.save_model and epoch_int % args.save_epoch_interval == 0:
             save_checkpoint(args, model, ema_models, opt, scheduler, epoch, step, name='last', best_alpha=best_alpha)
 
             # save best checkpoints
@@ -266,8 +267,15 @@ def train(args, wandb):
             if max_acc.is_best_loss('EMA'):
                 copy_checkpoint(args, new_name='best_ema_loss.pth.tar')
         
-            if np.round(epoch).astype(int) == 150:
+            if epoch_int == 150:
                  copy_checkpoint(args, ckpt_name='best_ema_acc.pth.tar', new_name='best_ema_acc_epoch150.pth.tar')  # NOTE saving best EMA at epoch 150, for experiments with best early EMA
+
+        if epoch_int == args.ema_acc_epoch:
+            copy_checkpoint(args, new_name='ema_acc_epoch.pth.tar')
+        if epoch_int == args.ema_val_epoch:
+            copy_checkpoint(args, new_name='ema_val_epoch.pth.tar')
+
+
 
     # save avg_index
     if args.avg_index:

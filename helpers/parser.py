@@ -24,6 +24,8 @@ def get_parser(parser=None):
                         help='wandb project to use')
     parser.add_argument('--entity', type=str, default=ENTITY,
                         help='wandb entity to use')
+
+    # save
     parser.add_argument('--save_dir', type=str, default=SAVE_DIR,
                         help='local directory to save experiment results to')
     parser.add_argument('--save_model', type=boolfromstr, default=True,
@@ -36,6 +38,11 @@ def get_parser(parser=None):
                         help='save final model') 
     parser.add_argument('--save_best_model', type=boolfromstr, default=True,
                         help='save models with best accuracy') 
+    parser.add_argument('--ema_acc_epoch', type=int, default=0,
+                        help='epoch best EMA acc, to save checkpoint')      
+    parser.add_argument('--ema_val_epoch', type=int, default=0,
+                        help='epoch best EMA val, to save checkpoint')           
+
     # model
     parser.add_argument('--net', type=str, default='rn20',
                         help='choice of architecture') 
@@ -55,7 +62,7 @@ def get_parser(parser=None):
                         help='topology of gossip matrix. see topology.py for options') 
     parser.add_argument('--local_steps', type=int, nargs='+', default=[0],
                         help='number of local steps inbetween each gossip') 
-    parser.add_argument('--epochs', type=float, default=300,
+    parser.add_argument('--epochs', type=float, default=200,
                         help='number epochs to train for') 
     parser.add_argument('--start_epoch_phases', type=int, nargs='+', default=[0],
                         help='start epoch for each training phase. If [0], only one training phase') 
@@ -63,9 +70,9 @@ def get_parser(parser=None):
                         help='when increasing n_nodes, whether to init momentum')
 
     # model averaging
-    parser.add_argument('--alpha', type=float, nargs='+', default=[0.995],
+    parser.add_argument('--alpha', type=float, nargs='+', default=[0.968, 0.984, 0.992, 0.996, 0.998],
                         help='EMA decay. Can specify many to keep multiple EMAs')   
-    parser.add_argument('--ema_period', type=int, default=1,
+    parser.add_argument('--ema_period', type=int, default=16,
                         help='period of steps to perform EMA update')                    
     parser.add_argument('--epoch_swa', type=int, default=100,
                         help='epoch when to start SWA averaging')
