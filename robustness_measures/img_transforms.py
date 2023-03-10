@@ -8,7 +8,6 @@ import sys
 
 sys.path.insert(0, os.path.join(sys.path[0], '..'))
 from helpers.parser import parse_args
-from avg_index.search_avg import get_avg_model
 from model.model import get_model
 from loaders.data import get_data, ROOT_CLUSTER
 from helpers.evaluate import eval_on_cifar_corrputed_test, evaluate_model, eval_ensemble
@@ -45,7 +44,6 @@ if __name__ == '__main__':
         model3 = load_model(args, args.resume3, device)
         models = [model1, model2, model3]
     else:
-        model = get_avg_model(args, start=0.5, end=1)
         # TODO
 
     _, acc, soft_acc, losses, accs, soft_accs = eval_ensemble(models, test_loader, device)
