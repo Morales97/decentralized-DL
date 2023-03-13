@@ -206,8 +206,7 @@ def ood_blob(args, model, ood_num_examples, in_score):
     dummy_targets = torch.ones(ood_num_examples)
     ood_data = torch.from_numpy(ood_data.transpose((0, 3, 1, 2))) * 2 - 1
     ood_data = torch.utils.data.TensorDataset(ood_data, dummy_targets)
-    ood_loader = torch.utils.data.DataLoader(ood_data, batch_size=100, shuffle=True,
-                                            num_workers=args.prefetch, pin_memory=True)
+    ood_loader = torch.utils.data.DataLoader(ood_data, batch_size=100, shuffle=True)
 
     print('\nBlob Detection')
     return get_and_print_results(model, ood_loader, len(ood_loader.dataset), in_score)
