@@ -257,7 +257,7 @@ def eval_ood_random_images(args, models, test_loader):
         in_score, right_score, wrong_score = get_ood_scores(model, test_loader, 0, in_dist=True)
         in_scores.append(in_score)
     
-    auroc, aupr, fpr = compute_average_ood(args, models, 0, in_scores, ood_random_images)
+    auroc, aupr, fpr = compute_average_ood(args, models, len(test_loader.dataset) // 5, in_scores, ood_random_images)
     print(f'OOD Detection 300K random images. AUROC: {auroc} \t AUPR {aupr} \t FPR {fpr}')
     return auroc, aupr, fpr
 
