@@ -237,7 +237,11 @@ def eval_ood(args, models, test_loader):
     auroc_list.append(auroc); aupr_list.append(aupr); fpr_list.append(fpr)
     
     auroc, aupr, fpr = compute_average_ood(args, models, ood_num_examples, in_scores, ood_rademacher_noise)
-    print(f'OOD Detection Rademacher noise. AUROC: {auroc} \t AUPR {aupr} \t FPR {fpr}')
+    print(f'OOD Detection - Rademacher noise. AUROC: {auroc} \t AUPR {aupr} \t FPR {fpr}')
+    auroc_list.append(auroc); aupr_list.append(aupr); fpr_list.append(fpr)
+
+    auroc, aupr, fpr = compute_average_ood(args, models, ood_num_examples, in_scores, ood_blob)
+    print(f'OOD Detection - Blop. AUROC: {auroc} \t AUPR {aupr} \t FPR {fpr}')
     auroc_list.append(auroc); aupr_list.append(aupr); fpr_list.append(fpr)
 
     # auroc, aupr, fpr = compute_average_ood(args, models, ood_num_examples, in_scores, ood_random_images)
