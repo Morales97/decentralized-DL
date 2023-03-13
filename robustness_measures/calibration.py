@@ -273,12 +273,12 @@ def ood_gaussian_noise(args, model, test_loader):
 
 
 
-def eval_ood(args, models, test_loader, test_confidence):
+def eval_ood(args, models, test_loader):
     t_star = 1
 
     rms_mean, mad_mean, sf1_mean = 0, 0, 0
     for model in models:
-        rms, mad, sf1 = ood_gaussian_noise(args, model, test_loader, test_confidence)
+        rms, mad, sf1 = ood_gaussian_noise(args, model, test_loader)
         rms_mean += rms
         mad_mean += mad
         sf1_mean += sf1
