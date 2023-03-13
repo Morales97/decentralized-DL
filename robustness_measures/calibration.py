@@ -188,7 +188,7 @@ def ood_gaussian_noise(args, model, test_loader, test_confidence):
     ood_data = torch.from_numpy(np.float32(np.clip(
         np.random.normal(size=(ood_num_examples, 3, 32, 32), scale=0.5), -1, 1)))
     ood_data = torch.utils.data.TensorDataset(ood_data, dummy_targets)
-    ood_loader = torch.utils.data.DataLoader(ood_data, batch_size=args.test_bs, shuffle=True)
+    ood_loader = torch.utils.data.DataLoader(ood_data, batch_size=100, shuffle=True)
 
     print('\n\nGaussian Noise (sigma = 0.5) Calibration')
     get_and_print_results(model, ood_loader, test_confidence)
