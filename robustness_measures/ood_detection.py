@@ -189,10 +189,10 @@ def ood_rademacher_noise(args, model, ood_num_examples, in_score):
     print('\n\nRademacher Noise Detection')
     return get_and_print_results(model, ood_loader, ood_num_examples, in_score)
 
-def get_ood_scores(args, models, ood_num_examples, in_score, ood_fn):
+def average_ood_across_models(args, models, ood_num_examples, in_scores, ood_fn):
     auroc_mean, aupr_mean, fpr_mean = 0, 0, 0
-    for model in models:
-        auroc, aupr, fpr = ood_fn(args, model, ood_num_examples, in_score)
+    for i, model in enumerate(models):
+        auroc, aupr, fpr = ood_fn(args, model, ood_num_examples, in_scores[i])
         auroc_mean += auroc
         aupr_mean += aupr
         fpr_mean += fpr
@@ -206,7 +206,7 @@ def eval_ood(args, models, test_loader):
         in_score, right_score, wrong_score = get_ood_scores(model, test_loader, ood_num_examples, in_dist=True)
         in_scores.append(in_score)
     
-    auroc, aupr, fpr = get_ood_scores(args, models, ood_num_examples, in_score, ood_gaussian_noise)
+    auroc, aupr, fpr = get_ood_scores(args, models, ood_num_examples, in_scores, ood_gaussian_noise)
     pdb.set_trace()
 
     return np.round(auroc_mean/len(models), 2), np.round(aupr_mean/len(models), 2), np.round(fpr_mean/len(models), 2)
