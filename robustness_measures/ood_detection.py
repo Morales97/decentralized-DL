@@ -197,6 +197,6 @@ if __name__ == '__main__':
     print('Error Rate {:.2f}'.format(100 * num_wrong / (num_wrong + num_right)))
 
     print('\n\nError Detection')
-    show_performance(wrong_score, right_score, method_name='')
+    show_performance(wrong_score, right_score)
 
 # python robustness_measures/ood_detection.py --net=vgg16 --dataset=cifar100 --resume=/mloraw1/danmoral/checkpoints/cifar100/vgg16/SGD_0.06_s0/checkpoint_last.pth.tar
