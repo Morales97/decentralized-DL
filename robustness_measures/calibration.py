@@ -15,6 +15,9 @@ from model.model import get_model
 from loaders.data import get_data, ROOT_CLUSTER
 from helpers.evaluate import evaluate_model
 import pdb
+import sklearn.metrics as sk
+
+RECALL_LEVEL = 0.95
 
 def calib_err(confidence, correct, p='2', beta=100):
     # beta is target bin size
@@ -90,12 +93,85 @@ def tune_temp(logits, labels, binary_search=True, lower=0.2, upper=5.0, eps=0.00
 
     return t
 
+def stable_cumsum(arr, rtol=1e-05, atol=1e-08):
+    """Use high precision for cumsum and check that final value matches sum
+    Parameters
+    ----------
+    arr : array-like
+        To be cumulatively summed as flat
+    rtol : float
+        Relative tolerance, see ``np.allclose``
+    atol : float
+        Absolute tolerance, see ``np.allclose``
+    """
+    out = np.cumsum(arr, dtype=np.float64)
+    expected = np.sum(arr, dtype=np.float64)
+    if not np.allclose(out[-1], expected, rtol=rtol, atol=atol):
+        raise RuntimeError('cumsum was found to be unstable: '
+                           'its last element does not correspond to sum')
+    return out
+
+def fpr_and_fdr_at_recall(y_true, y_score, recall_level=RECALL_LEVEL, pos_label=None):
+    classes = np.unique(y_true)
+    if (pos_label is None and
+            not (np.array_equal(classes, [0, 1]) or
+                     np.array_equal(classes, [-1, 1]) or
+                     np.array_equal(classes, [0]) or
+                     np.array_equal(classes, [-1]) or
+                     np.array_equal(classes, [1]))):
+        raise ValueError("Data is not binary and pos_label is not specified")
+    elif pos_label is None:
+        pos_label = 1.
+
+    # make y_true a boolean vector
+    y_true = (y_true == pos_label)
+
+    # sort scores and corresponding truth values
+    desc_score_indices = np.argsort(y_score, kind="mergesort")[::-1]
+    y_score = y_score[desc_score_indices]
+    y_true = y_true[desc_score_indices]
+
+    # y_score typically has many tied values. Here we extract
+    # the indices associated with the distinct values. We also
+    # concatenate a value for the end of the curve.
+    distinct_value_indices = np.where(np.diff(y_score))[0]
+    threshold_idxs = np.r_[distinct_value_indices, y_true.size - 1]
+
+    # accumulate the true positives with decreasing threshold
+    tps = stable_cumsum(y_true)[threshold_idxs]
+    fps = 1 + threshold_idxs - tps      # add one because of zero-based indexing
+
+    thresholds = y_score[threshold_idxs]
+
+    recall = tps / tps[-1]
+
+    last_ind = tps.searchsorted(tps[-1])
+    sl = slice(last_ind, None, -1)      # [last_ind::-1]
+    recall, fps, tps, thresholds = np.r_[recall[sl], 1], np.r_[fps[sl], 0], np.r_[tps[sl], 0], thresholds[sl]
+
+    cutoff = np.argmin(np.abs(recall - recall_level))
+
+    return fps[cutoff] / (np.sum(np.logical_not(y_true)))   # , fps[cutoff]/(fps[cutoff] + tps[cutoff])
+
 def get_measures(confidence, correct):
     rms = calib_err(confidence, correct, p='2')
     mad = calib_err(confidence, correct, p='1')
     sf1 = soft_f1(confidence, correct)
 
     return rms, mad, sf1
+
+def get_measures_roc(_pos, _neg, recall_level=RECALL_LEVEL):
+    pos = np.array(_pos[:]).reshape((-1, 1))
+    neg = np.array(_neg[:]).reshape((-1, 1))
+    examples = np.squeeze(np.vstack((pos, neg)))
+    labels = np.zeros(len(examples), dtype=np.int32)
+    labels[:len(pos)] += 1
+
+    auroc = sk.roc_auc_score(labels, examples)
+    aupr = sk.average_precision_score(labels, examples)
+    fpr = fpr_and_fdr_at_recall(labels, examples, recall_level)
+
+    return auroc, aupr, fpr
 
 to_np = lambda x: x.data.to('cpu').numpy()
 concat = lambda x: np.concatenate(x, axis=0)
@@ -150,12 +226,12 @@ def eval_calibration(args, models, test_loader):
         rms_mean += rms
         mad_mean += mad
         sf1_mean += sf1
-    
-    return np.round(rms_mean/len(models), 2), np.round(mad_mean/len(models), 2), np.round(sf1_mean/len(models), 2)
 
-def print_measures(auroc, aupr, fpr, method_name='Ours', recal_level=0.95):
+    return np.round(rms_mean/len(models), 2), np.round(mad_mean/len(models), 2), np.round(sf1_mean/len(models), 2), test_confidence
+
+def print_measures(auroc, aupr, fpr, method_name='Ours', recall_level=RECALL_LEVEL):
     print('\t\t\t\t' + method_name)
-    print('FPR{:d}:\t\t\t{:.2f}'.format(int(100 * recal_level), 100 * fpr))
+    print('FPR{:d}:\t\t\t{:.2f}'.format(int(100 * recall_level), 100 * fpr))
     print('AUROC: \t\t\t{:.2f}'.format(100 * auroc))
     print('AUPR:  \t\t\t{:.2f}'.format(100 * aupr))
 
@@ -165,7 +241,7 @@ def get_and_print_results(model, ood_loader, test_confidence, num_to_avg=1, t_st
     for _ in range(num_to_avg):
         out_logits, out_confidence = get_model_calibration_results(model, ood_loader, t=t_star, in_dist=False)
 
-        measures = get_measures(
+        measures = get_measures_roc(
             concat([out_confidence, test_confidence]),
             concat([np.zeros(len(out_confidence)), test_correct]))
 
@@ -191,13 +267,28 @@ def ood_gaussian_noise(args, model, test_loader, test_confidence):
     ood_loader = torch.utils.data.DataLoader(ood_data, batch_size=100, shuffle=True)
 
     print('\n\nGaussian Noise (sigma = 0.5) Calibration')
-    get_and_print_results(model, ood_loader, test_confidence)
+    return get_and_print_results(model, ood_loader, test_confidence)
+
+
+
+def eval_ood(args, models, test_loader, test_confidence):
+    t_star = 1
+
+    rms_mean, mad_mean, sf1_mean = 0, 0, 0
+    for model in models:
+        rms, mad, sf1 = ood_gaussian_noise(args, model, test_loader, test_confidence)
+        rms_mean += rms
+        mad_mean += mad
+        sf1_mean += sf1
+
+    return np.round(rms_mean/len(models), 2), np.round(mad_mean/len(models), 2), np.round(sf1_mean/len(models), 2)
+
 
 if __name__ == '__main__':
     args = parse_args()
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
-    train_loader, _, test_loader = get_data(args, args.batch_size[0], args.data_fraction)
+    train_loader, val_loader, test_loader = get_data(args, args.batch_size[0], args.data_fraction, args.val_fraction)
     # val_logits, val_confidence, val_correct, val_labels = get_net_results(val_loader, in_dist=True)   # NOTE need to split train in train-val
 
     if args.resume:
@@ -211,7 +302,7 @@ if __name__ == '__main__':
     # loss, acc = evaluate_model(model, test_loader, device)
     # print(f'Loss: {loss}, Acc: {acc}')
     
-    val_logits, val_confidence, val_correct, val_labels, _ = get_model_calibration_results(model, train_loader, in_dist=True)   # NOTE need to split train in train-val
+    val_logits, val_confidence, val_correct, val_labels, _ = get_model_calibration_results(model, val_loader, in_dist=True)   # NOTE need to split train in train-val
     print('\nTuning Softmax Temperature')
     t_star = tune_temp(val_logits, val_labels)
     print('Softmax Temperature Tuned. Temperature is {:.3f}'.format(t_star))
@@ -228,3 +319,4 @@ if __name__ == '__main__':
     ood_gaussian_noise(args, model, test_loader, test_confidence)
 
 # python robustness_measures/calibration.py --net=vgg16 --dataset=cifar100 --resume=/mloraw1/danmoral/checkpoints/cifar100/vgg16/SGD_0.06_s0/checkpoint_last.pth.tar
+# python robustness_measures/calibration.py --net=vgg16 --dataset=cifar100 --resume=/mloraw1/danmoral/checkpoints/cifar100/vgg16/search_0.06_s0/checkpoint_last.pth.tar

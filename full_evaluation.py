@@ -10,7 +10,7 @@ from helpers.utils import get_folder_name
 from helpers.parser import parse_args
 from loaders.data import get_data, ROOT_CLUSTER
 from model.model import get_model
-from robustness_measures.calibration import eval_calibration
+from robustness_measures.calibration import eval_calibration, ood_gaussian_noise
 from robustness_measures.repeatability import eval_repeatability
 from helpers.evaluate import eval_ensemble
 
@@ -59,10 +59,14 @@ def evaluate_all(args, models, test_loader, device):
     results['Pred JS div'] = _average_non_zero(JS_div)
 
     # CALIBRATION
-    rms, mad, sf1 = eval_calibration(args, models, test_loader)
+    rms, mad, sf1, test_confidence = eval_calibration(args, models, test_loader)
     results['RMS Calib Error (%)'] = rms
     results['MAD Calib Error (%)'] = mad
     results['Soft F1 Score (%)'] = sf1
+    
+    # OOD Detection
+    ood_gaussian_noise(args, model, test_loader, test_confidence)
+
 
     return results
 
