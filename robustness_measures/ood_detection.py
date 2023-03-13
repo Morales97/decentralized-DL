@@ -89,40 +89,36 @@ def get_ood_scores(model, loader, ood_num_examples, in_dist=False, test_bs=100, 
     else:
         return concat(_score)[:ood_num_examples].copy()
 
+def get_and_print_results(ood_loader, num_to_avg=1):
+
+    aurocs, auprs, fprs = [], [], []
+    for _ in range(num_to_avg):
+        out_score = get_ood_scores(ood_loader)
+        measures = get_measures(out_score, in_score)
+        aurocs.append(measures[0]); auprs.append(measures[1]); fprs.append(measures[2])
+
+    auroc = np.mean(aurocs); aupr = np.mean(auprs); fpr = np.mean(fprs)
+    auroc_list.append(auroc); aupr_list.append(aupr); fpr_list.append(fpr)
+
+    if num_to_avg >= 5:
+        print_measures_with_std(aurocs, auprs, fprs, args.method_name)
+    else:
+        print_measures(auroc, aupr, fpr, args.method_name)
+
 def ood_gaussian_noise(args, model, test_loader, t_star):
     _, test_confidence, test_correct, _, _ = get_model_calibration_results(model, test_loader, in_dist=True, t=t_star)
 
     ood_num_examples = len(test_loader.dataset) // 5
 
+    dummy_targets = torch.ones(ood_num_examples)
+    ood_data = torch.from_numpy(np.float32(np.clip(
+        np.random.normal(size=(ood_num_examples, 3, 32, 32), scale=0.5), -1, 1)))
+    ood_data = torch.utils.data.TensorDataset(ood_data, dummy_targets)
+    ood_loader = torch.utils.data.DataLoader(ood_data, batch_size=100, shuffle=True)
 
-# def get_and_print_results(ood_loader, num_to_avg=args.num_to_avg):
+    print('\n\nGaussian Noise (sigma = 0.5) Calibration')
+    return get_and_print_results(model, ood_loader, test_confidence, test_correct, ood_num_examples)
 
-#     aurocs, auprs, fprs = [], [], []
-#     for _ in range(num_to_avg):
-#         out_score = get_ood_scores(ood_loader)
-#         measures = get_measures(out_score, in_score)
-#         aurocs.append(measures[0]); auprs.append(measures[1]); fprs.append(measures[2])
-
-#     auroc = np.mean(aurocs); aupr = np.mean(auprs); fpr = np.mean(fprs)
-#     auroc_list.append(auroc); aupr_list.append(aupr); fpr_list.append(fpr)
-
-#     if num_to_avg >= 5:
-#         print_measures_with_std(aurocs, auprs, fprs, args.method_name)
-#     else:
-#         print_measures(auroc, aupr, fpr, args.method_name)
-
-
-# # /////////////// Gaussian Noise ///////////////
-
-# dummy_targets = torch.ones(ood_num_examples * args.num_to_avg)
-# ood_data = torch.from_numpy(np.float32(np.clip(
-#     np.random.normal(size=(ood_num_examples * args.num_to_avg, 3, 32, 32), scale=0.5), -1, 1)))
-# ood_data = torch.utils.data.TensorDataset(ood_data, dummy_targets)
-# ood_loader = torch.utils.data.DataLoader(ood_data, batch_size=args.test_bs, shuffle=True,
-#                                          num_workers=args.prefetch, pin_memory=True)
-
-# print('\n\nGaussian Noise (sigma = 0.5) Detection')
-# get_and_print_results(ood_loader)
 
 if __name__ == '__main__':
     args = parse_args()
@@ -141,6 +137,6 @@ if __name__ == '__main__':
     print('Error Rate {:.2f}'.format(100 * num_wrong / (num_wrong + num_right)))
 
     print('\n\nError Detection')
-    show_performance(wrong_score, right_score, method_name=args.method_name)
+    show_performance(wrong_score, right_score, method_name='')
 
 # python robustness_measures/ood_detection.py --net=vgg16 --dataset=cifar100 --resume=/mloraw1/danmoral/checkpoints/cifar100/vgg16/SGD_0.06_s0/checkpoint_last.pth.tar
