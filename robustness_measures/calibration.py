@@ -199,7 +199,6 @@ if __name__ == '__main__':
 
     train_loader, _, test_loader = get_data(args, args.batch_size[0], args.data_fraction)
     # val_logits, val_confidence, val_correct, val_labels = get_net_results(val_loader, in_dist=True)   # NOTE need to split train in train-val
-    val_logits, val_confidence, val_correct, val_labels = get_model_calibration_results(train_loader, in_dist=True)   # NOTE need to split train in train-val
 
     if args.resume:
         model = get_model(args, device)
@@ -212,6 +211,7 @@ if __name__ == '__main__':
     # loss, acc = evaluate_model(model, test_loader, device)
     # print(f'Loss: {loss}, Acc: {acc}')
     
+    val_logits, val_confidence, val_correct, val_labels = get_model_calibration_results(model, train_loader, in_dist=True)   # NOTE need to split train in train-val
     print('\nTuning Softmax Temperature')
     t_star = tune_temp(val_logits, val_labels)
     print('Softmax Temperature Tuned. Temperature is {:.3f}'.format(t_star))
