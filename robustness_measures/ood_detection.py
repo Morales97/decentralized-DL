@@ -199,20 +199,25 @@ def compute_average_ood(args, models, ood_num_examples, in_scores, ood_fn):
         auroc_mean += auroc
         aupr_mean += aupr
         fpr_mean += fpr
-    return np.round(auroc_mean/len(models), 2), np.round(aupr_mean/len(models), 2), np.round(fpr_mean/len(models), 2)
+    return np.round(auroc_mean/len(models)*100, 2), np.round(aupr_mean/len(models)*100, 2), np.round(fpr_mean/len(models)*100, 2)
 
 def eval_ood(args, models, test_loader):
     ood_num_examples = len(test_loader.dataset) // 5
-
+    auroc_list, aupr_list, fpr_list = [], [], []
     in_scores = []
     for model in models:
         in_score, right_score, wrong_score = get_ood_scores(model, test_loader, ood_num_examples, in_dist=True)
         in_scores.append(in_score)
     
     auroc, aupr, fpr = compute_average_ood(args, models, ood_num_examples, in_scores, ood_gaussian_noise)
-    pdb.set_trace()
+    print(f'OOD Detection - Gaussian noise. AUROC: {auroc} \t AUPR {aupr} \t FPR {fpr}')
+    auroc_list.append(auroc); aupr_list.append(aupr); fpr_list.append(fpr)
+    
+    auroc, aupr, fpr = compute_average_ood(args, models, ood_num_examples, in_scores, ood_rademacher_noise)
+    print(f'OOD Detection Rademacher noise. AUROC: {auroc} \t AUPR {aupr} \t FPR {fpr}')
+    auroc_list.append(auroc); aupr_list.append(aupr); fpr_list.append(fpr)
 
-    return np.round(auroc_mean/len(models), 2), np.round(aupr_mean/len(models), 2), np.round(fpr_mean/len(models), 2)
+    return np.array(auroc_list).mean(), np.array(aupr_list).mean(), np.array(fpr_list).mean() 
 
 
 
