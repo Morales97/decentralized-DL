@@ -18,6 +18,7 @@ def _load_model(args, device, seed, opt):
 
     model = get_model(args, device)
     expt_name = opt + '_' + str(args.lr[0])
+    pdb.set_trace()
     path = get_folder_name(args, expt_name=expt_name, seed=seed)
     ckpt = torch.load(os.path.join(path, 'checkpoint_last.pth.tar'))
 
