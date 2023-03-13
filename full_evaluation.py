@@ -10,7 +10,7 @@ from helpers.utils import get_folder_name
 from helpers.parser import parse_args
 from loaders.data import get_data, ROOT_CLUSTER
 from model.model import get_model
-from robustness_measures.calibration import eval_calibration, ood_gaussian_noise
+from robustness_measures.calibration import eval_calibration, eval_ood, ood_gaussian_noise
 from robustness_measures.repeatability import eval_repeatability
 from helpers.evaluate import eval_ensemble
 
@@ -65,8 +65,10 @@ def evaluate_all(args, models, test_loader, device):
     results['Soft F1 Score (%)'] = sf1
     
     # OOD Detection
-    ood_gaussian_noise(args, model, test_loader, test_confidence)
-
+    fpr, auroc, auc = eval_ood(args, models, test_loader, test_confidence)
+    results['FPR (lower better)'] = fpr
+    results['AUROC (higher better)'] = auroc
+    results['AUC (higher better)'] = auc
 
     return results
 
