@@ -110,7 +110,7 @@ def show_performance(pos, neg, recall_level=RECALL_LEVEL):
     print('AUROC:\t\t\t{:.2f}'.format(100 * auroc))
     print('AUPR:\t\t\t{:.2f}'.format(100 * aupr))
 
-def get_ood_scores(model, loader, ood_num_examples, in_dist=False, test_bs=100, use_CE=True):
+def get_ood_scores(model, loader, ood_num_examples, in_dist=False, test_bs=100, use_CE=True):   # NOTE still not sure about the difference between CE and MSP
     _score = []
     _right_score = []
     _wrong_score = []
@@ -167,7 +167,7 @@ def get_and_print_results(model, ood_loader, ood_num_examples, num_to_avg=1):
 
     print_measures(auroc, aupr, fpr)
 
-def ood_gaussian_noise(args, model, test_loader, t_star):
+def ood_gaussian_noise(args, model, test_loader):
     ood_num_examples = len(test_loader.dataset) // 5
 
     dummy_targets = torch.ones(ood_num_examples)
@@ -178,6 +178,17 @@ def ood_gaussian_noise(args, model, test_loader, t_star):
 
     print('\n\nGaussian Noise (sigma = 0.5) Calibration')
     return get_and_print_results(model, ood_loader, ood_num_examples)
+
+def eval_ood(args, models, test_loader):
+    auroc_mean, aupr_mean, fpr_mean = 0, 0, 0
+    for model in models:
+        auroc, aupr, fpr = ood_gaussian_noise(args, model, test_loader)
+        auroc_mean += auroc
+        aupr_mean += aupr
+        fpr_mean += fpr
+
+    return np.round(auroc_mean/len(models), 2), np.round(aupr_mean/len(models), 2), np.round(fpr_mean/len(models), 2)
+
 
 
 if __name__ == '__main__':

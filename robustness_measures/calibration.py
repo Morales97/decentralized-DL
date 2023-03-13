@@ -156,61 +156,7 @@ def eval_calibration(args, models, test_loader):
 
     return np.round(rms_mean/len(models), 2), np.round(mad_mean/len(models), 2), np.round(sf1_mean/len(models), 2)
 
-def print_measures(auroc, aupr, fpr, method_name='Ours', recall_level=RECALL_LEVEL):
-    print('\t\t\t\t' + method_name)
-    print('FPR{:d}:\t\t\t{:.2f}'.format(int(100 * recall_level), 100 * fpr))
-    print('AUROC: \t\t\t{:.2f}'.format(100 * auroc))
-    print('AUPR:  \t\t\t{:.2f}'.format(100 * aupr))
 
-def get_and_print_results(model, ood_loader, test_confidence, test_correct, ood_num_examples, num_to_avg=1, t_star=1):
-
-    rmss, mads, sf1s = [], [], []
-    for _ in range(num_to_avg):
-        out_logits, out_confidence = get_model_calibration_results(model, ood_loader, t=t_star, in_dist=False, ood_num_examples=ood_num_examples)
-        pdb.set_trace()
-        measures = get_measures_roc(
-            concat([out_confidence, test_confidence]),
-            concat([np.zeros(len(out_confidence)), test_correct]))
-
-        rmss.append(measures[0]); mads.append(measures[1]); sf1s.append(measures[2])
-
-    rms = np.mean(rmss); mad = np.mean(mads); sf1 = np.mean(sf1s)
-    # rms_list.append(rms); mad_list.append(mad); sf1_list.append(sf1)
-
-    print_measures(rms, mad, sf1, '')
-    return rms, mad, sf1
-
-
-# /////////////// Gaussian Noise ///////////////
-
-def ood_gaussian_noise(args, model, test_loader, t_star):
-    _, test_confidence, test_correct, _, _ = get_model_calibration_results(model, test_loader, in_dist=True, t=t_star)
-
-    ood_num_examples = len(test_loader.dataset) // 5
-    # expected_ap = ood_num_examples / (ood_num_examples + len(test_loader.dataset))
-
-    dummy_targets = torch.ones(ood_num_examples)
-    ood_data = torch.from_numpy(np.float32(np.clip(
-        np.random.normal(size=(ood_num_examples, 3, 32, 32), scale=0.5), -1, 1)))
-    ood_data = torch.utils.data.TensorDataset(ood_data, dummy_targets)
-    ood_loader = torch.utils.data.DataLoader(ood_data, batch_size=100, shuffle=True)
-
-    print('\n\nGaussian Noise (sigma = 0.5) Calibration')
-    return get_and_print_results(model, ood_loader, test_confidence, test_correct, ood_num_examples)
-
-
-
-def eval_ood(args, models, test_loader):
-    t_star = 1
-
-    rms_mean, mad_mean, sf1_mean = 0, 0, 0
-    for model in models:
-        rms, mad, sf1 = ood_gaussian_noise(args, model, test_loader, t_star)
-        rms_mean += rms
-        mad_mean += mad
-        sf1_mean += sf1
-
-    return np.round(rms_mean/len(models), 2), np.round(mad_mean/len(models), 2), np.round(sf1_mean/len(models), 2)
 
 
 if __name__ == '__main__':

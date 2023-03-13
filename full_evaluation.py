@@ -10,7 +10,8 @@ from helpers.utils import get_folder_name
 from helpers.parser import parse_args
 from loaders.data import get_data, ROOT_CLUSTER
 from model.model import get_model
-from robustness_measures.calibration import eval_calibration, eval_ood, ood_gaussian_noise
+from robustness_measures.calibration import eval_calibration
+from robustness_measures.ood_detection import eval_ood
 from robustness_measures.repeatability import eval_repeatability
 from helpers.evaluate import eval_ensemble
 
