@@ -106,7 +106,7 @@ if __name__ == '__main__':
         ckpt = torch.load(args.resume)
         model.load_state_dict(ckpt['state_dict'])
 
-    in_score, right_score, wrong_score = get_ood_scores(model, test_loader, in_dist=True)
+    in_score, right_score, wrong_score = get_ood_scores(model, test_loader, ood_num_examples=0, in_dist=True)
 
     num_right = len(right_score)
     num_wrong = len(wrong_score)
