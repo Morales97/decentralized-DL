@@ -191,6 +191,7 @@ def evaluate_all(args, models, test_loader, device):
     pred_disagreement = _average_non_zero(disagreement)
     pred_L2_dist = _average_non_zero(L2_dist)
     pred_JS_div = _average_non_zero(JS_div)
+    pdb.set_trace()
 
 def full_evaluation(args, seeds=[0,1,2]):
     '''
@@ -224,3 +225,6 @@ def full_evaluation(args, seeds=[0,1,2]):
 if __name__ == '__main__':
     ''' For debugging purposes '''
     args = parse_args()
+    full_evaluation(args)
+
+# python evaluate/evaluate.py --net=vgg16 --dataset=cifar100 --lr=0.06
