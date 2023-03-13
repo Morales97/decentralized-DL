@@ -154,7 +154,7 @@ def print_measures(auroc, aupr, fpr, recall_level=RECALL_LEVEL):
     print('AUROC: \t\t\t{:.2f}'.format(100 * auroc))
     print('AUPR:  \t\t\t{:.2f}'.format(100 * aupr))
 
-def get_and_print_results(model, ood_loader, ood_num_examples, num_to_avg=1):
+def get_and_print_results(model, ood_loader, ood_num_examples, in_score, num_to_avg=1):
 
     aurocs, auprs, fprs = [], [], []
     for _ in range(num_to_avg):
@@ -167,8 +167,8 @@ def get_and_print_results(model, ood_loader, ood_num_examples, num_to_avg=1):
 
     print_measures(auroc, aupr, fpr)
 
-def ood_gaussian_noise(args, model, test_loader):
-    ood_num_examples = len(test_loader.dataset) // 5
+def ood_gaussian_noise(args, model, in_score):
+    ood_num_examples = len(in_score) // 5
 
     dummy_targets = torch.ones(ood_num_examples)
     ood_data = torch.from_numpy(np.float32(np.clip(
@@ -177,12 +177,14 @@ def ood_gaussian_noise(args, model, test_loader):
     ood_loader = torch.utils.data.DataLoader(ood_data, batch_size=100, shuffle=True)
 
     print('\n\nGaussian Noise (sigma = 0.5) Calibration')
-    return get_and_print_results(model, ood_loader, ood_num_examples)
+    return get_and_print_results(model, ood_loader, ood_num_examples, in_score)
 
 def eval_ood(args, models, test_loader):
     auroc_mean, aupr_mean, fpr_mean = 0, 0, 0
     for model in models:
-        auroc, aupr, fpr = ood_gaussian_noise(args, model, test_loader)
+        in_score, right_score, wrong_score = get_ood_scores(test_loader, in_dist=True)
+
+        auroc, aupr, fpr = ood_gaussian_noise(args, model, in_score)
         auroc_mean += auroc
         aupr_mean += aupr
         fpr_mean += fpr
