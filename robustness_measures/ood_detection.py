@@ -194,7 +194,7 @@ def ood_rademacher_noise(args, model, ood_num_examples, in_score):
 
 def ood_random_images(args, model, ood_num_examples, in_score):
     ood_loader = get_ood_loader()
-    return get_and_print_results(model, ood_loader, len(ood_loader.dataset), in_score)
+    return get_and_print_results(model, ood_loader, ood_num_examples, in_score)
 
 def ood_blob(args, model, ood_num_examples, in_score):
 
@@ -240,13 +240,13 @@ def eval_ood(args, models, test_loader):
     print(f'OOD Detection - Rademacher noise. AUROC: {auroc} \t AUPR {aupr} \t FPR {fpr}')
     auroc_list.append(auroc); aupr_list.append(aupr); fpr_list.append(fpr)
 
-    auroc, aupr, fpr = compute_average_ood(args, models, ood_num_examples, in_scores, ood_blob)
-    print(f'OOD Detection - Blop. AUROC: {auroc} \t AUPR {aupr} \t FPR {fpr}')
-    auroc_list.append(auroc); aupr_list.append(aupr); fpr_list.append(fpr)
-
-    # auroc, aupr, fpr = compute_average_ood(args, models, ood_num_examples, in_scores, ood_random_images)
-    # print(f'OOD Detection 300K random images. AUROC: {auroc} \t AUPR {aupr} \t FPR {fpr}')
+    # auroc, aupr, fpr = compute_average_ood(args, models, ood_num_examples, in_scores, ood_blob)
+    # print(f'OOD Detection - Blop. AUROC: {auroc} \t AUPR {aupr} \t FPR {fpr}')
     # auroc_list.append(auroc); aupr_list.append(aupr); fpr_list.append(fpr)
+
+    auroc, aupr, fpr = compute_average_ood(args, models, ood_num_examples, in_scores, ood_random_images)
+    print(f'OOD Detection 300K random images. AUROC: {auroc} \t AUPR {aupr} \t FPR {fpr}')
+    auroc_list.append(auroc); aupr_list.append(aupr); fpr_list.append(fpr)
 
     return np.array(auroc_list).mean(), np.array(aupr_list).mean(), np.array(fpr_list).mean() 
 
