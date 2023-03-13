@@ -33,8 +33,8 @@ def _get_cifar(args, root, batch_size, val_fraction, fraction):
         return get_cifar(args, root, batch_size, iid=True, fraction=fraction, noisy=args.label_noise)
 
 
-def _get_tiny_imagenet(args, root, batch_size):
-    return get_tinyimagenet(args, root, batch_size)
+def _get_tiny_imagenet(args, root, batch_size, val_fraction):
+    return get_tinyimagenet(args, root, batch_size, val_fraction)
 
 
 def get_data(args, batch_size, fraction=-1, val_fraction=0, test_transforms=None):
