@@ -202,8 +202,8 @@ def ood_rademacher_noise(args, model, ood_num_examples, in_score):
 #     ood_loader = torch.utils.data.DataLoader(ood_data, batch_size=args.test_bs, shuffle=True,
 #                                             num_workers=args.prefetch, pin_memory=True)
 
-print('\n\nBlob Detection')
-get_and_print_results(ood_loader)
+# print('\n\nBlob Detection')
+# get_and_print_results(ood_loader)
 
 def compute_average_ood(args, models, ood_num_examples, in_scores, ood_fn):
     '''
