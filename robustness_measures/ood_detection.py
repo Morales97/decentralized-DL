@@ -235,8 +235,8 @@ def ood_svhn(args, model, ood_num_examples, in_score):
     elif args.dataset == 'tiny-in':
         normalize = transforms.Normalize(mean=(0.485, 0.456, 0.406), std=(0.229, 0.224, 0.225))
 
-    ood_data = datasets.SVHN(root=ROOT_CLUSTER + '/OOD_detection/SVHN', split='test',
-                            transform=transforms.Compose([transforms.Resize(32), transforms.ToTensor(), normalize]))
+    ood_data = datasets.SVHN(root=ROOT_CLUSTER + '/OOD_detection/', split='test',
+                            transform=transforms.Compose([transforms.Resize(32), transforms.ToTensor(), normalize]), download=True)
     ood_loader = torch.utils.data.DataLoader(ood_data, batch_size=100, shuffle=True)
 
     print('\nSVHN')
@@ -272,7 +272,7 @@ def eval_ood(args, models, test_loader):
     auroc_list.append(auroc); aupr_list.append(aupr); fpr_list.append(fpr)
 
     auroc, aupr, fpr = compute_average_ood(args, models, ood_num_examples, in_scores, ood_blob)
-    print(f'OOD Detection - Blop. AUROC: {auroc} \t AUPR {aupr} \t FPR {fpr}')
+    print(f'OOD Detection - Blob. AUROC: {auroc} \t AUPR {aupr} \t FPR {fpr}')
     auroc_list.append(auroc); aupr_list.append(aupr); fpr_list.append(fpr)
 
     auroc, aupr, fpr = compute_average_ood(args, models, ood_num_examples, in_scores, ood_textures)
