@@ -146,7 +146,7 @@ def eval_calibration(args, models, test_loader):
         mad_mean += mad
         sf1_mean += sf1
     
-    return rms_mean/len(models), mad_mean/len(models), sf1_mean/len(models)
+    return np.round(rms_mean/len(models), 2), np.round(mad_mean/len(models), 2), np.round(sf1_mean/len(models), 2)
 
 if __name__ == '__main__':
     args = parse_args()

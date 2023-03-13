@@ -6,6 +6,7 @@ from torch import FloatTensor, div
 from torch.utils.data import DataLoader, Dataset
 from torchvision import transforms
 from torchvision.transforms.functional import InterpolationMode
+import torch.utils.data as data
 
 import os
 import pickle, torch
@@ -35,7 +36,7 @@ class ImageNetDataset(Dataset):
 
         return data, self.labels[idx]
 
-def load_train_data(batch_size, file_path):
+def load_train_data(batch_size, file_path, val_fraction=0):
     with open(file_path, 'rb') as f:
         train_data, train_labels = pickle.load(f)
     transform = transforms.Compose([
@@ -51,15 +52,19 @@ def load_train_data(batch_size, file_path):
             )
         ]),
     )
-    train_loader = DataLoader(
-        train_dataset,
-        shuffle=True,
-        batch_size=batch_size,
-        pin_memory=True,
-        drop_last=True,
-    )
+
+    if val_fraction > 0:
+        n_samples = int(np.floor(len(train_dataset) * (1-val_fraction)))
+        print(f'Splitting training set into train/val, with {n_samples}/{len(train_dataset)-n_samples} samples respectively')
+        data_split = data.random_split(train_dataset, [n_samples, len(train_dataset)-n_samples], generator=torch.Generator().manual_seed(42))     # NOTE manual seed fixed for reproducible results
+        train_loader = data.DataLoader(data_split[0], batch_size=batch_size, shuffle=True)     
+        val_loader = data.DataLoader(data_split[1], batch_size=batch_size, shuffle=False)    
+    else:
+        train_loader = data.DataLoader(train_dataset, batch_size=batch_size, shuffle=True)   
+        val_loader = None
+
     f.close()
-    return train_loader
+    return train_loader, val_loader
 
 def load_val_data(batch_size, file_path):
     with open(file_path, 'rb') as f:
@@ -84,7 +89,9 @@ def load_val_data(batch_size, file_path):
     f.close()
     return val_loader
 
-def get_tinyimagenet(args, root, batch_size):
-    train_loader = load_train_data(batch_size, os.path.join(root, 'tiny-imagenet', 'train_dataset.pkl'))    
-    val_loader = load_val_data(batch_size, os.path.join(root, 'tiny-imagenet', 'val_dataset.pkl'))
-    return [train_loader], val_loader   # NOTE only supporting centralized training
+def get_tinyimagenet(args, root, batch_size, val_fraction):
+    train_loader, val_loader = load_train_data(batch_size, os.path.join(root, 'tiny-imagenet', 'train_dataset.pkl'), val_fraction)    
+    test_loader = load_val_data(batch_size, os.path.join(root, 'tiny-imagenet', 'val_dataset.pkl'))
+    if val_loader is None:
+        val_loader = test_loader
+    return train_loader, val_loader, test_loader   # NOTE only supporting centralized training
