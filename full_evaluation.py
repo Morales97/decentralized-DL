@@ -3,6 +3,7 @@ import numpy as np
 import os
 import sys
 import pdb
+from tabulate import tabulate
 
 from helpers.utils import get_folder_name
 from helpers.parser import parse_args
@@ -51,10 +52,11 @@ def evaluate_all(args, models, test_loader, device):
 
     # REPEATABILITY
     disagreement, L2_dist, JS_div = eval_repeatability(args, models, test_loader)
-    pred_disagreement = _average_non_zero(disagreement)
-    pred_L2_dist = _average_non_zero(L2_dist)
-    pred_JS_div = _average_non_zero(JS_div)
-    pdb.set_trace()
+    results['pred_disagreement'] = _average_non_zero(disagreement)
+    results['pred_L2_dist'] = _average_non_zero(L2_dist)
+    results['pred_JS_div'] = _average_non_zero(JS_div)
+
+    return results
 
 def full_evaluation(args, seeds=[0,1,2]):
     '''
@@ -69,20 +71,24 @@ def full_evaluation(args, seeds=[0,1,2]):
     models = []
     for seed in seeds:
         models.append(_load_model(args, device, seed, opt='SGD'))
-    
-    evaluate_all(args, models, test_loader, device)
+    results_SGD = evaluate_all(args, models, test_loader, device)
 
     # EMA acc
     print('\n *** Evaluating EMA Accuracy... ***')
     models = []
     for seed in seeds:
         models.append(_load_model(args, device, seed, opt='EMA_acc'))
+    results_EMA_acc = evaluate_all(args, models, test_loader, device)
+
 
     # EMA val
     print('\n *** Evaluating EMA Validation... ***')
     models = []
     for seed in seeds:
         models.append(_load_model(args, device, seed, opt='EMA_val'))
+    results_EMA_val = evaluate_all(args, models, test_loader, device)
+    pdb.set_trace()
+    print(tabulate(['SGD', *results_SGD.values()], ['EMA Acc', *results_EMA_acc.values()], headers=['Model', *results_SGD.keys()]))
 
 
 

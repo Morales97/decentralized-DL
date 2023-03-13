@@ -48,8 +48,8 @@ def get_data(args, batch_size, fraction=-1, val_fraction=0, test_transforms=None
     elif args.dataset in ['cifar10', 'cifar100']:
         if test_transforms:
             return get_cifar_test(args, root, test_transforms=test_transforms)
-        return _get_cifar(args, root, batch_size, val_fraction,fraction)
+        return _get_cifar(args, root, batch_size, val_fraction, fraction)
     elif args.dataset == 'tiny-in':
-        return _get_tiny_imagenet(args, root, batch_size)
+        return _get_tiny_imagenet(args, root, batch_size, val_fraction)
     else:
         raise Exception('Dataset not supported')
