@@ -66,7 +66,7 @@ def load_train_data(batch_size, file_path, val_fraction=0):
     f.close()
     return train_loader, val_loader
 
-def load_val_data(batch_size, file_path):
+def load_val_data(file_path, batch_size=100):
     with open(file_path, 'rb') as f:
         val_data, val_labels = pickle.load(f)
     transform = transforms.Compose([
@@ -83,7 +83,7 @@ def load_val_data(batch_size, file_path):
     val_loader = DataLoader(
         val_dataset,
         batch_size=batch_size,
-        shuffle=True,
+        shuffle=False,
         pin_memory=True
     )
     f.close()
@@ -91,7 +91,7 @@ def load_val_data(batch_size, file_path):
 
 def get_tinyimagenet(args, root, batch_size, val_fraction):
     train_loader, val_loader = load_train_data(batch_size, os.path.join(root, 'tiny-imagenet', 'train_dataset.pkl'), val_fraction)    
-    test_loader = load_val_data(batch_size, os.path.join(root, 'tiny-imagenet', 'val_dataset.pkl'))
+    test_loader = load_val_data(os.path.join(root, 'tiny-imagenet', 'val_dataset.pkl'))
     if val_loader is None:
         val_loader = test_loader
     return train_loader, val_loader, test_loader   # NOTE only supporting centralized training

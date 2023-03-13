@@ -98,8 +98,9 @@ def get_measures(confidence, correct):
     return rms, mad, sf1
 
 to_np = lambda x: x.data.to('cpu').numpy()
+concat = lambda x: np.concatenate(x, axis=0)
 
-def get_model_calibration_results(model, data_loader, in_dist=True, t=1):
+def get_model_calibration_results(model, data_loader, in_dist=True, t=1, ood_num_examples=0):
     logits = []
     confidence = []
     correct = []
@@ -107,9 +108,9 @@ def get_model_calibration_results(model, data_loader, in_dist=True, t=1):
     running_loss = 0
 
     with torch.no_grad():
-        for batch_idx, (data, target) in enumerate(data_loader):
-            # if batch_idx >= ood_num_examples // args.test_bs and in_dist is False:
-            #     break
+        for batch_idx, (data, target) in enumerate(data_loader):    
+            if batch_idx >= ood_num_examples // 100 and in_dist is False:   # NOTE 100 is test batch size
+                break
             data, target = data.cuda(), target.cuda()
 
             output = model(data)
@@ -123,16 +124,20 @@ def get_model_calibration_results(model, data_loader, in_dist=True, t=1):
 
             confidence.extend(to_np(F.softmax(output/t, dim=1).max(1)[0]).squeeze().tolist())
 
-            pred = output.data.max(1)[1]
-            correct.extend(pred.eq(target).to('cpu').numpy().squeeze().tolist())
-            labels.extend(target.to('cpu').numpy().squeeze().tolist())
+            if in_dist:
+                pred = output.data.max(1)[1]
+                correct.extend(pred.eq(target).to('cpu').numpy().squeeze().tolist())
+                labels.extend(target.to('cpu').numpy().squeeze().tolist())
             
-            loss = F.cross_entropy(output, target, reduction='sum')
-            running_loss += loss.cpu().data.numpy()
+                loss = F.cross_entropy(output, target, reduction='sum')
+                running_loss += loss.cpu().data.numpy()
     
-    loss = running_loss / len(data_loader.dataset)
+    if not in_dist:
+        return logits[:ood_num_examples].copy(), confidence[:ood_num_examples].copy()
+    else:
+        loss = running_loss / len(data_loader.dataset)
+        return logits.copy(), confidence.copy(), correct.copy(), labels.copy(), loss
 
-    return logits.copy(), confidence.copy(), correct.copy(), labels.copy(), loss
 
 def eval_calibration(args, models, test_loader):
     print('Ignoring temperature for calibration')
@@ -147,6 +152,46 @@ def eval_calibration(args, models, test_loader):
         sf1_mean += sf1
     
     return np.round(rms_mean/len(models), 2), np.round(mad_mean/len(models), 2), np.round(sf1_mean/len(models), 2)
+
+def print_measures(auroc, aupr, fpr, method_name='Ours', recal_level=0.95):
+    print('\t\t\t\t' + method_name)
+    print('FPR{:d}:\t\t\t{:.2f}'.format(int(100 * recal_level), 100 * fpr))
+    print('AUROC: \t\t\t{:.2f}'.format(100 * auroc))
+    print('AUPR:  \t\t\t{:.2f}'.format(100 * aupr))
+
+def get_and_print_results(model, ood_loader, test_confidence, num_to_avg=1, t_star=1):
+
+    rmss, mads, sf1s = [], [], []
+    for _ in range(num_to_avg):
+        out_logits, out_confidence = get_model_calibration_results(model, ood_loader, t=t_star, in_dist=False)
+
+        measures = get_measures(
+            concat([out_confidence, test_confidence]),
+            concat([np.zeros(len(out_confidence)), test_correct]))
+
+        rmss.append(measures[0]); mads.append(measures[1]); sf1s.append(measures[2])
+
+    rms = np.mean(rmss); mad = np.mean(mads); sf1 = np.mean(sf1s)
+    # rms_list.append(rms); mad_list.append(mad); sf1_list.append(sf1)
+
+    print_measures(rms, mad, sf1, '')
+    return rms, mad, sf1
+
+
+# /////////////// Gaussian Noise ///////////////
+
+def ood_gaussian_noise(args, model, test_loader, test_confidence):
+    ood_num_examples = len(test_loader.dataset) // 5
+    # expected_ap = ood_num_examples / (ood_num_examples + len(test_loader.dataset))
+
+    dummy_targets = torch.ones(ood_num_examples)
+    ood_data = torch.from_numpy(np.float32(np.clip(
+        np.random.normal(size=(ood_num_examples, 3, 32, 32), scale=0.5), -1, 1)))
+    ood_data = torch.utils.data.TensorDataset(ood_data, dummy_targets)
+    ood_loader = torch.utils.data.DataLoader(ood_data, batch_size=args.test_bs, shuffle=True)
+
+    print('\n\nGaussian Noise (sigma = 0.5) Calibration')
+    get_and_print_results(model, ood_loader, test_confidence)
 
 if __name__ == '__main__':
     args = parse_args()
@@ -166,8 +211,8 @@ if __name__ == '__main__':
     # loss, acc = evaluate_model(model, test_loader, device)
     # print(f'Loss: {loss}, Acc: {acc}')
     
-    # # print('\nTuning Softmax Temperature')
-    # # t_star = tune_temp(val_logits, val_labels)
+    # print('\nTuning Softmax Temperature')
+    # t_star = tune_temp(val_logits, val_labels)
     # # print('Softmax Temperature Tuned. Temperature is {:.3f}'.format(t_star))
     print('Ignoring temperature')
     t_star = 1
@@ -178,5 +223,7 @@ if __name__ == '__main__':
     print('RMS Calib Error (%): \t\t{:.2f}'.format(100 * rms))
     print('MAD Calib Error (%): \t\t{:.2f}'.format(100 * mad))
     print('Soft F1 Score (%):   \t\t{:.2f}'.format(100 * sf1))
+    
+    ood_gaussian_noise(args, model, test_loader, test_confidence)
 
 # python robustness_measures/calibration.py --net=vgg16 --dataset=cifar100 --resume=/mloraw1/danmoral/checkpoints/cifar100/vgg16/SGD_0.06_s0/checkpoint_last.pth.tar

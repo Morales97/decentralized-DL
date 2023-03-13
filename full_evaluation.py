@@ -104,10 +104,17 @@ def full_evaluation(args, seeds=[0,1,2]):
         models.append(get_avg_model(args, start=0, end=1, expt_name='EMA_acc_'+str(args.lr[0]), seed=seed))
     results_uniform = evaluate_all(args, models, test_loader, device)
 
-    pdb.set_trace()
-    results = np.concatenate((results_SGD.values(), results_EMA_acc.values()))
-
-    print(tabulate([['SGD', *results_SGD.values()], ['EMA Acc', *results_EMA_acc.values()], ['EMA Val', *results_EMA_val.values()], ['Uniform (EMA acc)', *results_uniform.values()]], headers=['Model', *results_SGD.keys()]))
+    results = np.vstack((
+        np.array([*results_SGD.values()]), 
+        np.array([*results_EMA_acc.values()]),
+        np.array([*results_EMA_val.values()]),
+        np.array([*results_uniform.values()])
+        ))
+    results_dict = {}
+    for i, key in enumerate(results_SGD.keys()):
+        results_dict[key] = results[:,i]
+    
+    print(tabulate([[key, *value] for key, value in results_dict.items()], headers=['', 'SGD (No averaging)', 'EMA Accuracy', 'EMA Validation', 'Uniform (EMA acc)'], tablefmt="pretty"))
 
 if __name__ == '__main__':
     ''' For debugging purposes '''
