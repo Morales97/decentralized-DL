@@ -19,6 +19,7 @@ class VGG(nn.Module):
     def __init__(self, features, n_classes):
         super(VGG, self).__init__()
         self.features = features
+        self.num_classes = n_classes
         self.classifier = nn.Sequential(
             nn.Dropout(),
             nn.Linear(512, 512),
