@@ -184,7 +184,7 @@ def ood_rademacher_noise(args, model, ood_num_examples, in_score):
     ood_data = torch.from_numpy(np.random.binomial(
         n=1, p=0.5, size=(ood_num_examples, 3, 32, 32)).astype(np.float32)) * 2 - 1
     ood_data = torch.utils.data.TensorDataset(ood_data, dummy_targets)
-    ood_loader = torch.utils.data.DataLoader(ood_data, batch_size=args.test_bs, shuffle=True)
+    ood_loader = torch.utils.data.DataLoader(ood_data, batch_size=100, shuffle=True)
 
     print('\n\nRademacher Noise Detection')
     return get_and_print_results(model, ood_loader, ood_num_examples, in_score)
@@ -199,7 +199,7 @@ def ood_rademacher_noise(args, model, ood_num_examples, in_score):
 #     dummy_targets = torch.ones(ood_num_examples)
 #     ood_data = torch.from_numpy(ood_data.transpose((0, 3, 1, 2))) * 2 - 1
 #     ood_data = torch.utils.data.TensorDataset(ood_data, dummy_targets)
-#     ood_loader = torch.utils.data.DataLoader(ood_data, batch_size=args.test_bs, shuffle=True,
+#     ood_loader = torch.utils.data.DataLoader(ood_data, batch_size=100, shuffle=True,
 #                                             num_workers=args.prefetch, pin_memory=True)
 
 # print('\n\nBlob Detection')
