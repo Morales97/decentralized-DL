@@ -138,7 +138,7 @@ def eval_calibration(args, models, test_loader):
     print('Ignoring temperature for calibration')
     t_star = 1
 
-    rms_mean, mad_mean, sf1_mean = 0
+    rms_mean, mad_mean, sf1_mean = 0, 0, 0
     for model in models:
         test_logits, test_confidence, test_correct, _, test_loss = get_model_calibration_results(model, test_loader, in_dist=True, t=t_star)
         rms, mad, sf1 = get_measures(np.array(test_confidence), np.array(test_correct))

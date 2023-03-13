@@ -52,10 +52,10 @@ def evaluate_all(args, models, test_loader, device):
     results['Test Loss'] = np.round(np.array(losses).mean(), 2)
 
     # REPEATABILITY
-    disagreement, L2_dist, JS_div = eval_repeatability(args, models, test_loader)
-    results['Pred Disagr. (%)'] = _average_non_zero(disagreement)
-    results['Pred L2 dist'] = _average_non_zero(L2_dist)
-    results['Pred JS div'] = _average_non_zero(JS_div)
+    # disagreement, L2_dist, JS_div = eval_repeatability(args, models, test_loader)
+    # results['Pred Disagr. (%)'] = _average_non_zero(disagreement)
+    # results['Pred L2 dist'] = _average_non_zero(L2_dist)
+    # results['Pred JS div'] = _average_non_zero(JS_div)
 
     # CALIBRATION
     rms, mad, sf1 = eval_calibration(args, models, test_loader)
