@@ -302,12 +302,12 @@ if __name__ == '__main__':
     # loss, acc = evaluate_model(model, test_loader, device)
     # print(f'Loss: {loss}, Acc: {acc}')
     
-    val_logits, val_confidence, val_correct, val_labels, _ = get_model_calibration_results(model, val_loader, in_dist=True)   # NOTE need to split train in train-val
-    print('\nTuning Softmax Temperature')
-    t_star = tune_temp(val_logits, val_labels)
-    print('Softmax Temperature Tuned. Temperature is {:.3f}'.format(t_star))
-    # print('Ignoring temperature')
-    # t_star = 1
+    # val_logits, val_confidence, val_correct, val_labels, _ = get_model_calibration_results(model, val_loader, in_dist=True)   # NOTE need to split train in train-val
+    # print('\nTuning Softmax Temperature')
+    # t_star = tune_temp(val_logits, val_labels)
+    # print('Softmax Temperature Tuned. Temperature is {:.3f}'.format(t_star))
+    print('Ignoring temperature')
+    t_star = 1
 
     test_logits, test_confidence, test_correct, _, test_loss = get_model_calibration_results(model, test_loader, in_dist=True, t=t_star)
     rms, mad, sf1 = get_measures(np.array(test_confidence), np.array(test_correct))
