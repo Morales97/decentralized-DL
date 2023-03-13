@@ -57,7 +57,6 @@ def load_train_data(batch_size, file_path, val_fraction=0):
         n_samples = int(np.floor(len(train_dataset) * (1-val_fraction)))
         print(f'Splitting training set into train/val, with {n_samples}/{len(train_dataset)-n_samples} samples respectively')
         data_split = data.random_split(train_dataset, [n_samples, len(train_dataset)-n_samples], generator=torch.Generator().manual_seed(42))     # NOTE manual seed fixed for reproducible results
-        pdb.set_trace()
         train_loader = data.DataLoader(data_split[0], batch_size=batch_size, shuffle=True)     
         val_loader = data.DataLoader(data_split[1], batch_size=batch_size, shuffle=False)    
     else:
