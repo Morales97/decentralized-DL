@@ -6,6 +6,8 @@ import pdb
 import pathlib
 import sys
 import os
+
+from helpers.utils import get_folder_name
 sys.path.insert(0, os.path.join(sys.path[0], '..'))
 from helpers.parser import parse_args
 from loaders.data import get_data, ROOT_CLUSTER
@@ -274,13 +276,10 @@ def get_avg_model(args, start=0.5, end=1, expt_name=None):
     
     return model
 
-if __name__ == '__main__':
-    ''' For debugging purposes '''
-    args = parse_args()
-
+def compute_and_save_accuracies(args, seed=None):
     train_loader, val_loader, test_loader = get_data(args, args.batch_size[0], args.data_fraction, args.val_fraction)
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
-    save_dir = os.path.join(args.save_dir, args.dataset, args.net, args.expt_name)
+    save_dir = get_folder_name(args, seed)
     index_ckpt_file, step = find_index_ckpt(save_dir)
     state_dir = os.path.join(save_dir, index_ckpt_file)
 
@@ -311,9 +310,55 @@ if __name__ == '__main__':
         print(f'Step {ckpt}, acc: {acc}')
     torch.save(accs, os.path.join(save_dir, 'accs_computed.pt'))
     
-    accs = torch.load(os.path.join(save_dir, 'accs_computed.pt'))
+def compute_accs_all_seeds(args, seeds=[0,1,2]):
+    for seed in seeds:
+        compute_and_save_accuracies(args, seed)
+
+if __name__ == '__main__':
+    ''' For debugging purposes '''
+    args = parse_args()
+
+    # compute_and_save_accuracies(args)
+    compute_accs_all_seeds(args)
+
+
+    # train_loader, val_loader, test_loader = get_data(args, args.batch_size[0], args.data_fraction, args.val_fraction)
+    # device = 'cuda' if torch.cuda.is_available() else 'cpu'
+    # save_dir = os.path.join(args.save_dir, args.dataset, args.net, args.expt_name)
+
+    # index_ckpt_file, step = find_index_ckpt(save_dir)
+    # state_dir = os.path.join(save_dir, index_ckpt_file)
+
+    # _index = UniformAvgIndex('.')
+    # # _index = TriangleAvgIndex('.') 
+    # state_dict = torch.load(state_dir)
+    # _index.load_state_dict(state_dict)
+
+    # index = ModelAvgIndex(
+    #         get_model(args, device),              # NOTE only supported with solo mode now.
+    #         _index,
+    #         include_buffers=True,
+    #     )
+    # index._index._checkpoint_dir = pathlib.Path(save_dir)
+
+    # # compute all accuracies in advance and store
+    # accs = {}
+    # av_ckpts = list(state_dict['available_checkpoints'])
+    # av_ckpts.sort()
+
+    # # NOTE UNCOMMENT to precompute checkpoints
+    # # for ckpt in av_ckpts[:int(3*len(av_ckpts)//6)]:
+    # for ckpt in av_ckpts[:-1]:
+    #     # model = index.avg_from(ckpt, until=av_ckpts[int(3*len(av_ckpts)//6)]) # until start of phase 2 (epoch 150)
+    #     model = index.avg_from(ckpt, until=av_ckpts[-1])
+    #     _, acc = eval_avg_model(model, train_loader, test_loader)
+    #     accs[ckpt] = acc
+    #     print(f'Step {ckpt}, acc: {acc}')
+    # torch.save(accs, os.path.join(save_dir, 'accs_computed.pt'))
+    
+    # accs = torch.load(os.path.join(save_dir, 'accs_computed.pt'))
     # exponential_search(index, train_loader, test_loader, end=38400, start=38000, accs=accs, test=False)
-    three_split_search(index, train_loader, test_loader, end=av_ckpts[-1], start=av_ckpts[0], accs=accs, test=False)
+    # three_split_search(index, train_loader, test_loader, end=av_ckpts[-1], start=av_ckpts[0], accs=accs, test=False)
 
     # start = 43200
     # end = 58400
