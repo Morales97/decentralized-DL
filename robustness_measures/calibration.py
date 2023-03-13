@@ -227,7 +227,7 @@ def eval_calibration(args, models, test_loader):
         mad_mean += mad
         sf1_mean += sf1
 
-    return np.round(rms_mean/len(models), 2), np.round(mad_mean/len(models), 2), np.round(sf1_mean/len(models), 2), test_confidence
+    return np.round(rms_mean/len(models), 2), np.round(mad_mean/len(models), 2), np.round(sf1_mean/len(models), 2)
 
 def print_measures(auroc, aupr, fpr, method_name='Ours', recall_level=RECALL_LEVEL):
     print('\t\t\t\t' + method_name)
