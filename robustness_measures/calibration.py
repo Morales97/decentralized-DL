@@ -99,7 +99,7 @@ def get_measures(confidence, correct):
 
 to_np = lambda x: x.data.to('cpu').numpy()
 
-def get_model_results(model, data_loader, in_dist=True, t=1):
+def get_model_calibration_results(model, data_loader, in_dist=True, t=1):
     logits = []
     confidence = []
     correct = []
@@ -134,6 +134,19 @@ def get_model_results(model, data_loader, in_dist=True, t=1):
 
     return logits.copy(), confidence.copy(), correct.copy(), labels.copy(), loss
 
+def eval_calibration(args, models, test_loader):
+    print('Ignoring temperature for calibration')
+    t_star = 1
+
+    rms_mean, mad_mean, sf1_mean = 0
+    for model in models:
+        test_logits, test_confidence, test_correct, _, test_loss = get_model_calibration_results(model, test_loader, in_dist=True, t=t_star)
+        rms, mad, sf1 = get_measures(np.array(test_confidence), np.array(test_correct))
+        rms_mean += rms
+        mad_mean += mad
+        sf1_mean += sf1
+    
+    return rms_mean/len(models), mad_mean/len(models), sf1_mean/len(models)
 
 if __name__ == '__main__':
     args = parse_args()
@@ -150,21 +163,20 @@ if __name__ == '__main__':
     else:
         model = get_avg_model(args, start=0.5, end=1)
 
-    loss, acc = evaluate_model(model, test_loader, device)
-    print(f'Loss: {loss}, Acc: {acc}')
+    # loss, acc = evaluate_model(model, test_loader, device)
+    # print(f'Loss: {loss}, Acc: {acc}')
     
-    # print('\nTuning Softmax Temperature')
-    # t_star = tune_temp(val_logits, val_labels)
-    # print('Softmax Temperature Tuned. Temperature is {:.3f}'.format(t_star))
+    # # print('\nTuning Softmax Temperature')
+    # # t_star = tune_temp(val_logits, val_labels)
+    # # print('Softmax Temperature Tuned. Temperature is {:.3f}'.format(t_star))
     print('Ignoring temperature')
     t_star = 1
 
-    test_logits, test_confidence, test_correct, _, test_loss = get_model_results(model, test_loader, in_dist=True, t=t_star)
+    test_logits, test_confidence, test_correct, _, test_loss = get_model_calibration_results(model, test_loader, in_dist=True, t=t_star)
     rms, mad, sf1 = get_measures(np.array(test_confidence), np.array(test_correct))
     print(f'Test Accuracy: {np.sum(test_correct)/10000*100} \t\t Test Loss: {test_loss}')
     print('RMS Calib Error (%): \t\t{:.2f}'.format(100 * rms))
     print('MAD Calib Error (%): \t\t{:.2f}'.format(100 * mad))
     print('Soft F1 Score (%):   \t\t{:.2f}'.format(100 * sf1))
 
-# python calibration/calibration.py --net=rn18 --dataset=cifar100 --resume=/mloraw1/danmoral/checkpoints/C4.3_lr0.8_cosine/checkpoint_m0_117001.pth.tar
-# python calibration/calibration.py --net=rn18 --dataset=cifar100 --expt_name=C4.3_lr0.8_cosine
+# python robustness_measures/calibration.py --net=vgg16 --dataset=cifar100 --resume=/mloraw1/danmoral/checkpoints/cifar100/vgg16/SGD_0.06_s0/checkpoint_last.pth.tar

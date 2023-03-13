@@ -9,6 +9,7 @@ from helpers.utils import get_folder_name
 from helpers.parser import parse_args
 from loaders.data import get_data, ROOT_CLUSTER
 from model.model import get_model
+from robustness_measures.calibration import eval_calibration
 from robustness_measures.repeatability import eval_repeatability
 from helpers.evaluate import eval_ensemble
 
@@ -33,7 +34,7 @@ def _load_model(args, device, seed, opt):
 
 def _average_non_zero(arr):
     non_zeros = arr[np.nonzero(arr)]
-    return non_zeros.mean()
+    return np.round(non_zeros.mean(), 2)
 
 def evaluate_all(args, models, test_loader, device):
     
@@ -47,14 +48,20 @@ def evaluate_all(args, models, test_loader, device):
         print(f'Model {i}:\tAccuracy: {accs[i]:.2f} \tLoss: {losses[i]:.4f} \tSoft accuracy: {soft_accs[i]:.2f}')
     print(f'(Prediction) Ensemble Accuracy: {acc:.2f} \tSoft accuracy: {soft_acc:.2f}')
 
-    results['Test Accuracy'] = np.array(accs).mean()
-    results['Test Loss'] = np.array(losses).mean()
+    results['Test Accuracy (%)'] = np.round(np.array(accs).mean(), 2)
+    results['Test Loss'] = np.round(np.array(losses).mean(), 2)
 
     # REPEATABILITY
     disagreement, L2_dist, JS_div = eval_repeatability(args, models, test_loader)
-    results['pred_disagreement'] = _average_non_zero(disagreement)
-    results['pred_L2_dist'] = _average_non_zero(L2_dist)
-    results['pred_JS_div'] = _average_non_zero(JS_div)
+    results['Pred Disagr. (%)'] = _average_non_zero(disagreement)
+    results['Pred L2 dist'] = _average_non_zero(L2_dist)
+    results['Pred JS div'] = _average_non_zero(JS_div)
+
+    # CALIBRATION
+    rms, mad, sf1 = eval_calibration(args, models, test_loader)
+    results['RMS Calib Error (%)'] = rms
+    results['MAD Calib Error (%)'] = mad
+    results['Soft F1 Score (%)'] = sf1
 
     return results
 
@@ -87,8 +94,9 @@ def full_evaluation(args, seeds=[0,1,2]):
     for seed in seeds:
         models.append(_load_model(args, device, seed, opt='EMA_val'))
     results_EMA_val = evaluate_all(args, models, test_loader, device)
+    
     pdb.set_trace()
-    print(tabulate(['SGD', *results_SGD.values()], ['EMA Acc', *results_EMA_acc.values()], headers=['Model', *results_SGD.keys()]))
+    print(tabulate([['SGD', *results_SGD.values()], ['EMA Acc', *results_EMA_acc.values()], ['EMA Val', *results_EMA_val.values()]], headers=['Model', *results_SGD.keys()]))
 
 
 
