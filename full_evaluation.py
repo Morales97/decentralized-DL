@@ -104,6 +104,8 @@ def full_evaluation(args, seeds=[0,1,2]):
         models.append(get_avg_model(args, start=0, end=1, expt_name='EMA_acc_'+str(args.lr[0]), seed=seed))
     results_uniform = evaluate_all(args, models, test_loader, device)
 
+    pdb.set_trace()
+    results = np.concatenate((results_SGD.values(), results_EMA_acc.values()))
 
     print(tabulate([['SGD', *results_SGD.values()], ['EMA Acc', *results_EMA_acc.values()], ['EMA Val', *results_EMA_val.values()], ['Uniform (EMA acc)', *results_uniform.values()]], headers=['Model', *results_SGD.keys()]))
 
