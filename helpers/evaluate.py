@@ -205,7 +205,7 @@ def full_evaluation(args, seeds=[0,1,2]):
     models = []
     for seed in seeds:
         models.append(_load_model(args, device, seed, opt='SGD'))
-
+        evaluate_all(args, models, test_loader, device)
 
     # EMA acc
     print('\n *** Evaluating EMA Accuracy... ***')
