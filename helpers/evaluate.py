@@ -1,6 +1,5 @@
 import torch
 import numpy as np
-from robustness_measures.repeatability import eval_repeatability
 from topology import get_average_model
 import torch.nn.functional as F
 import pdb
@@ -12,6 +11,7 @@ from helpers.utils import get_folder_name
 from helpers.parser import parse_args
 from loaders.data import get_data, ROOT_CLUSTER
 from model.model import get_model
+from robustness_measures.repeatability import eval_repeatability
 
 def evaluate_model(model, data_loader, device):
     """Compute loss and accuracy of a single model on a data_loader."""
@@ -227,4 +227,4 @@ if __name__ == '__main__':
     args = parse_args()
     full_evaluation(args)
 
-# python evaluate/evaluate.py --net=vgg16 --dataset=cifar100 --lr=0.06
+# python helpers/evaluate.py --net=vgg16 --dataset=cifar100 --lr=0.06
