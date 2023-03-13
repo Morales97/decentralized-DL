@@ -256,7 +256,7 @@ def get_and_print_results(model, ood_loader, test_confidence, test_correct, num_
 
 # /////////////// Gaussian Noise ///////////////
 
-def ood_gaussian_noise(args, model, test_loader):
+def ood_gaussian_noise(args, model, test_loader, t_star):
     _, test_confidence, test_correct, _, _ = get_model_calibration_results(model, test_loader, in_dist=True, t=t_star)
 
     ood_num_examples = len(test_loader.dataset) // 5
@@ -278,7 +278,7 @@ def eval_ood(args, models, test_loader):
 
     rms_mean, mad_mean, sf1_mean = 0, 0, 0
     for model in models:
-        rms, mad, sf1 = ood_gaussian_noise(args, model, test_loader)
+        rms, mad, sf1 = ood_gaussian_noise(args, model, test_loader, t_star)
         rms_mean += rms
         mad_mean += mad
         sf1_mean += sf1
@@ -318,7 +318,7 @@ if __name__ == '__main__':
     print('MAD Calib Error (%): \t\t{:.2f}'.format(100 * mad))
     print('Soft F1 Score (%):   \t\t{:.2f}'.format(100 * sf1))
     
-    ood_gaussian_noise(args, model, test_loader)
+    ood_gaussian_noise(args, model, test_loader, t_star)
 
 # python robustness_measures/calibration.py --net=vgg16 --dataset=cifar100 --resume=/mloraw1/danmoral/checkpoints/cifar100/vgg16/SGD_0.06_s0/checkpoint_last.pth.tar
 # python robustness_measures/calibration.py --net=vgg16 --dataset=cifar100 --resume=/mloraw1/danmoral/checkpoints/cifar100/vgg16/search_0.06_s0/checkpoint_last.pth.tar
