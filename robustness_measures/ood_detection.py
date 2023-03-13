@@ -5,7 +5,7 @@ import torch
 import numpy as np
 import torch.nn.functional as F
 from torch.utils.data import DataLoader, Dataset
-from torchvision import transforms
+from torchvision import transforms, datasets
 
 import os
 import sys
@@ -209,7 +209,23 @@ def ood_blob(args, model, ood_num_examples, in_score):
     ood_loader = torch.utils.data.DataLoader(ood_data, batch_size=100, shuffle=True)
 
     print('\nBlob Detection')
-    return get_and_print_results(model, ood_loader, len(ood_loader.dataset), in_score)
+    return get_and_print_results(model, ood_loader, ood_num_examples, in_score)
+
+def ood_textures(args, model, ood_num_examples, in_score):
+    if args.dataset == 'cifar10':
+        normalize = transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010))
+    elif args.dataset == 'cifar100':
+        normalize = transforms.Normalize((0.5071, 0.4867, 0.4408), (0.2675, 0.2565, 0.2761))
+    elif args.dataset == 'tiny-in':
+        normalize = transforms.Normalize(mean=(0.485, 0.456, 0.406), std=(0.229, 0.224, 0.225))
+
+    ood_data = datasets.ImageFolder(root=ROOT_CLUSTER + '/OOD_detection/dtd/images',
+                            transform=transforms.Compose([transforms.Resize(32), transforms.CenterCrop(32),
+                                                   transforms.ToTensor(), normalize]))
+    ood_loader = torch.utils.data.DataLoader(ood_data, batch_size=100, shuffle=True)
+
+    print('\nTexture Detection')
+    return get_and_print_results(model, ood_loader, ood_num_examples, in_score)
 
 def compute_average_ood(args, models, ood_num_examples, in_scores, ood_fn):
     '''
@@ -243,11 +259,15 @@ def eval_ood(args, models, test_loader):
     print(f'OOD Detection - Blop. AUROC: {auroc} \t AUPR {aupr} \t FPR {fpr}')
     auroc_list.append(auroc); aupr_list.append(aupr); fpr_list.append(fpr)
 
+    auroc, aupr, fpr = compute_average_ood(args, models, ood_num_examples, in_scores, ood_textures)
+    print(f'OOD Detection - Textures. AUROC: {auroc} \t AUPR {aupr} \t FPR {fpr}')
+    auroc_list.append(auroc); aupr_list.append(aupr); fpr_list.append(fpr)
+
     # auroc, aupr, fpr = compute_average_ood(args, models, ood_num_examples, in_scores, ood_random_images)
     # print(f'OOD Detection 300K random images. AUROC: {auroc} \t AUPR {aupr} \t FPR {fpr}')
     # auroc_list.append(auroc); aupr_list.append(aupr); fpr_list.append(fpr)
 
-    return np.array(auroc_list).mean(), np.array(aupr_list).mean(), np.array(fpr_list).mean() 
+    return np.round(np.array(auroc_list).mean(), 2), np.round(np.array(aupr_list).mean(), 2), np.round(np.array(fpr_list).mean(), 2)
 
 def eval_ood_random_images(args, models, test_loader):
     auroc_list, aupr_list, fpr_list = [], [], []
