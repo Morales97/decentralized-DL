@@ -166,6 +166,7 @@ def get_and_print_results(model, ood_loader, ood_num_examples, in_score, num_to_
     # auroc_list.append(auroc); aupr_list.append(aupr); fpr_list.append(fpr)
 
     print_measures(auroc, aupr, fpr)
+    return auroc, aupr, fpr
 
 def ood_gaussian_noise(args, model, in_score):
     ood_num_examples = len(in_score) // 5
