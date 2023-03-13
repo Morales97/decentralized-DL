@@ -112,7 +112,7 @@ def show_performance(pos, neg, recall_level=RECALL_LEVEL):
     print('AUROC:\t\t\t{:.2f}'.format(100 * auroc))
     print('AUPR:\t\t\t{:.2f}'.format(100 * aupr))
 
-def get_ood_scores(model, loader, ood_num_examples, in_dist=False, test_bs=100, use_CE=True):   # NOTE still not sure about the difference between CE and MSP
+def get_ood_scores(model, loader, ood_num_examples, in_dist=False, test_bs=100, use_CE=False):   # NOTE still not sure about the difference between CE and MSP
     _score = []
     _right_score = []
     _wrong_score = []
@@ -191,6 +191,10 @@ def ood_rademacher_noise(args, model, ood_num_examples, in_score):
     print('\n\nRademacher Noise Detection')
     return get_and_print_results(model, ood_loader, ood_num_examples, in_score)
 
+def ood_random_images(args, model, ood_num_examples, in_score):
+    ood_loader = get_ood_loader()
+    return get_and_print_results(model, ood_loader, len(ood_loader.dataset), in_score)
+
 # def ood_blob(args, model, ood_num_examples, in_score):
 
 #     ood_data = np.float32(np.random.binomial(n=1, p=0.7, size=(ood_num_examples, 32, 32, 3)))
@@ -235,16 +239,19 @@ def eval_ood(args, models, test_loader):
     print(f'OOD Detection Rademacher noise. AUROC: {auroc} \t AUPR {aupr} \t FPR {fpr}')
     auroc_list.append(auroc); aupr_list.append(aupr); fpr_list.append(fpr)
 
+    auroc, aupr, fpr = compute_average_ood(args, models, ood_num_examples, in_scores, ood_random_images)
+    print(f'OOD Detection 300K random images. AUROC: {auroc} \t AUPR {aupr} \t FPR {fpr}')
+    auroc_list.append(auroc); aupr_list.append(aupr); fpr_list.append(fpr)
     return np.array(auroc_list).mean(), np.array(aupr_list).mean(), np.array(fpr_list).mean() 
 
 
-def ood_dataset():
+def get_ood_loader():
     ood_dataset = np.load(ROOT_CLUSTER + str('/OOD_detection/300K_random_images.npy'))
     normalize = transforms.Normalize((0.5071, 0.4867, 0.4408), (0.2675, 0.2565, 0.2761))
     transform = transforms.Compose([transforms.ToTensor(), normalize]),
     ood_data = CustomDataset(ood_dataset, transform=transforms.Compose([transforms.ToTensor(), normalize]))
-    pdb.set_trace()
-
+    ood_loader = torch.utils.data.DataLoader(ood_data, batch_size=100, shuffle=False)
+    return ood_loader
 
 class CustomDataset(Dataset):
     def __init__(self, dataset, transform=None):
@@ -264,7 +271,6 @@ class CustomDataset(Dataset):
 
 
 if __name__ == '__main__':
-    ood_dataset()
     args = parse_args()
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
     train_loader, val_loader, test_loader = get_data(args, args.batch_size[0], args.data_fraction, args.val_fraction)
