@@ -110,7 +110,7 @@ def show_performance(pos, neg, recall_level=RECALL_LEVEL):
     print('AUROC:\t\t\t{:.2f}'.format(100 * auroc))
     print('AUPR:\t\t\t{:.2f}'.format(100 * aupr))
 
-def get_ood_scores(model, loader, ood_num_examples, in_dist=False, test_bs=100, use_CE=False):
+def get_ood_scores(model, loader, ood_num_examples, in_dist=False, test_bs=100, use_CE=True):
     _score = []
     _right_score = []
     _wrong_score = []
