@@ -240,6 +240,7 @@ def get_and_print_results(model, ood_loader, test_confidence, test_correct, ood_
     rmss, mads, sf1s = [], [], []
     for _ in range(num_to_avg):
         out_logits, out_confidence = get_model_calibration_results(model, ood_loader, t=t_star, in_dist=False, ood_num_examples=ood_num_examples)
+        pdb.set_trace()
         measures = get_measures_roc(
             concat([out_confidence, test_confidence]),
             concat([np.zeros(len(out_confidence)), test_correct]))
