@@ -65,10 +65,10 @@ def evaluate_all(args, models, test_loader, device):
     results['Soft F1 Score (%)'] = sf1
     
     # OOD Detection
-    fpr, auroc, auc = eval_ood(args, models, test_loader)
+    auroc, aupr, fpr = eval_ood(args, models, test_loader)
     results['FPR (lower better)'] = fpr
     results['AUROC (higher better)'] = auroc
-    results['AUC (higher better)'] = auc
+    results['AUPR (higher better)'] = aupr
 
     return results
 
