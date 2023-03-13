@@ -239,7 +239,7 @@ def eval_ood(args, models, test_loader):
 
 
 def ood_dataset():
-    ood_dataset = np.load(ROOT_CLUSTER + str('OOD_detection/300k_random_images.npy'))
+    ood_dataset = np.load(ROOT_CLUSTER + str('/OOD_detection/300k_random_images.npy'))
     normalize = transforms.Normalize((0.5071, 0.4867, 0.4408), (0.2675, 0.2565, 0.2761))
     transform = transforms.Compose([transforms.ToTensor(), normalize]),
     ood_data = CustomDataset(ood_dataset, transform=transforms.Compose([transforms.ToTensor(), normalize]))
