@@ -277,7 +277,7 @@ def get_avg_model(args, start=0.5, end=1, expt_name=None):
     return model
 
 def compute_and_save_accuracies(args, seed=None):
-    train_loader, val_loader, test_loader = get_data(args, args.batch_size[0], args.data_fraction, args.val_fraction)
+    train_loader, val_loader, test_loader = get_data(args, args.batch_size[0], args.data_fraction, val_fraction=0)
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
     save_dir = get_folder_name(args, seed)
     print(f'... Computing accuracies for model in {save_dir}')
@@ -308,7 +308,7 @@ def compute_and_save_accuracies(args, seed=None):
         model = index.avg_from(ckpt, until=av_ckpts[-1])
         _, acc = eval_avg_model(model, train_loader, test_loader)
         accs[ckpt] = acc
-        print(f'Step {ckpt}, acc: {acc}')
+        print(f'Step {ckpt} ({ckpt*args.ema_period}), acc: {acc}')
     torch.save(accs, os.path.join(save_dir, 'accs_computed.pt'))
     
 def compute_accs_all_seeds(args, seeds=[0,1,2]):
