@@ -15,9 +15,6 @@ from model.model import get_model
 from loaders.data import get_data, ROOT_CLUSTER
 from helpers.evaluate import evaluate_model
 import pdb
-import sklearn.metrics as sk
-
-RECALL_LEVEL = 0.95
 
 def calib_err(confidence, correct, p='2', beta=100):
     # beta is target bin size
