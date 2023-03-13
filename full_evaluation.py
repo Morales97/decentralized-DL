@@ -75,35 +75,38 @@ def full_evaluation(args, seeds=[0,1,2]):
     train_loader, val_loader, test_loader = get_data(args, args.batch_size[0], args.data_fraction, val_fraction=0)
 
     # SGD
-    # print('\n *** Evaluating SGD... ***')
-    # models = []
-    # for seed in seeds:
-    #     models.append(_load_model(args, device, seed, opt='SGD'))
-    # results_SGD = evaluate_all(args, models, test_loader, device)
+    print('\n *** Evaluating SGD... ***')
+    models = []
+    for seed in seeds:
+        models.append(_load_model(args, device, seed, opt='SGD'))
+    results_SGD = evaluate_all(args, models, test_loader, device)
 
-    # # EMA acc
-    # print('\n *** Evaluating EMA Accuracy... ***')
-    # models = []
-    # for seed in seeds:
-    #     models.append(_load_model(args, device, seed, opt='EMA_acc'))
-    # results_EMA_acc = evaluate_all(args, models, test_loader, device)
+    # EMA acc
+    print('\n *** Evaluating EMA Accuracy... ***')
+    models = []
+    for seed in seeds:
+        models.append(_load_model(args, device, seed, opt='EMA_acc'))
+    results_EMA_acc = evaluate_all(args, models, test_loader, device)
 
 
-    # # EMA val
-    # print('\n *** Evaluating EMA Validation... ***')
-    # models = []
-    # for seed in seeds:
-    #     models.append(_load_model(args, device, seed, opt='EMA_val'))
-    # results_EMA_val = evaluate_all(args, models, test_loader, device)
+    # EMA val
+    print('\n *** Evaluating EMA Validation... ***')
+    models = []
+    for seed in seeds:
+        models.append(_load_model(args, device, seed, opt='EMA_val'))
+    results_EMA_val = evaluate_all(args, models, test_loader, device)
     
-    # print(tabulate([['SGD', *results_SGD.values()], ['EMA Acc', *results_EMA_acc.values()], ['EMA Val', *results_EMA_val.values()]], headers=['Model', *results_SGD.keys()]))
 
     # Uniform avg of EMA acc
     print('\n *** Evaluating Uniform average of EMA Acc... ***')
     models = []
     for seed in seeds:
         models.append(get_avg_model(args, start=0, end=1, expt_name='EMA_acc_'+str(args.lr[0]), seed=seed))
-        pdb.set_trace()
+    results_uniform = evaluate_all(args, models, test_loader, device)
+
+
+    print(tabulate([['SGD', *results_SGD.values()], ['EMA Acc', *results_EMA_acc.values()], ['EMA Val', *results_EMA_val.values()], ['Uniform (EMA acc)', *results_uniform.values()]], headers=['Model', *results_SGD.keys()]))
+
 if __name__ == '__main__':
     ''' For debugging purposes '''
     args = parse_args()
