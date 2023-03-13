@@ -246,7 +246,7 @@ def find_index_ckpt(rootdir=".", prefix='index'):
     end_step = file.split('_')[-1].split('.')[0]
     return file, end_step
 
-def get_avg_model(args, start=0.5, end=1, expt_name=None):
+def get_avg_model(args, start=0.5, end=1, expt_name=None, seed=None):
     '''
     Get an average model for expt_name run between epochs [total_epochs * start, total_epochs * end] 
     '''
@@ -254,8 +254,9 @@ def get_avg_model(args, start=0.5, end=1, expt_name=None):
         expt_name = args.expt_name
 
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
-    train_loader, _, test_loader = get_data(args, args.batch_size[0], args.data_fraction)
-    save_dir = os.path.join(args.save_dir, args.dataset, args.net, expt_name)
+    train_loader, _, test_loader = get_data(args, args.batch_size[0], args.data_fraction, val_fraction=0)
+    # save_dir = os.path.join(args.save_dir, args.dataset, args.net, expt_name)
+    save_dir = get_folder_name(args, expt_name=expt_name, seed=seed)
     index_ckpt_file, step = find_index_ckpt(save_dir)
     state_dir = os.path.join(save_dir, index_ckpt_file)
 
@@ -279,7 +280,7 @@ def get_avg_model(args, start=0.5, end=1, expt_name=None):
 def compute_and_save_accuracies(args, seed=None):
     train_loader, val_loader, test_loader = get_data(args, args.batch_size[0], args.data_fraction, val_fraction=0)
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
-    save_dir = get_folder_name(args, seed)
+    save_dir = get_folder_name(args, seed=seed)
     print(f'... Computing accuracies for model in {save_dir}')
     index_ckpt_file, step = find_index_ckpt(save_dir)
     state_dir = os.path.join(save_dir, index_ckpt_file)
