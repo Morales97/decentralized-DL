@@ -235,7 +235,7 @@ def print_measures(auroc, aupr, fpr, method_name='Ours', recall_level=RECALL_LEV
     print('AUROC: \t\t\t{:.2f}'.format(100 * auroc))
     print('AUPR:  \t\t\t{:.2f}'.format(100 * aupr))
 
-def get_and_print_results(model, ood_loader, test_confidence, num_to_avg=1, t_star=1):
+def get_and_print_results(model, ood_loader, test_confidence, test_correct, num_to_avg=1, t_star=1):
 
     rmss, mads, sf1s = [], [], []
     for _ in range(num_to_avg):
@@ -256,7 +256,9 @@ def get_and_print_results(model, ood_loader, test_confidence, num_to_avg=1, t_st
 
 # /////////////// Gaussian Noise ///////////////
 
-def ood_gaussian_noise(args, model, test_loader, test_confidence):
+def ood_gaussian_noise(args, model, test_loader):
+    _, test_confidence, test_correct, _, _ = get_model_calibration_results(model, test_loader, in_dist=True, t=t_star)
+
     ood_num_examples = len(test_loader.dataset) // 5
     # expected_ap = ood_num_examples / (ood_num_examples + len(test_loader.dataset))
 
@@ -267,7 +269,7 @@ def ood_gaussian_noise(args, model, test_loader, test_confidence):
     ood_loader = torch.utils.data.DataLoader(ood_data, batch_size=100, shuffle=True)
 
     print('\n\nGaussian Noise (sigma = 0.5) Calibration')
-    return get_and_print_results(model, ood_loader, test_confidence)
+    return get_and_print_results(model, ood_loader, test_confidence, test_correct)
 
 
 
@@ -316,7 +318,7 @@ if __name__ == '__main__':
     print('MAD Calib Error (%): \t\t{:.2f}'.format(100 * mad))
     print('Soft F1 Score (%):   \t\t{:.2f}'.format(100 * sf1))
     
-    ood_gaussian_noise(args, model, test_loader, test_confidence)
+    ood_gaussian_noise(args, model, test_loader)
 
 # python robustness_measures/calibration.py --net=vgg16 --dataset=cifar100 --resume=/mloraw1/danmoral/checkpoints/cifar100/vgg16/SGD_0.06_s0/checkpoint_last.pth.tar
 # python robustness_measures/calibration.py --net=vgg16 --dataset=cifar100 --resume=/mloraw1/danmoral/checkpoints/cifar100/vgg16/search_0.06_s0/checkpoint_last.pth.tar

@@ -59,13 +59,13 @@ def evaluate_all(args, models, test_loader, device):
     results['Pred JS div'] = _average_non_zero(JS_div)
 
     # CALIBRATION
-    rms, mad, sf1, test_confidence = eval_calibration(args, models, test_loader)
+    rms, mad, sf1 = eval_calibration(args, models, test_loader)
     results['RMS Calib Error (%)'] = rms
     results['MAD Calib Error (%)'] = mad
     results['Soft F1 Score (%)'] = sf1
     
     # OOD Detection
-    fpr, auroc, auc = eval_ood(args, models, test_loader, test_confidence)
+    fpr, auroc, auc = eval_ood(args, models, test_loader)
     results['FPR (lower better)'] = fpr
     results['AUROC (higher better)'] = auroc
     results['AUC (higher better)'] = auc
