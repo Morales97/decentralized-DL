@@ -182,7 +182,7 @@ def ood_gaussian_noise(args, model, in_score):
 def eval_ood(args, models, test_loader):
     auroc_mean, aupr_mean, fpr_mean = 0, 0, 0
     for model in models:
-        in_score, right_score, wrong_score = get_ood_scores(test_loader, in_dist=True)
+        in_score, right_score, wrong_score = get_ood_scores(model, test_loader, 0, in_dist=True)
 
         auroc, aupr, fpr = ood_gaussian_noise(args, model, in_score)
         auroc_mean += auroc
