@@ -27,34 +27,16 @@ def load_model(args, path, device):
 
     return model
 
-
-if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description='')
-    parser.add_argument('--resume2', type=str, help='Second model to compare')
-    parser.add_argument('--resume3', type=str, help='Third model to compare')
-    parser.add_argument('--load_ema', action='store_true', help='load EMA models, not students')
-    args = parse_args(parser)
+def eval_repeatability(args, models, test_loader):
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
-    train_loader, val_loader, test_loader = get_data(args, args.batch_size[0], args.data_fraction, args.val_fraction)
-    # val_logits, val_confidence, val_correct, val_labels = get_net_results(val_loader, in_dist=True)   # NOTE need to split train in train-val
-
-    if args.resume:
-        model1 = load_model(args, args.resume, device)
-        model2 = load_model(args, args.resume2, device)
-        model3 = load_model(args, args.resume3, device)
-        models = [model1, model2, model3]
-    else:
-        model = get_avg_model(args, start=0.5, end=1)
-        # TODO
-
-    _, acc, soft_acc, losses, accs, soft_accs = eval_ensemble(models, test_loader, device)
-    _, avg_model_acc, _, _ = eval_ensemble(models, test_loader, device, avg_model=True)
-    print('\n ~~~ Models accuracy ~~~')
-    for i in range(len(accs)):
-        print(f'Model {i}:\tAccuracy: {accs[i]:.2f} \tLoss: {losses[i]:.4f} \tSoft accuracy: {soft_accs[i]:.2f}')
-    print(f'(Prediction) Ensemble Accuracy: {acc:.2f} \tSoft accuracy: {soft_acc:.2f}')
-    print(f'(Weight) Ensemble Accuracy: {avg_model_acc:.2f}')
+    # _, acc, soft_acc, losses, accs, soft_accs = eval_ensemble(models, test_loader, device)
+    # # _, avg_model_acc, _, _ = eval_ensemble(models, test_loader, device, avg_model=True)
+    # print('\n ~~~ Models accuracy ~~~')
+    # for i in range(len(accs)):
+    #     print(f'Model {i}:\tAccuracy: {accs[i]:.2f} \tLoss: {losses[i]:.4f} \tSoft accuracy: {soft_accs[i]:.2f}')
+    # print(f'(Prediction) Ensemble Accuracy: {acc:.2f} \tSoft accuracy: {soft_acc:.2f}')
+    # # print(f'(Weight) Ensemble Accuracy: {avg_model_acc:.2f}')
 
     pred_disagreement = np.zeros((len(models), len(models)))
     pred_distance = np.zeros((len(models), len(models)))
@@ -106,6 +88,28 @@ if __name__ == '__main__':
     # print(incorr_incorr_same)
     # print('Incorrect-Incorrect, different prediction')
     # print(incorr_incorr_diff)
+
+    return pred_disagreement, pred_distance, pred_js_div
+
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser(description='')
+    parser.add_argument('--resume2', type=str, help='Second model to compare')
+    parser.add_argument('--resume3', type=str, help='Third model to compare')
+    parser.add_argument('--load_ema', action='store_true', help='load EMA models, not students')
+    args = parse_args(parser)
+    device = 'cuda' if torch.cuda.is_available() else 'cpu'
+    train_loader, val_loader, test_loader = get_data(args, args.batch_size[0], args.data_fraction, args.val_fraction)
+
+    if args.resume:
+        model1 = load_model(args, args.resume, device)
+        model2 = load_model(args, args.resume2, device)
+        model3 = load_model(args, args.resume3, device)
+        models = [model1, model2, model3]
+    else:
+        model = get_avg_model(args, start=0.5, end=1)
+        # TODO
+
+    eval_repeatability(args, models, test_loader)
 
 
 # python robustness_measures/repeatability.py --net=rn18 --dataset=cifar100 --resume=/mloraw1/danmoral/checkpoints/C4.3_lr0.8_cosine/checkpoint_m0_117001.pth.tar --resume2=/mloraw1/danmoral/checkpoints/C4.3_lr0.8_cosine_1/checkpoint_m0_117001.pth.tar --resume3=/mloraw1/danmoral/checkpoints/C4.3_lr0.8_cosine_2/checkpoint_m0_117001.pth.tar

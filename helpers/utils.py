@@ -29,7 +29,9 @@ def get_expt_name(args, warmup=False):
 
     return name
 
-def get_folder_name(args, seed=None):
+def get_folder_name(args, expt_name=None, seed=None):
+    if expt_name is None:
+        expt_name = args.expt_name
     if seed is None:
         seed = args.seed
     if args.local_exec:
