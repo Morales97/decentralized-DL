@@ -254,7 +254,7 @@ def eval_ood_random_images(args, models, test_loader):
     auroc_list, aupr_list, fpr_list = [], [], []
     in_scores = []
     for model in models:
-        in_score, right_score, wrong_score = get_ood_scores(model, test_loader, 0, in_dist=False)
+        in_score, right_score, wrong_score = get_ood_scores(model, test_loader, 0, in_dist=True)
         in_scores.append(in_score)
     
     auroc, aupr, fpr = compute_average_ood(args, models, 0, in_scores, ood_random_images)
