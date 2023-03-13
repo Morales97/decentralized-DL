@@ -272,6 +272,7 @@ def get_avg_model(args, start=0.5, end=1, expt_name=None, seed=None):
     
     av_ckpts = list(state_dict['available_checkpoints'])
     av_ckpts.sort()
+    pdb.set_trace()
     model = index.avg_from(av_ckpts[int(len(av_ckpts)*start)-1], until=av_ckpts[int(len(av_ckpts)*end)-1])  
     update_bn(train_loader, model, device)
     
