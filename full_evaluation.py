@@ -66,16 +66,16 @@ def evaluate_all(args, models, test_loader, device):
     # results['Soft F1 Score (%)'] = sf1
     
     # OOD Detection - Anomalous data
-    # auroc, aupr, fpr = eval_ood(args, models, test_loader)
-    # results['FPR (lower better)'] = fpr
-    # results['AUROC (higher better)'] = auroc
-    # results['AUPR (higher better)'] = aupr
+    auroc, aupr, fpr = eval_ood(args, models, test_loader)
+    results['FPR (lower better)'] = fpr
+    results['AUROC (higher better)'] = auroc
+    results['AUPR (higher better)'] = aupr
 
     # OOD Detection - Random images
-    auroc, aupr, fpr = eval_ood_random_images(args, models, test_loader)
-    results['FPR rand (lower better)'] = fpr
-    results['AUROC rand (higher better)'] = auroc
-    results['AUPR rand (higher better)'] = aupr
+    # auroc, aupr, fpr = eval_ood_random_images(args, models, test_loader)
+    # results['FPR rand (lower better)'] = fpr
+    # results['AUROC rand (higher better)'] = auroc
+    # results['AUPR rand (higher better)'] = aupr
 
     return results
 
