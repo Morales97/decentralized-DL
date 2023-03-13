@@ -22,6 +22,67 @@ concat = lambda x: np.concatenate(x, axis=0)
 to_np = lambda x: x.data.cpu().numpy()
 
 
+def stable_cumsum(arr, rtol=1e-05, atol=1e-08):
+    """Use high precision for cumsum and check that final value matches sum
+    Parameters
+    ----------
+    arr : array-like
+        To be cumulatively summed as flat
+    rtol : float
+        Relative tolerance, see ``np.allclose``
+    atol : float
+        Absolute tolerance, see ``np.allclose``
+    """
+    out = np.cumsum(arr, dtype=np.float64)
+    expected = np.sum(arr, dtype=np.float64)
+    if not np.allclose(out[-1], expected, rtol=rtol, atol=atol):
+        raise RuntimeError('cumsum was found to be unstable: '
+                           'its last element does not correspond to sum')
+    return out
+
+
+def fpr_and_fdr_at_recall(y_true, y_score, recall_level=RECALL_LEVEL, pos_label=None):
+    classes = np.unique(y_true)
+    if (pos_label is None and
+            not (np.array_equal(classes, [0, 1]) or
+                     np.array_equal(classes, [-1, 1]) or
+                     np.array_equal(classes, [0]) or
+                     np.array_equal(classes, [-1]) or
+                     np.array_equal(classes, [1]))):
+        raise ValueError("Data is not binary and pos_label is not specified")
+    elif pos_label is None:
+        pos_label = 1.
+
+    # make y_true a boolean vector
+    y_true = (y_true == pos_label)
+
+    # sort scores and corresponding truth values
+    desc_score_indices = np.argsort(y_score, kind="mergesort")[::-1]
+    y_score = y_score[desc_score_indices]
+    y_true = y_true[desc_score_indices]
+
+    # y_score typically has many tied values. Here we extract
+    # the indices associated with the distinct values. We also
+    # concatenate a value for the end of the curve.
+    distinct_value_indices = np.where(np.diff(y_score))[0]
+    threshold_idxs = np.r_[distinct_value_indices, y_true.size - 1]
+
+    # accumulate the true positives with decreasing threshold
+    tps = stable_cumsum(y_true)[threshold_idxs]
+    fps = 1 + threshold_idxs - tps      # add one because of zero-based indexing
+
+    thresholds = y_score[threshold_idxs]
+
+    recall = tps / tps[-1]
+
+    last_ind = tps.searchsorted(tps[-1])
+    sl = slice(last_ind, None, -1)      # [last_ind::-1]
+    recall, fps, tps, thresholds = np.r_[recall[sl], 1], np.r_[fps[sl], 0], np.r_[tps[sl], 0], thresholds[sl]
+
+    cutoff = np.argmin(np.abs(recall - recall_level))
+
+    return fps[cutoff] / (np.sum(np.logical_not(y_true)))   # , fps[cutoff]/(fps[cutoff] + tps[cutoff])
+
 def get_measures(_pos, _neg, recall_level=RECALL_LEVEL):
     pos = np.array(_pos[:]).reshape((-1, 1))
     neg = np.array(_neg[:]).reshape((-1, 1))
@@ -36,7 +97,7 @@ def get_measures(_pos, _neg, recall_level=RECALL_LEVEL):
     return auroc, aupr, fpr
 
 
-def show_performance(pos, neg, method_name='Ours', recall_level=RECALL_LEVEL):
+def show_performance(pos, neg, recall_level=RECALL_LEVEL):
     '''
     :param pos: 1's class, class to detect, outliers, or wrongly predicted
     example scores
@@ -45,7 +106,6 @@ def show_performance(pos, neg, method_name='Ours', recall_level=RECALL_LEVEL):
 
     auroc, aupr, fpr = get_measures(pos[:], neg[:], recall_level)
 
-    print('\t\t\t' + method_name)
     print('FPR{:d}:\t\t\t{:.2f}'.format(int(100 * recall_level), 100 * fpr))
     print('AUROC:\t\t\t{:.2f}'.format(100 * auroc))
     print('AUPR:\t\t\t{:.2f}'.format(100 * aupr))
@@ -89,6 +149,11 @@ def get_ood_scores(model, loader, ood_num_examples, in_dist=False, test_bs=100, 
     else:
         return concat(_score)[:ood_num_examples].copy()
 
+def print_measures(auroc, aupr, fpr, recall_level=RECALL_LEVEL):
+    print('FPR{:d}:\t\t\t{:.2f}'.format(int(100 * recall_level), 100 * fpr))
+    print('AUROC: \t\t\t{:.2f}'.format(100 * auroc))
+    print('AUPR:  \t\t\t{:.2f}'.format(100 * aupr))
+
 def get_and_print_results(ood_loader, num_to_avg=1):
 
     aurocs, auprs, fprs = [], [], []
@@ -98,12 +163,9 @@ def get_and_print_results(ood_loader, num_to_avg=1):
         aurocs.append(measures[0]); auprs.append(measures[1]); fprs.append(measures[2])
 
     auroc = np.mean(aurocs); aupr = np.mean(auprs); fpr = np.mean(fprs)
-    auroc_list.append(auroc); aupr_list.append(aupr); fpr_list.append(fpr)
+    # auroc_list.append(auroc); aupr_list.append(aupr); fpr_list.append(fpr)
 
-    if num_to_avg >= 5:
-        print_measures_with_std(aurocs, auprs, fprs, args.method_name)
-    else:
-        print_measures(auroc, aupr, fpr, args.method_name)
+    print_measures(auroc, aupr, fpr)
 
 def ood_gaussian_noise(args, model, test_loader, t_star):
     _, test_confidence, test_correct, _, _ = get_model_calibration_results(model, test_loader, in_dist=True, t=t_star)
