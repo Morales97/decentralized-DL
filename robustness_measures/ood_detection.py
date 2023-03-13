@@ -168,8 +168,7 @@ def get_and_print_results(model, ood_loader, ood_num_examples, in_score, num_to_
     print_measures(auroc, aupr, fpr)
     return auroc, aupr, fpr
 
-def ood_gaussian_noise(args, model, in_score):
-    ood_num_examples = len(in_score) // 5
+def ood_gaussian_noise(args, model, ood_num_examples, in_score):
 
     dummy_targets = torch.ones(ood_num_examples)
     ood_data = torch.from_numpy(np.float32(np.clip(
@@ -177,18 +176,38 @@ def ood_gaussian_noise(args, model, in_score):
     ood_data = torch.utils.data.TensorDataset(ood_data, dummy_targets)
     ood_loader = torch.utils.data.DataLoader(ood_data, batch_size=100, shuffle=True)
 
-    print('\n\nGaussian Noise (sigma = 0.5) Calibration')
+    print('\n\nGaussian Noise (sigma = 0.5)')
     return get_and_print_results(model, ood_loader, ood_num_examples, in_score)
 
-def eval_ood(args, models, test_loader):
+def ood_rademacher_noise(args, model, ood_num_examples, in_score):
+    dummy_targets = torch.ones(ood_num_examples * args.num_to_avg)
+    ood_data = torch.from_numpy(np.random.binomial(
+        n=1, p=0.5, size=(ood_num_examples * args.num_to_avg, 3, 32, 32)).astype(np.float32)) * 2 - 1
+    ood_data = torch.utils.data.TensorDataset(ood_data, dummy_targets)
+    ood_loader = torch.utils.data.DataLoader(ood_data, batch_size=args.test_bs, shuffle=True)
+
+    print('\n\nRademacher Noise Detection')
+    return get_and_print_results(model, ood_loader, ood_num_examples, in_score)
+
+def get_ood_scores(args, models, ood_num_examples, in_score, ood_fn):
     auroc_mean, aupr_mean, fpr_mean = 0, 0, 0
     for model in models:
-        in_score, right_score, wrong_score = get_ood_scores(model, test_loader, 0, in_dist=True)
-
-        auroc, aupr, fpr = ood_gaussian_noise(args, model, in_score)
+        auroc, aupr, fpr = ood_fn(args, model, ood_num_examples, in_score)
         auroc_mean += auroc
         aupr_mean += aupr
         fpr_mean += fpr
+    return np.round(auroc_mean/len(models), 2), np.round(aupr_mean/len(models), 2), np.round(fpr_mean/len(models), 2)
+
+def eval_ood(args, models, test_loader):
+    ood_num_examples = len(test_loader.dataset) // 5
+
+    in_scores = []
+    for model in models:
+        in_score, right_score, wrong_score = get_ood_scores(model, test_loader, ood_num_examples, in_dist=True)
+        in_scores.append(in_score)
+    
+    auroc, aupr, fpr = get_ood_scores(args, models, ood_num_examples, in_score, ood_gaussian_noise)
+    pdb.set_trace()
 
     return np.round(auroc_mean/len(models), 2), np.round(aupr_mean/len(models), 2), np.round(fpr_mean/len(models), 2)
 
