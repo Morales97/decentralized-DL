@@ -11,7 +11,7 @@ from helpers.parser import parse_args
 from loaders.data import get_data, ROOT_CLUSTER
 from model.model import get_model
 from robustness_measures.calibration import eval_calibration
-from robustness_measures.ood_detection import eval_ood
+from robustness_measures.ood_detection import eval_ood, eval_ood_random_images
 from robustness_measures.repeatability import eval_repeatability
 from helpers.evaluate import eval_ensemble
 
@@ -65,11 +65,17 @@ def evaluate_all(args, models, test_loader, device):
     # results['MAD Calib Error (%)'] = mad
     # results['Soft F1 Score (%)'] = sf1
     
-    # OOD Detection
+    # OOD Detection - Anomalous data
     auroc, aupr, fpr = eval_ood(args, models, test_loader)
     results['FPR (lower better)'] = fpr
     results['AUROC (higher better)'] = auroc
     results['AUPR (higher better)'] = aupr
+
+    # OOD Detection - Random images
+    auroc, aupr, fpr = eval_ood_random_images(args, models, test_loader)
+    results['FPR rand (lower better)'] = fpr
+    results['AUROC rand (higher better)'] = auroc
+    results['AUPR rand (higher better)'] = aupr
 
     return results
 
