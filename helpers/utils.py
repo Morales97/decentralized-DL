@@ -36,7 +36,7 @@ def get_folder_name(args, expt_name=None, seed=None):
         seed = args.seed
     if args.local_exec:
         return os.getcwd()
-    return os.path.join(args.save_dir, args.dataset, args.net, args.expt_name + '_s' + str(seed))
+    return os.path.join(args.save_dir, args.dataset, args.net, expt_name + '_s' + str(seed))
 
 
 def load_results(path):
