@@ -1,12 +1,12 @@
 import torch
 import numpy as np
-from topology import get_average_model
 import torch.nn.functional as F
 import pdb
 import os
 import sys
 
 sys.path.insert(0, os.path.join(sys.path[0], '..'))
+from topology import get_average_model
 from helpers.utils import get_folder_name
 from helpers.parser import parse_args
 from loaders.data import get_data, ROOT_CLUSTER
