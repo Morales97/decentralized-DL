@@ -7,8 +7,8 @@ import pathlib
 import sys
 import os
 
-from helpers.utils import get_folder_name
 sys.path.insert(0, os.path.join(sys.path[0], '..'))
+from helpers.utils import get_folder_name
 from helpers.parser import parse_args
 from loaders.data import get_data, ROOT_CLUSTER
 from loaders.cifar import get_cifar_filtered_samples
@@ -280,6 +280,7 @@ def compute_and_save_accuracies(args, seed=None):
     train_loader, val_loader, test_loader = get_data(args, args.batch_size[0], args.data_fraction, args.val_fraction)
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
     save_dir = get_folder_name(args, seed)
+    print(f'... Computing accuracies for model in {save_dir}')
     index_ckpt_file, step = find_index_ckpt(save_dir)
     state_dir = os.path.join(save_dir, index_ckpt_file)
 
