@@ -4,6 +4,8 @@ Adapted from https://github.com/hendrycks/pre-training/blob/83f5787dea1532a66fd7
 import torch
 import numpy as np
 import torch.nn.functional as F
+from torch.utils.data import DataLoader, Dataset
+from torchvision import transforms
 
 import os
 import sys
@@ -236,8 +238,33 @@ def eval_ood(args, models, test_loader):
     return np.array(auroc_list).mean(), np.array(aupr_list).mean(), np.array(fpr_list).mean() 
 
 
+def ood_dataset():
+    ood_dataset = np.load(ROOT_CLUSTER + str('OOD_detection/300k_random_images.npy'))
+    normalize = transforms.Normalize((0.5071, 0.4867, 0.4408), (0.2675, 0.2565, 0.2761))
+    transform = transforms.Compose([transforms.ToTensor(), normalize]),
+    ood_data = CustomDataset(ood_dataset, transform=transforms.Compose([transforms.ToTensor(), normalize]))
+    pdb.set_trace()
+
+
+class CustomDataset(Dataset):
+    def __init__(self, dataset, transform=None):
+        super(CustomDataset, self).__init__()
+        self.dataset = dataset
+        self.transform = transform
+
+    def __len__(self):
+        return len(self.dataset)
+
+    def __getitem__(self, idx):
+        data = self.dataset[idx]
+        if self.transform:
+            data = self.transform(data)
+
+        return data, 0 # 0 is the class
+
 
 if __name__ == '__main__':
+    ood_dataset()
     args = parse_args()
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
     train_loader, val_loader, test_loader = get_data(args, args.batch_size[0], args.data_fraction, args.val_fraction)
