@@ -180,14 +180,30 @@ def ood_gaussian_noise(args, model, ood_num_examples, in_score):
     return get_and_print_results(model, ood_loader, ood_num_examples, in_score)
 
 def ood_rademacher_noise(args, model, ood_num_examples, in_score):
-    dummy_targets = torch.ones(ood_num_examples * args.num_to_avg)
+    dummy_targets = torch.ones(ood_num_examples)
     ood_data = torch.from_numpy(np.random.binomial(
-        n=1, p=0.5, size=(ood_num_examples * args.num_to_avg, 3, 32, 32)).astype(np.float32)) * 2 - 1
+        n=1, p=0.5, size=(ood_num_examples, 3, 32, 32)).astype(np.float32)) * 2 - 1
     ood_data = torch.utils.data.TensorDataset(ood_data, dummy_targets)
     ood_loader = torch.utils.data.DataLoader(ood_data, batch_size=args.test_bs, shuffle=True)
 
     print('\n\nRademacher Noise Detection')
     return get_and_print_results(model, ood_loader, ood_num_examples, in_score)
+
+# def ood_blob(args, model, ood_num_examples, in_score):
+
+#     ood_data = np.float32(np.random.binomial(n=1, p=0.7, size=(ood_num_examples, 32, 32, 3)))
+#     for i in range(ood_num_examples):
+#         ood_data[i] = gblur(ood_data[i], sigma=1.5, multichannel=False)
+#         ood_data[i][ood_data[i] < 0.75] = 0.0
+
+#     dummy_targets = torch.ones(ood_num_examples)
+#     ood_data = torch.from_numpy(ood_data.transpose((0, 3, 1, 2))) * 2 - 1
+#     ood_data = torch.utils.data.TensorDataset(ood_data, dummy_targets)
+#     ood_loader = torch.utils.data.DataLoader(ood_data, batch_size=args.test_bs, shuffle=True,
+#                                             num_workers=args.prefetch, pin_memory=True)
+
+print('\n\nBlob Detection')
+get_and_print_results(ood_loader)
 
 def compute_average_ood(args, models, ood_num_examples, in_scores, ood_fn):
     '''
