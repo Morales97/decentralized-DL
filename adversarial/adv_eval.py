@@ -1,4 +1,4 @@
-from pyrsistent import T
+
 import torch
 import torch.nn.functional as F
 import numpy as np
@@ -10,10 +10,6 @@ from adversarial import attacks
 from helpers.parser import parse_args
 from loaders.data import get_data, ROOT_CLUSTER
 from model.model import get_model
-from avg_index.search_avg import find_index_ckpt, update_bn
-from avg_index.avg_index import UniformAvgIndex, ModelAvgIndex, TriangleAvgIndex
-from torchvision import datasets, transforms
-import torch.utils.data as data
 import pdb
 
 def evaluate_pgd_attack(model, test_loader, adv=True, epsilon=8./255):
