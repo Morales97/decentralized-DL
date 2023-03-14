@@ -78,8 +78,8 @@ if __name__ == '__main__':
     if args.resume:
         model = get_model(args, device)
         ckpt = torch.load(args.resume)
-        model.load_state_dict(ckpt['state_dict'])
-        # model.load_state_dict(ckpt['ema_state_dict'])
+        #model.load_state_dict(ckpt['state_dict'])
+        model.load_state_dict(ckpt['ema_state_dict_0.996'])
     else:
         model = get_avg_model(args, start=0.5, end=1)
 
@@ -87,6 +87,14 @@ if __name__ == '__main__':
         preprocessing = dict(mean=[0.5071, 0.4867, 0.4408], std=[0.2675, 0.2565, 0.2761], axis=-3)
 
     fmodel = fb.PyTorchModel(model, bounds=(0,1), preprocessing=preprocessing) 
+    images = torch.Tensor(test_loader.dataset.data)
+    images = torch.transpose(images, 1, 3) # convert to NCHW
+    images = torch.transpose(images, 2, 3) 
+    labels = torch.Tensor(test_loader.dataset.targets)
+    clean_acc = fb.utils.accuracy(fmodel, images, labels)
+    print(f'Clean accuracy: {clean_acc*100}')
+
+    
     pdb.set_trace()
     epsilon = 8./255
     loss, acc = evaluate_pgd_attack(model, test_loader, epsilon=epsilon)
@@ -104,4 +112,4 @@ if __name__ == '__main__':
     print(f'Test Accuracy: {acc} \t Test Loss: {loss}')
 
 # python adversarial/adv_eval.py --net=rn18 --dataset=cifar100 --expt_name=C4.3_lr0.8_cosine
-# python adversarial/adv_eval.py --net=rn18 --dataset=cifar100 --resume=/mloraw1/danmoral/checkpoints/C4.3_lr0.8_cosine/checkpoint_m0_117001.pth.tar
+# python adversarial/adv_eval.py --net=rn18 --dataset=cifar100 --resume=/mloraw1/danmoral/checkpoints/cifar100/rn18/EMA_acc_1.2_s0/checkpoint_last.pth.tar
