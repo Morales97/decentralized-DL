@@ -78,10 +78,13 @@ if __name__ == '__main__':
 
     # NOTE DO CHECK OUT ROBUSTBENCH: https://github.com/RobustBench/robustbencht
     # they have a super nice cifar100c loader: load_cifar10c(n_examples=1000, corruptions=corruptions, severity=5)
-    acc1 = eval_on_cifar_corrputed_test(model1, 'cifar100-C', device, root=ROOT_CLUSTER)
-    acc2 = eval_on_cifar_corrputed_test(model2, 'cifar100-C', device, root=ROOT_CLUSTER)
-    acc3 = eval_on_cifar_corrputed_test(model3, 'cifar100-C', device, root=ROOT_CLUSTER)
-    print(f'Mean robust accuracy for the 3 models: {(acc1+acc2+acc3)/3}')
+    acc = eval_on_cifar_corrputed_test(model1, 'cifar100-C', device, root=ROOT_CLUSTER, distortions=['shot_noise'])
+    
+
+    # acc1 = eval_on_cifar_corrputed_test(model1, 'cifar100-C', device, root=ROOT_CLUSTER)
+    # acc2 = eval_on_cifar_corrputed_test(model2, 'cifar100-C', device, root=ROOT_CLUSTER)
+    # acc3 = eval_on_cifar_corrputed_test(model3, 'cifar100-C', device, root=ROOT_CLUSTER)
+    # print(f'Mean robust accuracy for the 3 models: {(acc1+acc2+acc3)/3}')
 
 # python robustness_measures/img_transforms.py --net=rn18 --dataset=cifar100 --resume=/mloraw1/danmoral/checkpoints/cifar100/rn18/search_0.8_s0/best_student_acc.pth.tar --resume2=/mloraw1/danmoral/checkpoints/cifar100/rn18/search_0.8_s1/best_student_acc.pth.tar --resume3=/mloraw1/danmoral/checkpoints/cifar100/rn18/search_0.8_s2/best_student_acc.pth.tar
 # python robustness_measures/img_transforms.py --net=rn18 --dataset=cifar100 --resume=/mloraw1/danmoral/checkpoints/cifar100/rn18/search_0.8_s0/best_ema_acc.pth.tar --resume2=/mloraw1/danmoral/checkpoints/cifar100/rn18/search_0.8_s1/best_ema_acc.pth.tar --resume3=/mloraw1/danmoral/checkpoints/cifar100/rn18/search_0.8_s2/best_ema_acc.pth.tar --load_ema
