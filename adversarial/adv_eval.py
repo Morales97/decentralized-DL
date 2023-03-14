@@ -37,7 +37,7 @@ def evaluate_adversarial(args, models, epsilon):
     for model in models:
         fmodel = fb.PyTorchModel(model, bounds=(0,1), preprocessing=preprocessing) 
         robust_acc = pgd_attack(fmodel, test_loader, epsilon)
-        acc_mean.append(robust_acc)
+        acc_mean.append(robust_acc.cpu())
 
     return np.round(np.mean(acc_mean)*100, 2)
 
