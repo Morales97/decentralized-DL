@@ -250,7 +250,6 @@ def ood_places(args, model, ood_num_examples, in_score):
     elif args.dataset == 'tiny-in':
         normalize = transforms.Normalize(mean=(0.485, 0.456, 0.406), std=(0.229, 0.224, 0.225))
 
-    pdb.set_trace()
     ood_data = datasets.ImageFolder(root=ROOT_CLUSTER + '/OOD_detection/places/test',
                             transform=transforms.Compose([transforms.Resize(32), transforms.CenterCrop(32),
                                                    transforms.ToTensor(), normalize]))
@@ -315,9 +314,10 @@ def eval_ood(args, models, test_loader):
     # print(f'OOD Detection - SVHN. AUROC: {auroc} \t AUPR {aupr} \t FPR {fpr}')
     # auroc_list.append(auroc); aupr_list.append(aupr); fpr_list.append(fpr)
 
-    auroc, aupr, fpr = compute_average_ood(args, models, ood_num_examples, in_scores, ood_places)
-    print(f'OOD Detection - Places. AUROC: {auroc} \t AUPR {aupr} \t FPR {fpr}')
-    auroc_list.append(auroc); aupr_list.append(aupr); fpr_list.append(fpr)
+    # NOTE Places test set is 5 GB and it takes a loong time to load to memory - maybe change loader to not load all dataset?
+    # auroc, aupr, fpr = compute_average_ood(args, models, ood_num_examples, in_scores, ood_places)
+    # print(f'OOD Detection - Places. AUROC: {auroc} \t AUPR {aupr} \t FPR {fpr}')
+    # auroc_list.append(auroc); aupr_list.append(aupr); fpr_list.append(fpr)
 
     auroc, aupr, fpr = compute_average_ood(args, models, ood_num_examples, in_scores, ood_lsun)
     print(f'OOD Detection - LSUN. AUROC: {auroc} \t AUPR {aupr} \t FPR {fpr}')
