@@ -242,6 +242,37 @@ def ood_svhn(args, model, ood_num_examples, in_score):
     print('\nSVHN')
     return get_and_print_results(model, ood_loader, ood_num_examples, in_score)
 
+def ood_places(args, model, ood_num_examples, in_score):
+    if args.dataset == 'cifar10':
+        normalize = transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010))
+    elif args.dataset == 'cifar100':
+        normalize = transforms.Normalize((0.5071, 0.4867, 0.4408), (0.2675, 0.2565, 0.2761))
+    elif args.dataset == 'tiny-in':
+        normalize = transforms.Normalize(mean=(0.485, 0.456, 0.406), std=(0.229, 0.224, 0.225))
+
+    ood_data = datasets.ImageFolder(root=ROOT_CLUSTER + '/OOD_detection/places/test',
+                            transform=transforms.Compose([transforms.Resize(32), transforms.CenterCrop(32),
+                                                   transforms.ToTensor(), normalize]))
+    ood_loader = torch.utils.data.DataLoader(ood_data, batch_size=100, shuffle=True)
+    
+    print('\nPlaces365')
+    return get_and_print_results(model, ood_loader, ood_num_examples, in_score)
+
+def ood_lsun(args, model, ood_num_examples, in_score):
+    if args.dataset == 'cifar10':
+        normalize = transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010))
+    elif args.dataset == 'cifar100':
+        normalize = transforms.Normalize((0.5071, 0.4867, 0.4408), (0.2675, 0.2565, 0.2761))
+    elif args.dataset == 'tiny-in':
+        normalize = transforms.Normalize(mean=(0.485, 0.456, 0.406), std=(0.229, 0.224, 0.225))
+
+    ood_data = datasets.LSUN(root=ROOT_CLUSTER + '/OOD_detection/', split='test',
+                            transform=transforms.Compose([transforms.Resize(32), transforms.CenterCrop(32),
+                                                   transforms.ToTensor(), normalize]))
+    ood_loader = torch.utils.data.DataLoader(ood_data, batch_size=100, shuffle=True)
+
+    print('\nLSUN')
+    return get_and_print_results(model, ood_loader, ood_num_examples, in_score)
 
 def compute_average_ood(args, models, ood_num_examples, in_scores, ood_fn):
     '''
@@ -281,6 +312,14 @@ def eval_ood(args, models, test_loader):
 
     auroc, aupr, fpr = compute_average_ood(args, models, ood_num_examples, in_scores, ood_svhn)
     print(f'OOD Detection - SVHN. AUROC: {auroc} \t AUPR {aupr} \t FPR {fpr}')
+    auroc_list.append(auroc); aupr_list.append(aupr); fpr_list.append(fpr)
+
+    auroc, aupr, fpr = compute_average_ood(args, models, ood_num_examples, in_scores, ood_places)
+    print(f'OOD Detection - Places. AUROC: {auroc} \t AUPR {aupr} \t FPR {fpr}')
+    auroc_list.append(auroc); aupr_list.append(aupr); fpr_list.append(fpr)
+
+    auroc, aupr, fpr = compute_average_ood(args, models, ood_num_examples, in_scores, ood_lsun)
+    print(f'OOD Detection - LSUN. AUROC: {auroc} \t AUPR {aupr} \t FPR {fpr}')
     auroc_list.append(auroc); aupr_list.append(aupr); fpr_list.append(fpr)
 
     # auroc, aupr, fpr = compute_average_ood(args, models, ood_num_examples, in_scores, ood_random_images)
