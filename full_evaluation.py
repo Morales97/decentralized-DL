@@ -60,40 +60,40 @@ def evaluate_all(args, models, test_loader, device):
     results['Test Loss'] = np.round(np.array(losses).mean(), 2)
 
     # # REPEATABILITY
-    disagreement, L2_dist, JS_div = eval_repeatability(args, models, test_loader)
-    results['Pred Disagr. (%)'] = _average_non_zero(disagreement)
-    # results['Pred L2 dist'] = _average_non_zero(L2_dist)
-    results['Pred JS div'] = _average_non_zero(JS_div)
+    # disagreement, L2_dist, JS_div = eval_repeatability(args, models, test_loader)
+    # results['Pred Disagr. (%)'] = _average_non_zero(disagreement)
+    # # results['Pred L2 dist'] = _average_non_zero(L2_dist)
+    # results['Pred JS div'] = _average_non_zero(JS_div)
 
-    # # CALIBRATION
-    rms, mad, sf1 = eval_calibration(args, models, test_loader)
-    results['RMS Calib Error (%)'] = rms
-    results['MAD Calib Error (%)'] = mad
-    # results['Soft F1 Score (%)'] = sf1
+    # # # CALIBRATION
+    # rms, mad, sf1 = eval_calibration(args, models, test_loader)
+    # results['RMS Calib Error (%)'] = rms
+    # results['MAD Calib Error (%)'] = mad
+    # # results['Soft F1 Score (%)'] = sf1
     
-    # # OOD Detection - Anomalous data
-    auroc, aupr, fpr = eval_ood(args, models, test_loader)
-    # results['FPR (lower better)'] = fpr
-    results['AUROC (higher better)'] = auroc
-    results['AUPR (higher better)'] = aupr
+    # # # OOD Detection - Anomalous data
+    # auroc, aupr, fpr = eval_ood(args, models, test_loader)
+    # # results['FPR (lower better)'] = fpr
+    # results['AUROC (higher better)'] = auroc
+    # results['AUPR (higher better)'] = aupr
 
-    # OOD Detection - Random images
-    # auroc, aupr, fpr = eval_ood_random_images(args, models, test_loader)
-    # results['FPR rand (lower better)'] = fpr
-    # results['AUROC rand (higher better)'] = auroc
-    # results['AUPR rand (higher better)'] = aupr
+    # # OOD Detection - Random images
+    # # auroc, aupr, fpr = eval_ood_random_images(args, models, test_loader)
+    # # results['FPR rand (lower better)'] = fpr
+    # # results['AUROC rand (higher better)'] = auroc
+    # # results['AUPR rand (higher better)'] = aupr
 
-    # Common corruptions
-    results['Common corruptions (severity=1)'] = eval_common_corruptions(args, models, severities=[1])
-    # results['Common corruptions (severities=1-5)'] = eval_common_corruptions(args, models, severities=[1,2,3,4,5])
+    # # Common corruptions
+    # results['Common corruptions (severity=1)'] = eval_common_corruptions(args, models, severities=[1])
+    # # results['Common corruptions (severities=1-5)'] = eval_common_corruptions(args, models, severities=[1,2,3,4,5])
 
-    # Adversarial attacks
-    # results['Adversarial Accuracy (eps=8/255)'] = evaluate_adversarial(args, models, epsilon=8/225)
-    results['Adversarial Accuracy (eps=2/255)'] = evaluate_adversarial(args, models, epsilon=2/225)
+    # # Adversarial attacks
+    # # results['Adversarial Accuracy (eps=8/255)'] = evaluate_adversarial(args, models, epsilon=8/225)
+    # results['Adversarial Accuracy (eps=2/255)'] = evaluate_adversarial(args, models, epsilon=2/225)
 
     return results
 
-def full_evaluation(args, seeds=[0,1,2]):
+def full_evaluation(args, seeds=[0]):
     '''
     Evaluate SGD vs EMA solution on mulitple metrics.
     Average of 3 seeds. Always use last model (no early stopping on test set)
