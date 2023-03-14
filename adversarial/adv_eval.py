@@ -52,11 +52,9 @@ def pgd_attack(fmodel, test_loader, epsilon):
     robust_accuracy = 0
     for images, labels in iter(test_loader):
         images = images.cuda()
-        images = torch.transpose(images, 1, 3) # convert to NCHW
-        images = torch.transpose(images, 2, 3) 
         images /= 255
         labels = labels.cuda().long()
-        pdb.set_trace()
+
         _, _, is_adv = attack(fmodel, images, labels, epsilons=epsilon)
         robust_accuracy += 1 - is_adv.float().mean(axis=-1)
 
