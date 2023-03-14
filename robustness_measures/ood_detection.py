@@ -250,6 +250,7 @@ def ood_places(args, model, ood_num_examples, in_score):
     elif args.dataset == 'tiny-in':
         normalize = transforms.Normalize(mean=(0.485, 0.456, 0.406), std=(0.229, 0.224, 0.225))
 
+    pdb.set_trace()
     ood_data = datasets.ImageFolder(root=ROOT_CLUSTER + '/OOD_detection/places/test',
                             transform=transforms.Compose([transforms.Resize(32), transforms.CenterCrop(32),
                                                    transforms.ToTensor(), normalize]))
