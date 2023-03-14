@@ -1,5 +1,7 @@
+from pyrsistent import T
 import torch
 import torch.nn.functional as F
+import numpy as np
 
 import os
 import sys
@@ -14,7 +16,7 @@ from torchvision import datasets, transforms
 import torch.utils.data as data
 import pdb
 
-def evaluate(model, test_loader, adv=True, epsilon=8./255):
+def evaluate_pgd_attack(model, test_loader, adv=True, epsilon=8./255):
     adversary = attacks.PGD_linf(epsilon=epsilon, num_steps=20, step_size=2./255).cuda()
 
     model.eval()
@@ -48,6 +50,14 @@ def evaluate(model, test_loader, adv=True, epsilon=8./255):
     return loss, acc
 
 
+def evaluate_adversarial(models, test_loader, epsilon):
+    acc_mean = []
+    for model in models:
+        loss, acc = evaluate_pgd_attack(model, test_loader, epsilon=epsilon)
+        acc_mean.append(acc)
+
+    return np.round(np.mean(acc_mean)*100, 2)
+
 if __name__ == '__main__':
     args = parse_args()
 
@@ -75,18 +85,18 @@ if __name__ == '__main__':
         model = get_avg_model(args, start=0.5, end=1)
 
     epsilon = 8./255
-    loss, acc = evaluate(model, test_loader, epsilon=epsilon)
+    loss, acc = evaluate_pgd_attack(model, test_loader, epsilon=epsilon)
     print(f'Adversarial Test Accuracy (eps={epsilon}): {acc} \t Advesarial Test Loss: {loss}')
 
     epsilon = 4./255
-    loss, acc = evaluate(model, test_loader, epsilon=epsilon)
+    loss, acc = evaluate_pgd_attack(model, test_loader, epsilon=epsilon)
     print(f'Adversarial Test Accuracy (eps={epsilon}): {acc} \t Advesarial Test Loss: {loss}')
     
     epsilon = 2./255
-    loss, acc = evaluate(model, test_loader, epsilon=epsilon)
+    loss, acc = evaluate_pgd_attack(model, test_loader, epsilon=epsilon)
     print(f'Adversarial Test Accuracy (eps={epsilon}): {acc} \t Advesarial Test Loss: {loss}')
 
-    loss, acc = evaluate(model, test_loader, adv=False)
+    loss, acc = evaluate_pgd_attack(model, test_loader, adv=False)
     print(f'Test Accuracy: {acc} \t Test Loss: {loss}')
 
 # python adversarial/adv_eval.py --net=rn18 --dataset=cifar100 --expt_name=C4.3_lr0.8_cosine
