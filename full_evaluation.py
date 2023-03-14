@@ -155,7 +155,8 @@ def full_evaluation(args, seeds=[0,1,2]):
     # print(tabulate([[key, *value] for key, value in results_dict.items()], headers=['', 'SGD (No averaging)', 'EMA Accuracy', 'Uniform (EMA val)'], tablefmt="pretty"))
     print(tabulate([[key, *value] for key, value in results_dict.items()], headers=['', 'SGD (No averaging)', 'EMA Accuracy', 'EMA Validation', 'Uniform (SGD)', 'Uniform (EMA val)'], tablefmt="pretty"))
     # print(tabulate([[key, *value] for key, value in results_dict.items()], headers=['', 'SGD (No averaging)', 'EMA Validation'], tablefmt="pretty"))
-
+    pdb.set_trace()
+    
 if __name__ == '__main__':
     ''' For debugging purposes '''
     args = parse_args()
