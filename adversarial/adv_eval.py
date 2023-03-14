@@ -19,27 +19,25 @@ def pgd_attack(fmodel, test_loader, epsilon):
     robust_accuracy = 0
     for data, target in iter(test_loader):
         data = data.cuda()
-        data = torch.transpose(data, 2, 3) 
-        data /= 255
+        # data = torch.transpose(data, 2, 3) 
         target = target.cuda().long()
 
         _, _, is_adv = attack(fmodel, data, target, epsilons=epsilon)
-        pdb.set_trace()
         robust_accuracy += 1 - is_adv.float().mean(axis=-1)
 
     return robust_accuracy / len(test_loader)
 
 def evaluate_adversarial(args, models, epsilon):
     acc_mean = []
+
     if args.dataset == 'cifar100':
         preprocessing = dict(mean=[0.5071, 0.4867, 0.4408], std=[0.2675, 0.2565, 0.2761], axis=-3)
         test_loader = get_unprocessed_test(args)
 
     for model in models:
         fmodel = fb.PyTorchModel(model, bounds=(0,1), preprocessing=preprocessing) 
-        pgd_attack(fmodel, test_loader, epsilon)
-        loss, acc = evaluate_pgd_attack(model, test_loader, epsilon=epsilon)
-        acc_mean.append(acc)
+        robust_acc = pgd_attack(fmodel, test_loader, epsilon)
+        acc_mean.append(robust_acc)
 
     return np.round(np.mean(acc_mean)*100, 2)
 
