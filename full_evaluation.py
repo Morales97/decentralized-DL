@@ -121,10 +121,17 @@ def full_evaluation(args, seeds=[0,1,2]):
     
 
     # Uniform avg of EMA acc
-    print('\n *** Evaluating Uniform average of EMA Acc... ***')
+    # print('\n *** Evaluating Uniform average of EMA Acc... ***')
+    # models = []
+    # for seed in seeds:
+    #     models.append(get_avg_model(args, start=0, end=1, expt_name='EMA_acc_'+str(args.lr[0]), seed=seed))
+    # results_uniform = evaluate_all(args, models, test_loader, device)
+
+    # Uniform avg of EMA val
+    print('\n *** Evaluating Uniform average of EMA Val... ***')
     models = []
     for seed in seeds:
-        models.append(get_avg_model(args, start=0, end=1, expt_name='EMA_acc_'+str(args.lr[0]), seed=seed))
+        models.append(get_avg_model(args, start=0, end=1, expt_name='EMA_val_'+str(args.lr[0]), seed=seed))
     results_uniform = evaluate_all(args, models, test_loader, device)
 
     results = np.vstack((
@@ -138,7 +145,7 @@ def full_evaluation(args, seeds=[0,1,2]):
         results_dict[key] = results[:,i]
     
     # print(tabulate([[key, *value] for key, value in results_dict.items()], headers=['', 'SGD (No averaging)', 'EMA Accuracy', 'EMA Validation', 'Uniform (EMA acc)'], tablefmt="pretty"))
-    print(tabulate([[key, *value] for key, value in results_dict.items()], headers=['', 'SGD (No averaging)', 'EMA Accuracy', 'Uniform (EMA acc)'], tablefmt="pretty"))
+    print(tabulate([[key, *value] for key, value in results_dict.items()], headers=['', 'SGD (No averaging)', 'EMA Accuracy', 'Uniform (EMA val)'], tablefmt="pretty"))
     # print(tabulate([[key, *value] for key, value in results_dict.items()], headers=['', 'SGD (No averaging)', 'EMA Validation'], tablefmt="pretty"))
 
 if __name__ == '__main__':
