@@ -12,6 +12,7 @@ from helpers.parser import parse_args
 from loaders.data import get_data, ROOT_CLUSTER
 from model.model import get_model
 from robustness_measures.calibration import eval_calibration
+from robustness_measures.img_transforms import eval_common_corruptions
 from robustness_measures.ood_detection import eval_ood, eval_ood_random_images
 from robustness_measures.repeatability import eval_repeatability
 from helpers.evaluate import eval_ensemble
@@ -44,12 +45,12 @@ def evaluate_all(args, models, test_loader, device):
     results = {}
 
     # TEST ACCURACY AND LOSS
-    _, acc, soft_acc, losses, accs, soft_accs = eval_ensemble(models, test_loader, device)
-    # _, avg_model_acc, _, _ = eval_ensemble(models, test_loader, device, avg_model=True)
-    print('\n ~~~ Models accuracy ~~~')
-    for i in range(len(accs)):
-        print(f'Model {i}:\tAccuracy: {accs[i]:.2f} \tLoss: {losses[i]:.4f} \tSoft accuracy: {soft_accs[i]:.2f}')
-    print(f'(Prediction) Ensemble Accuracy: {acc:.2f} \tSoft accuracy: {soft_acc:.2f}')
+    # _, acc, soft_acc, losses, accs, soft_accs = eval_ensemble(models, test_loader, device)
+    # # _, avg_model_acc, _, _ = eval_ensemble(models, test_loader, device, avg_model=True)
+    # print('\n ~~~ Models accuracy ~~~')
+    # for i in range(len(accs)):
+    #     print(f'Model {i}:\tAccuracy: {accs[i]:.2f} \tLoss: {losses[i]:.4f} \tSoft accuracy: {soft_accs[i]:.2f}')
+    # print(f'(Prediction) Ensemble Accuracy: {acc:.2f} \tSoft accuracy: {soft_acc:.2f}')
 
     # results['Test Accuracy (%)'] = np.round(np.array(accs).mean(), 2)
     # results['Test Loss'] = np.round(np.array(losses).mean(), 2)
@@ -78,9 +79,12 @@ def evaluate_all(args, models, test_loader, device):
     # results['AUROC rand (higher better)'] = auroc
     # results['AUPR rand (higher better)'] = aupr
 
+    # Common corruptions
+    results['Common corruptions (severity=1)'] = eval_common_corruptions(args, models, severities=[1])
+
     # Adversarial attacks
-    results['Adversarial Accuracy (eps=8/255)'] = evaluate_adversarial(args, models, epsilon=8/225)
-    results['Adversarial Accuracy (eps=2/255)'] = evaluate_adversarial(args, models, epsilon=2/225)
+    # results['Adversarial Accuracy (eps=8/255)'] = evaluate_adversarial(args, models, epsilon=8/225)
+    # results['Adversarial Accuracy (eps=2/255)'] = evaluate_adversarial(args, models, epsilon=2/225)
 
     return results
 
