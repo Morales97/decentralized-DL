@@ -29,13 +29,15 @@ def load_model(args, path, device):
     return model
 
 def eval_common_corruptions(args, models, severities=[1,2,3,4,5]):
+    device = 'cuda' if torch.cuda.is_available() else 'cpu'
     acc_mean = []
+    
     if args.dataset == 'cifar100':
         for model in models:
-            acc = eval_on_cifar_corrputed_test(model, 'cifar100-C', device, root=ROOT_CLUSTER, severities=[1])
+            acc = eval_on_cifar_corrputed_test(model, 'cifar100-C', device, root=ROOT_CLUSTER, severities=severities)
             acc_mean.append(acc)
     return np.round(np.mean(acc_mean))
-    
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='')
     parser.add_argument('--resume2', type=str, help='Second model to compare')
