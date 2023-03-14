@@ -54,6 +54,7 @@ def pgd_attack(fmodel, test_loader, epsilon):
         images = torch.Tensor(test_loader.dataset.data).cuda()
         images = torch.transpose(images, 1, 3) # convert to NCHW
         images = torch.transpose(images, 2, 3) 
+        images /= 255
         labels = torch.Tensor(test_loader.dataset.targets).cuda().long()
 
         _, _, is_adv = attack(fmodel, images, labels, epsilons=epsilon)
@@ -108,6 +109,8 @@ if __name__ == '__main__':
 
     images = images[:1000]  # to fit in memory
     labels = labels[:1000]
+
+    images /= 255
     clean_acc = fb.utils.accuracy(fmodel, images, labels)
     print(f'Clean accuracy: {clean_acc*100}')
 
