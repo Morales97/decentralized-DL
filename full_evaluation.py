@@ -22,6 +22,7 @@ def _get_expt_name(args, opt):
     expt_name = opt + '_' + str(args.lr[0])
     if args.label_noise:
         expt_name += '_noise40'
+    return expt_name
 
 def _load_model(args, device, seed, opt):
     assert opt in ['SGD', 'EMA_acc', 'EMA_val']
