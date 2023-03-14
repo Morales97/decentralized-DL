@@ -266,7 +266,7 @@ def ood_lsun(args, model, ood_num_examples, in_score):
     elif args.dataset == 'tiny-in':
         normalize = transforms.Normalize(mean=(0.485, 0.456, 0.406), std=(0.229, 0.224, 0.225))
 
-    ood_data = datasets.LSUN(root=ROOT_CLUSTER + '/OOD_detection/', split='test',
+    ood_data = datasets.LSUN(root=ROOT_CLUSTER + '/OOD_detection/', classes='test',
                             transform=transforms.Compose([transforms.Resize(32), transforms.CenterCrop(32),
                                                    transforms.ToTensor(), normalize]))
     ood_loader = torch.utils.data.DataLoader(ood_data, batch_size=100, shuffle=True)
