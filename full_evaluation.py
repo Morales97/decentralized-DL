@@ -27,7 +27,7 @@ def _load_model(args, device, seed, opt):
     assert opt in ['SGD', 'EMA_acc', 'EMA_val']
 
     model = get_model(args, device)
-    expt_name = _get_expt_name(args)
+    expt_name = _get_expt_name(args, opt)
     path = get_folder_name(args, expt_name=expt_name, seed=seed)
     ckpt = torch.load(os.path.join(path, 'checkpoint_last.pth.tar'))
 
