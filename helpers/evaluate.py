@@ -139,7 +139,7 @@ def eval_on_cifar_corrputed_test(model, dataset, device, root, distortions=None)
         loss, acc = evaluate_model(model, test_loader, device)
 
         from robustbench.data import load_cifar100c
-        test_loader2 = load_cifar100c(num_examples=10000, corruptions = ['shot_noise'], severity=1)
+        test_loader2 = load_cifar100c(n_examples=10000, corruptions = ['shot_noise'], severity=1)
         loss, acc2 = evaluate_model(model, test_loader2, device)
         pdb.set_trace()
         print(f'[{dataset}] - Distorsion: {distortion_name}\t Accuracy: {acc}')

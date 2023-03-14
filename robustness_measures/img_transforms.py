@@ -48,11 +48,11 @@ if __name__ == '__main__':
         pass
         # TODO
 
-    _, acc, soft_acc, losses, accs, soft_accs = eval_ensemble(models, test_loader, device)
-    print('\n ~~~ Models accuracy on original Test set ~~~')
-    for i in range(len(accs)):
-        print(f'Model {i}:\tAccuracy: {accs[i]:.2f} \tLoss: {losses[i]:.4f} \tSoft accuracy: {soft_accs[i]:.2f}')
-    print(f'(Prediction) Ensemble Accuracy: {acc:.2f} \tSoft accuracy: {soft_acc:.2f}')
+    # _, acc, soft_acc, losses, accs, soft_accs = eval_ensemble(models, test_loader, device)
+    # print('\n ~~~ Models accuracy on original Test set ~~~')
+    # for i in range(len(accs)):
+    #     print(f'Model {i}:\tAccuracy: {accs[i]:.2f} \tLoss: {losses[i]:.4f} \tSoft accuracy: {soft_accs[i]:.2f}')
+    # print(f'(Prediction) Ensemble Accuracy: {acc:.2f} \tSoft accuracy: {soft_acc:.2f}')
 
     # RAND-AUGMENT
     # test_loader = get_data(args, batch_size=100, test_transforms='RandAugment')
@@ -79,7 +79,7 @@ if __name__ == '__main__':
     # NOTE DO CHECK OUT ROBUSTBENCH: https://github.com/RobustBench/robustbencht
     # they have a super nice cifar100c loader: load_cifar10c(n_examples=1000, corruptions=corruptions, severity=5)
     acc = eval_on_cifar_corrputed_test(model1, 'cifar100-C', device, root=ROOT_CLUSTER, distortions=['shot_noise'])
-    
+
 
     # acc1 = eval_on_cifar_corrputed_test(model1, 'cifar100-C', device, root=ROOT_CLUSTER)
     # acc2 = eval_on_cifar_corrputed_test(model2, 'cifar100-C', device, root=ROOT_CLUSTER)
