@@ -99,11 +99,11 @@ def full_evaluation(args, seeds=[0,1,2]):
     results_SGD = evaluate_all(args, models, test_loader, device)
 
     # EMA acc
-    print('\n *** Evaluating EMA Accuracy... ***')
-    models = []
-    for seed in seeds:
-        models.append(_load_model(args, device, seed, opt='EMA_acc'))
-    results_EMA_acc = evaluate_all(args, models, test_loader, device)
+    # print('\n *** Evaluating EMA Accuracy... ***')
+    # models = []
+    # for seed in seeds:
+    #     models.append(_load_model(args, device, seed, opt='EMA_acc'))
+    # results_EMA_acc = evaluate_all(args, models, test_loader, device)
 
 
     # EMA val
@@ -115,23 +115,24 @@ def full_evaluation(args, seeds=[0,1,2]):
     
 
     # Uniform avg of EMA acc
-    print('\n *** Evaluating Uniform average of EMA Acc... ***')
-    models = []
-    for seed in seeds:
-        models.append(get_avg_model(args, start=0, end=1, expt_name='EMA_acc_'+str(args.lr[0]), seed=seed))
-    results_uniform = evaluate_all(args, models, test_loader, device)
+    # print('\n *** Evaluating Uniform average of EMA Acc... ***')
+    # models = []
+    # for seed in seeds:
+    #     models.append(get_avg_model(args, start=0, end=1, expt_name='EMA_acc_'+str(args.lr[0]), seed=seed))
+    # results_uniform = evaluate_all(args, models, test_loader, device)
 
     results = np.vstack((
         np.array([*results_SGD.values()]), 
-        np.array([*results_EMA_acc.values()]),
+        # np.array([*results_EMA_acc.values()]),
         np.array([*results_EMA_val.values()]),
-        np.array([*results_uniform.values()])
+        # np.array([*results_uniform.values()])
         ))
     results_dict = {}
     for i, key in enumerate(results_SGD.keys()):
         results_dict[key] = results[:,i]
     
-    print(tabulate([[key, *value] for key, value in results_dict.items()], headers=['', 'SGD (No averaging)', 'EMA Accuracy', 'EMA Validation', 'Uniform (EMA acc)'], tablefmt="pretty"))
+    # print(tabulate([[key, *value] for key, value in results_dict.items()], headers=['', 'SGD (No averaging)', 'EMA Accuracy', 'EMA Validation', 'Uniform (EMA acc)'], tablefmt="pretty"))
+    print(tabulate([[key, *value] for key, value in results_dict.items()], headers=['', 'SGD (No averaging)', 'EMA Validation'], tablefmt="pretty"))
 
 if __name__ == '__main__':
     ''' For debugging purposes '''
