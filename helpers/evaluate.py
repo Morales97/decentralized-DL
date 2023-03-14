@@ -123,31 +123,24 @@ def eval_on_cifar_corrputed_test(model, dataset, device, root, distortions=None)
                         'defocus_blur', 'glass_blur', 'motion_blur',
                         'zoom_blur', 'snow', 'frost',
                         'brightness', 'contrast', 'elastic_transform',
-                        'pixelate', 'jpeg_compression', 'speckle_noise',
-                        'gaussian_blur', 'spatter', 'saturate']
-
+                        'pixelate', 'jpeg_compression', 'fog']
+                        #''speckle_noise',
+                        #'gaussian_blur', 'spatter', 'saturate'']
     mean_acc = 0
     for distortion_name in distortions:
         full_data_pth = os.path.join(root, dataset, f"{distortion_name}.npy")
         full_labels_pth = os.path.join(root, dataset, "labels.npy")
 
-        test_data.data = np.load(full_data_pth)[:10000]
-        test_data.targets = torch.LongTensor(np.load(full_labels_pth))[:10000]
+        for severity in range(5):
+            test_data.data = np.load(full_data_pth)[10000*severity : 10000*(severity+1)]
+            test_data.targets = torch.LongTensor(np.load(full_labels_pth))[10000*severity : 10000*(severity+1)]
 
-        test_loader = torch.utils.data.DataLoader(test_data, batch_size=100, shuffle=False)
+            test_loader = torch.utils.data.DataLoader(test_data, batch_size=100, shuffle=False)
 
-        loss, acc = evaluate_model(model, test_loader, device)
+            loss, acc = evaluate_model(model, test_loader, device)
 
-        from robustbench.data import load_cifar100c
-        _x, _y = load_cifar100c(n_examples=10000, corruptions = ['shot_noise'], severity=1) #, data_dir=root)
-        test_data.data = np.load(full_data_pth)[:10000]
-        test_data.targets = torch.LongTensor(np.load(full_labels_pth))[:10000]
-        test_loader2 = torch.utils.data.DataLoader(test_data, batch_size=100, shuffle=False)
-        pdb.set_trace()
-        loss, acc2 = evaluate_model(model, test_loader2, device)
-        pdb.set_trace()
-        print(f'[{dataset}] - Distorsion: {distortion_name}\t Accuracy: {acc}')
-        mean_acc += acc
+            print(f'[{dataset}] - Distorsion: {distortion_name}, Severity {severity+1} \t Accuracy: {acc}')
+            mean_acc += acc
 
     mean_acc /= len(distortions)
     print(f'[{dataset}] - \t *** Mean Accuracy: {mean_acc} ***')
