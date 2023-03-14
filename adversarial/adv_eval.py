@@ -124,7 +124,8 @@ if __name__ == '__main__':
     print(f'Robust accuracy for epsilon {epsilon}: {robust_accuracy*100}')
 
     robust_accuracy = pgd_attack(fmodel, test_loader, epsilon)
-
+    print(f'Robust accuracy for epsilon {epsilon}: {robust_accuracy*100}')
+    
     # epsilon = 8./255
     # loss, acc = evaluate_pgd_attack(model, test_loader, epsilon=epsilon)
     # print(f'Adversarial Test Accuracy (eps={epsilon}): {acc} \t Advesarial Test Loss: {loss}')
