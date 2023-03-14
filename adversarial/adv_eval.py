@@ -87,14 +87,14 @@ if __name__ == '__main__':
         preprocessing = dict(mean=[0.5071, 0.4867, 0.4408], std=[0.2675, 0.2565, 0.2761], axis=-3)
 
     fmodel = fb.PyTorchModel(model, bounds=(0,1), preprocessing=preprocessing) 
-    images = torch.Tensor(test_loader.dataset.data)
+    images = torch.Tensor(test_loader.dataset.data).cuda()
     images = torch.transpose(images, 1, 3) # convert to NCHW
     images = torch.transpose(images, 2, 3) 
-    labels = torch.Tensor(test_loader.dataset.targets)
+    labels = torch.Tensor(test_loader.dataset.targets).cuda()
     clean_acc = fb.utils.accuracy(fmodel, images, labels)
     print(f'Clean accuracy: {clean_acc*100}')
 
-    
+
     pdb.set_trace()
     epsilon = 8./255
     loss, acc = evaluate_pgd_attack(model, test_loader, epsilon=epsilon)
