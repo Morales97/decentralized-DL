@@ -52,26 +52,26 @@ def evaluate_all(args, models, test_loader, device):
         print(f'Model {i}:\tAccuracy: {accs[i]:.2f} \tLoss: {losses[i]:.4f} \tSoft accuracy: {soft_accs[i]:.2f}')
     print(f'(Prediction) Ensemble Accuracy: {acc:.2f} \tSoft accuracy: {soft_acc:.2f}')
 
-    # results['Test Accuracy (%)'] = np.round(np.array(accs).mean(), 2)
-    # results['Test Loss'] = np.round(np.array(losses).mean(), 2)
+    results['Test Accuracy (%)'] = np.round(np.array(accs).mean(), 2)
+    results['Test Loss'] = np.round(np.array(losses).mean(), 2)
 
     # # REPEATABILITY
-    # disagreement, L2_dist, JS_div = eval_repeatability(args, models, test_loader)
-    # results['Pred Disagr. (%)'] = _average_non_zero(disagreement)
+    disagreement, L2_dist, JS_div = eval_repeatability(args, models, test_loader)
+    results['Pred Disagr. (%)'] = _average_non_zero(disagreement)
     # results['Pred L2 dist'] = _average_non_zero(L2_dist)
-    # results['Pred JS div'] = _average_non_zero(JS_div)
+    results['Pred JS div'] = _average_non_zero(JS_div)
 
     # # CALIBRATION
-    # rms, mad, sf1 = eval_calibration(args, models, test_loader)
-    # results['RMS Calib Error (%)'] = rms
-    # results['MAD Calib Error (%)'] = mad
+    rms, mad, sf1 = eval_calibration(args, models, test_loader)
+    results['RMS Calib Error (%)'] = rms
+    results['MAD Calib Error (%)'] = mad
     # results['Soft F1 Score (%)'] = sf1
     
     # # OOD Detection - Anomalous data
-    # auroc, aupr, fpr = eval_ood(args, models, test_loader)
+    auroc, aupr, fpr = eval_ood(args, models, test_loader)
     # results['FPR (lower better)'] = fpr
-    # results['AUROC (higher better)'] = auroc
-    # results['AUPR (higher better)'] = aupr
+    results['AUROC (higher better)'] = auroc
+    results['AUPR (higher better)'] = aupr
 
     # OOD Detection - Random images
     # auroc, aupr, fpr = eval_ood_random_images(args, models, test_loader)
@@ -80,12 +80,12 @@ def evaluate_all(args, models, test_loader, device):
     # results['AUPR rand (higher better)'] = aupr
 
     # Common corruptions
-    # results['Common corruptions (severity=1)'] = eval_common_corruptions(args, models, severities=[1])
+    results['Common corruptions (severity=1)'] = eval_common_corruptions(args, models, severities=[1])
     # results['Common corruptions (severities=1-5)'] = eval_common_corruptions(args, models, severities=[1,2,3,4,5])
 
     # Adversarial attacks
     # results['Adversarial Accuracy (eps=8/255)'] = evaluate_adversarial(args, models, epsilon=8/225)
-    # results['Adversarial Accuracy (eps=2/255)'] = evaluate_adversarial(args, models, epsilon=2/225)
+    results['Adversarial Accuracy (eps=2/255)'] = evaluate_adversarial(args, models, epsilon=2/225)
 
     return results
 
@@ -113,12 +113,18 @@ def full_evaluation(args, seeds=[0,1,2]):
 
 
     # EMA val
-    # print('\n *** Evaluating EMA Validation... ***')
-    # models = []
-    # for seed in seeds:
-    #     models.append(_load_model(args, device, seed, opt='EMA_val'))
-    # results_EMA_val = evaluate_all(args, models, test_loader, device)
+    print('\n *** Evaluating EMA Validation... ***')
+    models = []
+    for seed in seeds:
+        models.append(_load_model(args, device, seed, opt='EMA_val'))
+    results_EMA_val = evaluate_all(args, models, test_loader, device)
     
+    # Uniform avg of SGD
+    print('\n *** Evaluating Uniform average of SGD since epoch 100... ***')
+    models = []
+    for seed in seeds:
+        models.append(get_avg_model(args, start=0.5, end=1, expt_name='SGD_'+str(args.lr[0]), seed=seed))
+    results_uniform_sgd = evaluate_all(args, models, test_loader, device)
 
     # Uniform avg of EMA acc
     # print('\n *** Evaluating Uniform average of EMA Acc... ***')
@@ -137,7 +143,8 @@ def full_evaluation(args, seeds=[0,1,2]):
     results = np.vstack((
         np.array([*results_SGD.values()]), 
         np.array([*results_EMA_acc.values()]),
-        # np.array([*results_EMA_val.values()]),
+        np.array([*results_EMA_val.values()]),
+        np.array([*results_uniform_sgd.values()]),
         np.array([*results_uniform.values()])
         ))
     results_dict = {}
@@ -145,7 +152,8 @@ def full_evaluation(args, seeds=[0,1,2]):
         results_dict[key] = results[:,i]
     
     # print(tabulate([[key, *value] for key, value in results_dict.items()], headers=['', 'SGD (No averaging)', 'EMA Accuracy', 'EMA Validation', 'Uniform (EMA acc)'], tablefmt="pretty"))
-    print(tabulate([[key, *value] for key, value in results_dict.items()], headers=['', 'SGD (No averaging)', 'EMA Accuracy', 'Uniform (EMA val)'], tablefmt="pretty"))
+    # print(tabulate([[key, *value] for key, value in results_dict.items()], headers=['', 'SGD (No averaging)', 'EMA Accuracy', 'Uniform (EMA val)'], tablefmt="pretty"))
+    print(tabulate([[key, *value] for key, value in results_dict.items()], headers=['', 'SGD (No averaging)', 'EMA Accuracy', 'EMA Validation', 'Uniform (SGD)', 'Uniform (EMA val)'], tablefmt="pretty"))
     # print(tabulate([[key, *value] for key, value in results_dict.items()], headers=['', 'SGD (No averaging)', 'EMA Validation'], tablefmt="pretty"))
 
 if __name__ == '__main__':
