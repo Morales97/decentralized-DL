@@ -13,45 +13,13 @@ from loaders.data import get_data, ROOT_CLUSTER, get_unprocessed_test
 from model.model import get_model
 import pdb
 
-def evaluate_pgd_attack(model, test_loader, adv=True, epsilon=8./255):
-    adversary = attacks.PGD_linf(epsilon=epsilon, num_steps=20, step_size=2./255).cuda()
-
-    model.eval()
-    if adv is False:
-        torch.set_grad_enabled(False)
-    running_loss = 0
-    running_acc = 0
-    count = 0
-    for i, batch in enumerate(test_loader):
-        bx = batch[0].cuda()
-        by = batch[1].cuda()
-
-        count += by.size(0)
-
-        adv_bx = adversary(model, bx, by) if adv else bx
-        with torch.no_grad():
-            logits = model(adv_bx) # TODO change this
-            # logits = model(adv_bx * 2 - 1) # TODO change this
-
-        loss = F.cross_entropy(logits.data, by, reduction='sum')
-        running_loss += loss.cpu().data.numpy()
-        running_acc += (torch.max(logits, dim=1)[1] == by).float().sum(0).cpu().data.numpy()
-    running_loss /= count
-    running_acc /= count
-
-    loss = running_loss
-    acc = running_acc
-
-    if adv is False:
-        torch.set_grad_enabled(True)
-    return loss, acc
-
 def pgd_attack(fmodel, test_loader, epsilon):
     attack = fb.attacks.LinfPGD(steps=20)
 
     robust_accuracy = 0
     for images, labels in iter(test_loader):
         images = images.cuda()
+        images = torch.transpose(images, 2, 3) 
         images /= 255
         labels = labels.cuda().long()
 
@@ -62,7 +30,10 @@ def pgd_attack(fmodel, test_loader, epsilon):
 
 def evaluate_adversarial(models, test_loader, epsilon):
     acc_mean = []
+    if args.dataset == 'cifar100':
+        preprocessing = dict(mean=[0.5071, 0.4867, 0.4408], std=[0.2675, 0.2565, 0.2761], axis=-3)
     for model in models:
+        fmodel = fb.PyTorchModel(model, bounds=(0,1), preprocessing=preprocessing) 
         loss, acc = evaluate_pgd_attack(model, test_loader, epsilon=epsilon)
         acc_mean.append(acc)
 
@@ -125,7 +96,7 @@ if __name__ == '__main__':
 
     robust_accuracy = pgd_attack(fmodel, test_loader, epsilon)
     print(f'Robust accuracy for epsilon {epsilon}: {robust_accuracy*100}')
-    
+
     # epsilon = 8./255
     # loss, acc = evaluate_pgd_attack(model, test_loader, epsilon=epsilon)
     # print(f'Adversarial Test Accuracy (eps={epsilon}): {acc} \t Advesarial Test Loss: {loss}')
