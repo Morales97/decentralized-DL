@@ -4,7 +4,7 @@ import os
 import sys
 import pdb
 from tabulate import tabulate
-from adversarial.adv_eval import evaluate_adversarial, evaluate_pgd_attack
+from adversarial.adv_eval import evaluate_adversarial
 from avg_index.search_avg import get_avg_model
 
 from helpers.utils import get_folder_name
