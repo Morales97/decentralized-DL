@@ -44,27 +44,27 @@ def evaluate_all(args, models, test_loader, device):
     results = {}
 
     # TEST ACCURACY AND LOSS
-    # _, acc, soft_acc, losses, accs, soft_accs = eval_ensemble(models, test_loader, device)
-    # # _, avg_model_acc, _, _ = eval_ensemble(models, test_loader, device, avg_model=True)
-    # print('\n ~~~ Models accuracy ~~~')
-    # for i in range(len(accs)):
-    #     print(f'Model {i}:\tAccuracy: {accs[i]:.2f} \tLoss: {losses[i]:.4f} \tSoft accuracy: {soft_accs[i]:.2f}')
-    # print(f'(Prediction) Ensemble Accuracy: {acc:.2f} \tSoft accuracy: {soft_acc:.2f}')
+    _, acc, soft_acc, losses, accs, soft_accs = eval_ensemble(models, test_loader, device)
+    # _, avg_model_acc, _, _ = eval_ensemble(models, test_loader, device, avg_model=True)
+    print('\n ~~~ Models accuracy ~~~')
+    for i in range(len(accs)):
+        print(f'Model {i}:\tAccuracy: {accs[i]:.2f} \tLoss: {losses[i]:.4f} \tSoft accuracy: {soft_accs[i]:.2f}')
+    print(f'(Prediction) Ensemble Accuracy: {acc:.2f} \tSoft accuracy: {soft_acc:.2f}')
 
-    # results['Test Accuracy (%)'] = np.round(np.array(accs).mean(), 2)
-    # results['Test Loss'] = np.round(np.array(losses).mean(), 2)
+    results['Test Accuracy (%)'] = np.round(np.array(accs).mean(), 2)
+    results['Test Loss'] = np.round(np.array(losses).mean(), 2)
 
-    # # REPEATABILITY
-    # disagreement, L2_dist, JS_div = eval_repeatability(args, models, test_loader)
-    # results['Pred Disagr. (%)'] = _average_non_zero(disagreement)
-    # results['Pred L2 dist'] = _average_non_zero(L2_dist)
-    # results['Pred JS div'] = _average_non_zero(JS_div)
+    # REPEATABILITY
+    disagreement, L2_dist, JS_div = eval_repeatability(args, models, test_loader)
+    results['Pred Disagr. (%)'] = _average_non_zero(disagreement)
+    results['Pred L2 dist'] = _average_non_zero(L2_dist)
+    results['Pred JS div'] = _average_non_zero(JS_div)
 
-    # # CALIBRATION
-    # rms, mad, sf1 = eval_calibration(args, models, test_loader)
-    # results['RMS Calib Error (%)'] = rms
-    # results['MAD Calib Error (%)'] = mad
-    # results['Soft F1 Score (%)'] = sf1
+    # CALIBRATION
+    rms, mad, sf1 = eval_calibration(args, models, test_loader)
+    results['RMS Calib Error (%)'] = rms
+    results['MAD Calib Error (%)'] = mad
+    results['Soft F1 Score (%)'] = sf1
     
     # OOD Detection - Anomalous data
     auroc, aupr, fpr = eval_ood(args, models, test_loader)
@@ -79,7 +79,7 @@ def evaluate_all(args, models, test_loader, device):
     # results['AUPR rand (higher better)'] = aupr
 
     # Adversarial attacks
-    # results['Adversarial Accuracy (eps=2/255)'] = evaluate_adversarial(models, test_loader, epsilon=2/225)
+    results['Adversarial Accuracy (eps=2/255)'] = evaluate_adversarial(models, test_loader, epsilon=2/225)
 
     return results
 
@@ -99,11 +99,11 @@ def full_evaluation(args, seeds=[0,1,2]):
     results_SGD = evaluate_all(args, models, test_loader, device)
 
     # EMA acc
-    # print('\n *** Evaluating EMA Accuracy... ***')
-    # models = []
-    # for seed in seeds:
-    #     models.append(_load_model(args, device, seed, opt='EMA_acc'))
-    # results_EMA_acc = evaluate_all(args, models, test_loader, device)
+    print('\n *** Evaluating EMA Accuracy... ***')
+    models = []
+    for seed in seeds:
+        models.append(_load_model(args, device, seed, opt='EMA_acc'))
+    results_EMA_acc = evaluate_all(args, models, test_loader, device)
 
 
     # EMA val
