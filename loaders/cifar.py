@@ -25,7 +25,9 @@ def get_cifar_test(args, root, batch_size=100, test_transforms=None):
             (0.5071, 0.4867, 0.4408), (0.2675, 0.2565, 0.2761)
         )
 
-    if test_transforms:
+    if test_transforms == 'no_norm':
+        transform = transforms.Compose([transforms.ToTensor()])
+    elif test_transforms:
         # for robustness experiments
         transform = transforms.Compose([
             # transforms.RandomHorizontalFlip(),
@@ -33,7 +35,6 @@ def get_cifar_test(args, root, batch_size=100, test_transforms=None):
             transforms.RandAugment(),
             transforms.ToTensor(), 
             normalize])
-
     else:
         transform = transforms.Compose([transforms.ToTensor(), normalize])
 

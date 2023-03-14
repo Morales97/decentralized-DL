@@ -5,10 +5,11 @@ import numpy as np
 
 import os
 import sys
+import foolbox as fb
 sys.path.insert(0, os.path.join(sys.path[0], '..'))
 from adversarial import attacks
 from helpers.parser import parse_args
-from loaders.data import get_data, ROOT_CLUSTER
+from loaders.data import get_data, ROOT_CLUSTER, get_unprocessed_test
 from model.model import get_model
 import pdb
 
@@ -57,8 +58,10 @@ def evaluate_adversarial(models, test_loader, epsilon):
 if __name__ == '__main__':
     args = parse_args()
 
-    train_loader, _, test_loader = get_data(args, args.batch_size[0], args.data_fraction)
-    
+    # train_loader, _, test_loader = get_data(args, args.batch_size[0], args.data_fraction)
+
+    test_loader = get_unprocessed_test(args)
+
     # dataset_loader = datasets.CIFAR100
     # transform = transforms.Compose([transforms.ToTensor(), transforms.Normalize((0.5071, 0.4867, 0.4408), (0.2675, 0.2565, 0.2761))])
     # # transform = transforms.Compose([transforms.ToTensor()])
@@ -80,6 +83,11 @@ if __name__ == '__main__':
     else:
         model = get_avg_model(args, start=0.5, end=1)
 
+    if args.dataset == 'cifar100':
+        preprocessing = dict(mean=[0.5071, 0.4867, 0.4408], std=[0.2675, 0.2565, 0.2761], axis=-3)
+
+    fmodel = fb.PyTorchModel(model, bounds=(0,1), preprocessing=preprocessing) 
+    pdb.set_trace()
     epsilon = 8./255
     loss, acc = evaluate_pgd_attack(model, test_loader, epsilon=epsilon)
     print(f'Adversarial Test Accuracy (eps={epsilon}): {acc} \t Advesarial Test Loss: {loss}')

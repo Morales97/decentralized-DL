@@ -36,6 +36,14 @@ def _get_cifar(args, root, batch_size, val_fraction, fraction):
 def _get_tiny_imagenet(args, root, batch_size, val_fraction):
     return get_tinyimagenet(args, root, batch_size, val_fraction)
 
+def get_unprocessed_test(args):
+    if args.local_exec:
+        root = ROOT_LOCAL
+    else:
+        root = ROOT_CLUSTER
+
+    if args.dataset in ['cifar10', 'cifar100']:
+        return get_cifar_test(args, root, test_transforms='no_norm')
 
 def get_data(args, batch_size, fraction=-1, val_fraction=0, test_transforms=None):
     if args.local_exec:
