@@ -45,12 +45,12 @@ def evaluate_all(args, models, test_loader, device):
     results = {}
 
     # TEST ACCURACY AND LOSS
-    # _, acc, soft_acc, losses, accs, soft_accs = eval_ensemble(models, test_loader, device)
-    # # _, avg_model_acc, _, _ = eval_ensemble(models, test_loader, device, avg_model=True)
-    # print('\n ~~~ Models accuracy ~~~')
-    # for i in range(len(accs)):
-    #     print(f'Model {i}:\tAccuracy: {accs[i]:.2f} \tLoss: {losses[i]:.4f} \tSoft accuracy: {soft_accs[i]:.2f}')
-    # print(f'(Prediction) Ensemble Accuracy: {acc:.2f} \tSoft accuracy: {soft_acc:.2f}')
+    _, acc, soft_acc, losses, accs, soft_accs = eval_ensemble(models, test_loader, device)
+    # _, avg_model_acc, _, _ = eval_ensemble(models, test_loader, device, avg_model=True)
+    print('\n ~~~ Models accuracy ~~~')
+    for i in range(len(accs)):
+        print(f'Model {i}:\tAccuracy: {accs[i]:.2f} \tLoss: {losses[i]:.4f} \tSoft accuracy: {soft_accs[i]:.2f}')
+    print(f'(Prediction) Ensemble Accuracy: {acc:.2f} \tSoft accuracy: {soft_acc:.2f}')
 
     # results['Test Accuracy (%)'] = np.round(np.array(accs).mean(), 2)
     # results['Test Loss'] = np.round(np.array(losses).mean(), 2)
@@ -80,7 +80,8 @@ def evaluate_all(args, models, test_loader, device):
     # results['AUPR rand (higher better)'] = aupr
 
     # Common corruptions
-    results['Common corruptions (severity=1)'] = eval_common_corruptions(args, models, severities=[1])
+    # results['Common corruptions (severity=1)'] = eval_common_corruptions(args, models, severities=[1])
+    # results['Common corruptions (severities=1-5)'] = eval_common_corruptions(args, models, severities=[1,2,3,4,5])
 
     # Adversarial attacks
     # results['Adversarial Accuracy (eps=8/255)'] = evaluate_adversarial(args, models, epsilon=8/225)
@@ -112,32 +113,33 @@ def full_evaluation(args, seeds=[0,1,2]):
 
 
     # EMA val
-    print('\n *** Evaluating EMA Validation... ***')
-    models = []
-    for seed in seeds:
-        models.append(_load_model(args, device, seed, opt='EMA_val'))
-    results_EMA_val = evaluate_all(args, models, test_loader, device)
+    # print('\n *** Evaluating EMA Validation... ***')
+    # models = []
+    # for seed in seeds:
+    #     models.append(_load_model(args, device, seed, opt='EMA_val'))
+    # results_EMA_val = evaluate_all(args, models, test_loader, device)
     
 
     # Uniform avg of EMA acc
-    # print('\n *** Evaluating Uniform average of EMA Acc... ***')
-    # models = []
-    # for seed in seeds:
-    #     models.append(get_avg_model(args, start=0, end=1, expt_name='EMA_acc_'+str(args.lr[0]), seed=seed))
-    # results_uniform = evaluate_all(args, models, test_loader, device)
+    print('\n *** Evaluating Uniform average of EMA Acc... ***')
+    models = []
+    for seed in seeds:
+        models.append(get_avg_model(args, start=0, end=1, expt_name='EMA_acc_'+str(args.lr[0]), seed=seed))
+    results_uniform = evaluate_all(args, models, test_loader, device)
 
     results = np.vstack((
         np.array([*results_SGD.values()]), 
-        # np.array([*results_EMA_acc.values()]),
-        np.array([*results_EMA_val.values()]),
-        # np.array([*results_uniform.values()])
+        np.array([*results_EMA_acc.values()]),
+        # np.array([*results_EMA_val.values()]),
+        np.array([*results_uniform.values()])
         ))
     results_dict = {}
     for i, key in enumerate(results_SGD.keys()):
         results_dict[key] = results[:,i]
     
     # print(tabulate([[key, *value] for key, value in results_dict.items()], headers=['', 'SGD (No averaging)', 'EMA Accuracy', 'EMA Validation', 'Uniform (EMA acc)'], tablefmt="pretty"))
-    print(tabulate([[key, *value] for key, value in results_dict.items()], headers=['', 'SGD (No averaging)', 'EMA Validation'], tablefmt="pretty"))
+    print(tabulate([[key, *value] for key, value in results_dict.items()], headers=['', 'SGD (No averaging)', 'EMA Accuracy', 'Uniform (EMA acc)'], tablefmt="pretty"))
+    # print(tabulate([[key, *value] for key, value in results_dict.items()], headers=['', 'SGD (No averaging)', 'EMA Validation'], tablefmt="pretty"))
 
 if __name__ == '__main__':
     ''' For debugging purposes '''
