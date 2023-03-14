@@ -46,6 +46,20 @@ def evaluate_pgd_attack(model, test_loader, adv=True, epsilon=8./255):
         torch.set_grad_enabled(True)
     return loss, acc
 
+def pgd_attack(fmodel, test_loader, epsilon):
+    attack = fb.attacks.LinfPGD(steps=20)
+
+    robust_accuracy = 0
+    for images, labels in iter(test_loader):
+        images = torch.Tensor(test_loader.dataset.data).cuda()
+        images = torch.transpose(images, 1, 3) # convert to NCHW
+        images = torch.transpose(images, 2, 3) 
+        labels = torch.Tensor(test_loader.dataset.targets).cuda().long()
+
+        _, _, is_adv = attack(fmodel, images, labels, epsilons=epsilon)
+        robust_accuracy += 1 - is_adv.float().mean(axis=-1)
+
+    return robust_accuracy / len(test_loader)
 
 def evaluate_adversarial(models, test_loader, epsilon):
     acc_mean = []
@@ -90,26 +104,40 @@ if __name__ == '__main__':
     images = torch.Tensor(test_loader.dataset.data).cuda()
     images = torch.transpose(images, 1, 3) # convert to NCHW
     images = torch.transpose(images, 2, 3) 
-    labels = torch.Tensor(test_loader.dataset.targets).cuda()
+    labels = torch.Tensor(test_loader.dataset.targets).cuda().long()
+
+    images = images[:1000]  # to fit in memory
+    labels = labels[:1000]
     clean_acc = fb.utils.accuracy(fmodel, images, labels)
     print(f'Clean accuracy: {clean_acc*100}')
 
+    attack = fb.attacks.LinfPGD(steps=20)
+    epsilon = 8/255
+    _, _, is_adv = attack(fmodel, images, labels, epsilons=epsilon)
+    robust_accuracy = 1 - is_adv.float().mean(axis=-1)
+    print(f'Robust accuracy for epsilon {epsilon}: {robust_accuracy*100}')
 
-    pdb.set_trace()
-    epsilon = 8./255
-    loss, acc = evaluate_pgd_attack(model, test_loader, epsilon=epsilon)
-    print(f'Adversarial Test Accuracy (eps={epsilon}): {acc} \t Advesarial Test Loss: {loss}')
+    epsilon = 2/255
+    _, _, is_adv = attack(fmodel, images, labels, epsilons=epsilon)
+    robust_accuracy = 1 - is_adv.float().mean(axis=-1)
+    print(f'Robust accuracy for epsilon {epsilon}: {robust_accuracy*100}')
 
-    epsilon = 4./255
-    loss, acc = evaluate_pgd_attack(model, test_loader, epsilon=epsilon)
-    print(f'Adversarial Test Accuracy (eps={epsilon}): {acc} \t Advesarial Test Loss: {loss}')
+    robust_accuracy = pgd_attack(fmodel, test_loader, epsilon)
+
+    # epsilon = 8./255
+    # loss, acc = evaluate_pgd_attack(model, test_loader, epsilon=epsilon)
+    # print(f'Adversarial Test Accuracy (eps={epsilon}): {acc} \t Advesarial Test Loss: {loss}')
+
+    # epsilon = 4./255
+    # loss, acc = evaluate_pgd_attack(model, test_loader, epsilon=epsilon)
+    # print(f'Adversarial Test Accuracy (eps={epsilon}): {acc} \t Advesarial Test Loss: {loss}')
     
-    epsilon = 2./255
-    loss, acc = evaluate_pgd_attack(model, test_loader, epsilon=epsilon)
-    print(f'Adversarial Test Accuracy (eps={epsilon}): {acc} \t Advesarial Test Loss: {loss}')
+    # epsilon = 2./255
+    # loss, acc = evaluate_pgd_attack(model, test_loader, epsilon=epsilon)
+    # print(f'Adversarial Test Accuracy (eps={epsilon}): {acc} \t Advesarial Test Loss: {loss}')
 
-    loss, acc = evaluate_pgd_attack(model, test_loader, adv=False)
-    print(f'Test Accuracy: {acc} \t Test Loss: {loss}')
+    # loss, acc = evaluate_pgd_attack(model, test_loader, adv=False)
+    # print(f'Test Accuracy: {acc} \t Test Loss: {loss}')
 
 # python adversarial/adv_eval.py --net=rn18 --dataset=cifar100 --expt_name=C4.3_lr0.8_cosine
 # python adversarial/adv_eval.py --net=rn18 --dataset=cifar100 --resume=/mloraw1/danmoral/checkpoints/cifar100/rn18/EMA_acc_1.2_s0/checkpoint_last.pth.tar

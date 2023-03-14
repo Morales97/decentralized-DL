@@ -75,6 +75,9 @@ if __name__ == '__main__':
     # print(f'(Prediction) Ensemble Accuracy: {acc:.2f} \tSoft accuracy: {soft_acc:.2f}')
 
     # CORRUPTED CIFAR
+
+    # NOTE DO CHECK OUT ROBUSTBENCH: https://github.com/RobustBench/robustbencht
+    # they have a super nice cifar100c loader: load_cifar10c(n_examples=1000, corruptions=corruptions, severity=5)
     acc1 = eval_on_cifar_corrputed_test(model1, 'cifar100-C', device, root=ROOT_CLUSTER)
     acc2 = eval_on_cifar_corrputed_test(model2, 'cifar100-C', device, root=ROOT_CLUSTER)
     acc3 = eval_on_cifar_corrputed_test(model3, 'cifar100-C', device, root=ROOT_CLUSTER)
