@@ -18,14 +18,16 @@ from robustness_measures.repeatability import eval_repeatability
 from helpers.evaluate import eval_ensemble
 
 
+def _get_expt_name(args, opt):
+    expt_name = opt + '_' + str(args.lr[0])
+    if args.label_noise:
+        expt_name += '_noise40'
 
 def _load_model(args, device, seed, opt):
     assert opt in ['SGD', 'EMA_acc', 'EMA_val']
 
     model = get_model(args, device)
-    expt_name = opt + '_' + str(args.lr[0])
-    if args.label_noise:
-        expt_name += '_noise40'
+    expt_name = _get_expt_name(args)
     path = get_folder_name(args, expt_name=expt_name, seed=seed)
     ckpt = torch.load(os.path.join(path, 'checkpoint_last.pth.tar'))
 
@@ -125,21 +127,21 @@ def full_evaluation(args, seeds=[0,1,2]):
     print('\n *** Evaluating Uniform average of SGD since epoch 100... ***')
     models = []
     for seed in seeds:
-        models.append(get_avg_model(args, start=0.5, end=1, expt_name='SGD_'+str(args.lr[0]), seed=seed))
+        models.append(get_avg_model(args, start=0.5, end=1, expt_name=_get_expt_name(args, 'SGD'), seed=seed))
     results_uniform_sgd = evaluate_all(args, models, test_loader, device)
 
     # Uniform avg of EMA acc
     print('\n *** Evaluating Uniform average of EMA Acc... ***')
     models = []
     for seed in seeds:
-        models.append(get_avg_model(args, start=0, end=1, expt_name='EMA_acc_'+str(args.lr[0]), seed=seed))
+        models.append(get_avg_model(args, start=0, end=1, expt_name=_get_expt_name(args, 'EMA_acc'), seed=seed))
     results_uniform_acc = evaluate_all(args, models, test_loader, device)
 
     # Uniform avg of EMA val
     print('\n *** Evaluating Uniform average of EMA Val... ***')
     models = []
     for seed in seeds:
-        models.append(get_avg_model(args, start=0, end=1, expt_name='EMA_val_'+str(args.lr[0]), seed=seed))
+        models.append(get_avg_model(args, start=0, end=1, expt_name=_get_expt_name(args, 'EMA_val'), seed=seed))
     results_uniform_val = evaluate_all(args, models, test_loader, device)
 
     results = np.vstack((
