@@ -132,8 +132,8 @@ def eval_on_cifar_corrputed_test(model, dataset, device, root, distortions=None,
         full_labels_pth = os.path.join(root, dataset, "labels.npy")
 
         for severity in severities:
-            test_data.data = np.load(full_data_pth)[10000*severity : 10000*(severity+1)]
-            test_data.targets = torch.LongTensor(np.load(full_labels_pth))[10000*severity : 10000*(severity+1)]
+            test_data.data = np.load(full_data_pth)[10000*(severity-1) : 10000*(severity)]
+            test_data.targets = torch.LongTensor(np.load(full_labels_pth))[10000*(severity-1) : 10000*severity]
 
             test_loader = torch.utils.data.DataLoader(test_data, batch_size=100, shuffle=False)
 
