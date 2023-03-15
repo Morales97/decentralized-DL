@@ -56,7 +56,7 @@ def evaluate_all(args, models, test_loader, device):
     print('\n ~~~ Models accuracy ~~~')
     for i in range(len(accs)):
         print(f'Model {i}:\tAccuracy: {accs[i]:.2f} \tLoss: {losses[i]:.4f} \tSoft accuracy: {soft_accs[i]:.2f}')
-    print(f'(Prediction) Ensemble Accuracy: {acc:.2f} \tLoss: {loss:.2f} \tSoft accuracy: {soft_acc:.2f}')
+    print(f'(Prediction) Ensemble Accuracy: {acc:.2f} \tSoft accuracy: {soft_acc:.2f}')
 
     results['Test Accuracy (%)'] = np.round(np.array(accs).mean(), 2)
     results['Test Loss'] = np.round(np.array(losses).mean(), 2)
