@@ -156,13 +156,13 @@ def full_evaluation(args, seeds=[0,1,2]):
     print('\n *** Evaluating EMA Accuracy (train/val)... ***')
     models = []
     for seed in seeds:
-        models.append(_load_model(args, device, seed, opt='val', averaging='EMA_acc', ckpt_name='best_ema_acc.pth.tar'))
+        models.append(_load_model(args, device, seed, expt_name='val', averaging='EMA_acc', ckpt_name='best_ema_acc.pth.tar'))
     results_EMA_acc = evaluate_all(args, models, test_loader, device)
 
     print('\n *** Evaluating EMA Validation (train/val)... ***')
     models = []
     for seed in seeds:
-        models.append(_load_model(args, device, seed, opt='val', averaging='EMA_val', ckpt_name='best_ema_val.pth.tar'))
+        models.append(_load_model(args, device, seed, expt_name='val', averaging='EMA_val', ckpt_name='best_ema_val.pth.tar'))
     results_EMA_val = evaluate_all(args, models, test_loader, device)
 
     results = np.vstack((
