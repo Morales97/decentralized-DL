@@ -72,8 +72,11 @@ if __name__ == '__main__':
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
     model = get_model(args, device)
     ckpt = torch.load(args.resume)
-    model.load_state_dict(ckpt['state_dict'])
-    # model.load_state_dict(ckpt['ema_state_dict_0.996'])
+    if 'ema' in args.resume:
+        alpha = ckpt(['best_alpha'])
+        model.load_state_dict(ckpt['ema_state_dict_'+str(alpha)])
+    else:
+        model.load_state_dict(ckpt['state_dict'])
     
     train_loader, val_loader, test_loader = get_data(args, args.batch_size[0], args.data_fraction, val_fraction=0.2)
     dp_acc = rank_DP(args, model, train_loader, test_loader)
