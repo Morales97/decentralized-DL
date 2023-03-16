@@ -28,14 +28,21 @@ def rank_DP(args, model):
         data = data.cuda()
         labels = labels.cuda()
         probs = F.softmax(model(data), dim=1)
-        pdb.set_trace()
-        max_probs = torch.max(probs, dim=1)
-        confidences.append(max_probs.cpu())
+        max_probs = torch.max(probs, dim=1)[0]
+        confidences += list(max_probs.tolist())
 
         if len(confidences) >= 10000:
             confidences = confidences[:10000]
             break
-        
+
+    pdb.set_trace()
+    for data, labels in test_loader:
+        data = data.cuda()
+        labels = labels.cuda()
+        probs = F.softmax(model(data), dim=1)
+        max_probs = torch.max(probs, dim=1)[0]
+        confidences += list(max_probs.tolist())
+    pdb.set_trace()
 
 if __name__ == '__main__':
     ''' For debugging purposes '''
