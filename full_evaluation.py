@@ -86,7 +86,7 @@ def evaluate_all(args, models, test_loader, device):
     # results['AUPR rand (higher better)'] = aupr
 
     # Common corruptions
-    results['Common corruptions (severity=1)'] = eval_common_corruptions(args, models, severities=[1])
+    # results['Common corruptions (severity=1)'] = eval_common_corruptions(args, models, severities=[1])
     # results['Common corruptions (severities=1-5)'] = eval_common_corruptions(args, models, severities=[1,2,3,4,5])
 
     # Adversarial attacks
@@ -191,3 +191,4 @@ if __name__ == '__main__':
 # python full_evaluation.py --net=vgg16 --dataset=cifar100 --lr=0.06
 # python full_evaluation.py --net=rn18 --dataset=cifar100 --lr=0.8
 # python full_evaluation.py --net=widern28 --dataset=cifar100 --lr=0.1
+# python full_evaluation.py --net=rn18 --dataset=tiny-in --lr=0.8

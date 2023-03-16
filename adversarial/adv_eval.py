@@ -32,7 +32,11 @@ def evaluate_adversarial(args, models, epsilon):
 
     if args.dataset == 'cifar100':
         preprocessing = dict(mean=[0.5071, 0.4867, 0.4408], std=[0.2675, 0.2565, 0.2761], axis=-3)
-        test_loader = get_unprocessed_test(args)
+
+    if args.dataset == 'tiny-in':
+        preprocessing = dict(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225], axis=-3)
+    
+    test_loader = get_unprocessed_test(args)
 
     for model in models:
         fmodel = fb.PyTorchModel(model, bounds=(0,1), preprocessing=preprocessing) 

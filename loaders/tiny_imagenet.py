@@ -66,20 +66,24 @@ def load_train_data(batch_size, file_path, val_fraction=0):
     f.close()
     return train_loader, val_loader
 
-def load_val_data(file_path, batch_size=100):
+def load_val_data(file_path, batch_size=100, do_normalize=True):
     with open(file_path, 'rb') as f:
         val_data, val_labels = pickle.load(f)
     transform = transforms.Compose([
         #transforms.ToTensor(),   
     ])
-    val_dataset = ImageNetDataset(val_data, val_labels.type(torch.LongTensor), transform,
-        normalize=transforms.Compose([
-            transforms.Normalize(
-                mean=(0.485, 0.456, 0.406),
-                std=(0.229, 0.224, 0.225)
-            ),
-        ])
-    )
+    if do_normalize:
+        val_dataset = ImageNetDataset(val_data, val_labels.type(torch.LongTensor), transform,
+            normalize=transforms.Compose([
+                transforms.Normalize(
+                    mean=(0.485, 0.456, 0.406),
+                    std=(0.229, 0.224, 0.225)
+                ),
+            ])
+        )
+    else:
+        val_dataset = ImageNetDataset(val_data, val_labels.type(torch.LongTensor), transform)
+        
     val_loader = DataLoader(
         val_dataset,
         batch_size=batch_size,

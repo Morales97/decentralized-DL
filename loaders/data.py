@@ -4,7 +4,7 @@ import numpy as np
 import pdb
 from loaders.mnist import get_heterogeneous_mnist, get_mnist_split, get_mnist_iid
 from loaders.cifar import get_cifar, get_cifar_filtered_samples, get_cifar_test
-from loaders.tiny_imagenet import get_tinyimagenet
+from loaders.tiny_imagenet import get_tinyimagenet, load_val_data
 
 ROOT_LOCAL = './data'
 ROOT_CLUSTER = '/mloraw1/danmoral/data'
@@ -44,6 +44,8 @@ def get_unprocessed_test(args, batch_size=1000):
 
     if args.dataset in ['cifar10', 'cifar100']:
         return get_cifar_test(args, root, batch_size=batch_size, test_transforms='no_norm')
+    elif args.dataset == 'tiny-in':
+        return load_val_data(root, do_normalize=False)
 
 def get_data(args, batch_size, fraction=-1, val_fraction=0, test_transforms=None):
     if args.local_exec:
