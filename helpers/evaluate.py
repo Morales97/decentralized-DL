@@ -29,6 +29,38 @@ def evaluate_model(model, data_loader, device):
 
     return loss, acc
 
+def evaluate_model_per_class(model, data_loader, device):
+    model.eval()
+    loss = 0
+    correct = np.zeros(model.num_classes)
+    with torch.no_grad():
+        for data, target in data_loader:
+            data, target = data.to(device), target.to(device)
+            # data = data.to(device)
+            output = model(data)
+            # output = model(data[None, ...])
+            # sum up batch loss
+            loss += F.cross_entropy(output, target, reduction='sum').item()
+            pred = output.argmax(dim=1, keepdim=True)
+            correct_pred = pred.eq(target.view_as(pred)).cpu().numpy()
+            for i in range(model.num_classes):
+                pdb.set_trace()
+                correct[i] += correct_pred[target == i].sum()
+
+    accs = np.zeros(model.num_classes)
+    for i in range(model.num_classes):
+        accs[i] = correct[i] / (data_loader.dataset.targets == i).sum() * 100
+    acc = np.sum(correct) / len(data_loader.dataset) * 100
+
+    loss /= len(data_loader.dataset)
+
+    print(f'Accuracy: {np.max(acc)}')
+    print(f'Max class accuracy: {np.max(accs)}')
+    print(f'Min class accuracy: {np.min(accs)}')
+    print(f'Median class accuracy: {np.median(accs)}')
+
+    return loss, accs
+
 def eval_all_models(args, models, test_loader, device):
     acc_workers = []
     loss_workers = []

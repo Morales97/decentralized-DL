@@ -1,3 +1,4 @@
+from markupsafe import te
 import torch
 import numpy as np
 import os
@@ -16,7 +17,7 @@ from robustness_measures.diff_privacy import eval_DP_ranking
 from robustness_measures.img_transforms import eval_common_corruptions
 from robustness_measures.ood_detection import eval_ood, eval_ood_random_images
 from robustness_measures.repeatability import eval_repeatability
-from helpers.evaluate import eval_ensemble
+from helpers.evaluate import eval_ensemble, evaluate_model_per_class
 
 
 def _get_expt_name(args, opt):
@@ -52,6 +53,7 @@ def evaluate_all(args, models, test_loader, device):
     results = {}
 
     # TEST ACCURACY AND LOSS
+    evaluate_model_per_class(models[0], test_loader, device)
     loss, acc, soft_acc, losses, accs, soft_accs = eval_ensemble(models, test_loader, device)
     # _, avg_model_acc, _, _ = eval_ensemble(models, test_loader, device, avg_model=True)
     print('\n ~~~ Models accuracy ~~~')
