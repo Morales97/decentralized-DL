@@ -12,6 +12,7 @@ from helpers.parser import parse_args
 from loaders.data import get_data, ROOT_CLUSTER
 from model.model import get_model
 from robustness_measures.calibration import eval_calibration
+from robustness_measures.diff_privacy import eval_DP_ranking
 from robustness_measures.img_transforms import eval_common_corruptions
 from robustness_measures.ood_detection import eval_ood, eval_ood_random_images
 from robustness_measures.repeatability import eval_repeatability
@@ -62,22 +63,22 @@ def evaluate_all(args, models, test_loader, device):
     results['Test Loss'] = np.round(np.array(losses).mean(), 2)
 
     # # REPEATABILITY
-    disagreement, L2_dist, JS_div = eval_repeatability(args, models, test_loader)
-    results['Pred Disagr. (%)'] = _average_non_zero(disagreement)
-    # results['Pred L2 dist'] = _average_non_zero(L2_dist)
-    results['Pred JS div'] = _average_non_zero(JS_div)
+    # disagreement, L2_dist, JS_div = eval_repeatability(args, models, test_loader)
+    # results['Pred Disagr. (%)'] = _average_non_zero(disagreement)
+    # # results['Pred L2 dist'] = _average_non_zero(L2_dist)
+    # results['Pred JS div'] = _average_non_zero(JS_div)
 
     # # CALIBRATION
-    rms, mad, sf1 = eval_calibration(args, models, test_loader)
-    results['RMS Calib Error (%)'] = rms
-    results['MAD Calib Error (%)'] = mad
-    # results['Soft F1 Score (%)'] = sf1
+    # rms, mad, sf1 = eval_calibration(args, models, test_loader)
+    # results['RMS Calib Error (%)'] = rms
+    # results['MAD Calib Error (%)'] = mad
+    # # results['Soft F1 Score (%)'] = sf1
     
     # # OOD Detection - Anomalous data
-    auroc, aupr, fpr = eval_ood(args, models, test_loader)
-    # results['FPR (lower better)'] = fpr
-    results['AUROC (higher better)'] = auroc
-    results['AUPR (higher better)'] = aupr
+    # auroc, aupr, fpr = eval_ood(args, models, test_loader)
+    # # results['FPR (lower better)'] = fpr
+    # results['AUROC (higher better)'] = auroc
+    # results['AUPR (higher better)'] = aupr
 
     # OOD Detection - Random images
     # auroc, aupr, fpr = eval_ood_random_images(args, models, test_loader)
@@ -91,7 +92,10 @@ def evaluate_all(args, models, test_loader, device):
 
     # Adversarial attacks
     # results['Adversarial Accuracy (eps=8/255)'] = evaluate_adversarial(args, models, epsilon=8/225)
-    results['Adversarial Accuracy (eps=2/255)'] = evaluate_adversarial(args, models, epsilon=2/225)
+    # results['Adversarial Accuracy (eps=2/255)'] = evaluate_adversarial(args, models, epsilon=2/225)
+
+    # DP ranking membership attack
+    results['DP Ranking'] = eval_DP_ranking(args, models)
 
     return results
 
