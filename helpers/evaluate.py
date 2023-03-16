@@ -44,12 +44,11 @@ def evaluate_model_per_class(model, data_loader, device):
             pred = output.argmax(dim=1, keepdim=True)
             correct_pred = pred.eq(target.view_as(pred)).cpu().numpy()
             for i in range(model.num_classes):
-                pdb.set_trace()
-                correct[i] += correct_pred[target == i].sum()
+                correct[i] += correct_pred[target.cpu().numpy() == i].sum()
 
     accs = np.zeros(model.num_classes)
     for i in range(model.num_classes):
-        accs[i] = correct[i] / (data_loader.dataset.targets == i).sum() * 100
+        accs[i] = correct[i] / np.sum(np.array(data_loader.dataset.targets) == i) * 100
     acc = np.sum(correct) / len(data_loader.dataset) * 100
 
     loss /= len(data_loader.dataset)
