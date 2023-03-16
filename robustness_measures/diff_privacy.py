@@ -31,11 +31,10 @@ def rank_DP(args, model, train_loader, test_loader, use_labels=True):
         labels = labels.cuda()
         probs = F.softmax(model(data), dim=1)
         if not use_labels:
-            max_probs = torch.max(probs, dim=1)[0]
+            conf = torch.max(probs, dim=1)[0]
         else:
-            pdb.set_trace()
-            max_probs = probs[labels]
-        confidences += list(max_probs.tolist())
+            conf = probs.gather(1, labels.unsqueeze(1)).squeeze()
+        confidences += list(conf.tolist())
 
         if len(confidences) >= 10000:
             confidences = confidences[:10000]
@@ -46,8 +45,11 @@ def rank_DP(args, model, train_loader, test_loader, use_labels=True):
         data = data.cuda()
         labels = labels.cuda()
         probs = F.softmax(model(data), dim=1)
-        max_probs = torch.max(probs, dim=1)[0]
-        confidences += list(max_probs.tolist())
+        if not use_labels:
+            conf = torch.max(probs, dim=1)[0]
+        else:
+            conf = probs.gather(1, labels.unsqueeze(1)).squeeze()
+        confidences += list(conf.tolist())
 
     sorted_idxs = np.argsort(confidences)   # Sorted from lowest to highest confidence
     test_idxs = sorted_idxs >= 10000    
