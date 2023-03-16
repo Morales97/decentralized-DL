@@ -158,10 +158,10 @@ def train(args, wandb):
                 param.requires_grad = False
             for param in model.fc.parameters():     # Unfreeze last linear layer
                 param.requires_grad = True
-                pdb.set_trace()
+                #pdb.set_trace()
 
         if True:
-            opt = torch.optim.LBFGS()
+            pass #opt = torch.optim.LBFGS()
 
     # TRAIN LOOP
     while epoch < args.epochs:
