@@ -150,8 +150,8 @@ def train(args, wandb):
         for key in state_dict:
             if 'fc' in key:     # replace the last linear layer to fine-tune
                 state_dict[key] = model_sd[key]
-        pdb.set_trace()
-        model.load_state_dict(ckpt['state_dict'])
+
+        model.load_state_dict(state_dict)
         
         if args.freeze:
             for param in model.parameters():        # Freeze all layers
