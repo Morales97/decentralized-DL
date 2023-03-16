@@ -140,12 +140,17 @@ def train(args, wandb):
 
     if args.pretrained:
         ckpt = torch.load(args.pretrained)
-        state_dict = ckpt['state_dict']
+        if 'best_ema_loss' in args.pretrained or 'best_ema_acc' in args.pretrained:
+            alpha = ckpt['best_alpha']
+            state_dict = ckpt['ema_state_dict_' + str(alpha)]
+        else:
+            state_dict = ckpt['state_dict']
         model_sd = model.state_dict()
 
         for key in state_dict:
             if 'fc' in key:     # replace the last linear layer to fine-tune
                 state_dict[key] = model_sd[key]
+        pdb.set_trace()
         model.load_state_dict(ckpt['state_dict'])
         
         if args.freeze:
