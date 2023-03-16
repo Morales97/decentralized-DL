@@ -35,14 +35,18 @@ def rank_DP(args, model):
             confidences = confidences[:10000]
             break
 
-    pdb.set_trace()
+    assert len(test_loader.dataset) == 10000
     for data, labels in test_loader:
         data = data.cuda()
         labels = labels.cuda()
         probs = F.softmax(model(data), dim=1)
         max_probs = torch.max(probs, dim=1)[0]
         confidences += list(max_probs.tolist())
-    pdb.set_trace()
+
+    sorted_idxs = np.argsort(confidences)
+    test_idxs = sorted_idxs >= 10000
+    membership_attack_acc = test_idxs[:10000].sum() / 20000 * 100
+    return membership_attack_acc
 
 if __name__ == '__main__':
     ''' For debugging purposes '''
@@ -52,6 +56,7 @@ if __name__ == '__main__':
     ckpt = torch.load(args.resume)
     model.load_state_dict(ckpt['state_dict'])
     # model.load_state_dict(ckpt['ema_state_dict_0.996'])
-    rank_DP(args, model)
+    dp_acc = rank_DP(args, model)
+    print(f'Ranking Membership Attack Accuracy: {dp_acc:.2f}')
 
 # python robustness_measures/diff_privacy.py --net=rn18 --dataset=cifar100 --resume=/mloraw1/danmoral/checkpoints/cifar100/rn18/val_0.8_s0/checkpoint_last.pth.tar
