@@ -139,7 +139,7 @@ def eval_on_cifar_corrputed_test(model, dataset, device, root, distortions=None,
 
             loss, acc = evaluate_model(model, test_loader, device)
 
-            print(f'[{dataset}] - Distorsion: {distortion_name}, Severity {severity+1} \t Accuracy: {acc}')
+            print(f'[{dataset}] - Distorsion: {distortion_name}, Severity {severity} \t Accuracy: {acc}')
             mean_acc += acc
 
     mean_acc /= len(distortions)

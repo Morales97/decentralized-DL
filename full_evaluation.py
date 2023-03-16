@@ -190,3 +190,4 @@ if __name__ == '__main__':
 
 # python full_evaluation.py --net=vgg16 --dataset=cifar100 --lr=0.06
 # python full_evaluation.py --net=rn18 --dataset=cifar100 --lr=0.8
+# python full_evaluation.py --net=widern28 --dataset=cifar100 --lr=0.1
