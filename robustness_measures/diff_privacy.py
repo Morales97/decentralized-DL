@@ -73,7 +73,7 @@ if __name__ == '__main__':
     model = get_model(args, device)
     ckpt = torch.load(args.resume)
     if 'ema' in args.resume:
-        alpha = ckpt(['best_alpha'])
+        alpha = ckpt['best_alpha']
         model.load_state_dict(ckpt['ema_state_dict_'+str(alpha)])
     else:
         model.load_state_dict(ckpt['state_dict'])
@@ -83,3 +83,4 @@ if __name__ == '__main__':
     print(f'Ranking Membership Attack Accuracy: {dp_acc:.2f}')
 
 # python robustness_measures/diff_privacy.py --net=rn18 --dataset=cifar100 --resume=/mloraw1/danmoral/checkpoints/cifar100/rn18/val_0.8_s0/checkpoint_last.pth.tar
+# python robustness_measures/diff_privacy.py --net=rn18 --dataset=cifar100 --resume=/mloraw1/danmoral/checkpoints/cifar100/rn18/val_0.8_s0/best_ema_acc.pth.tar
