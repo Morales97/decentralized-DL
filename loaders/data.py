@@ -63,6 +63,6 @@ def get_data(args, batch_size, fraction=-1, val_fraction=0, test_transforms=None
     elif args.dataset == 'tiny-in':
         return _get_tiny_imagenet(args, root, batch_size, val_fraction)
     elif args.dataset == 'animal':
-        return get_animal(args, root)
+        return get_animal(args, root, batch_size, val_fraction)
     else:
         raise Exception('Dataset not supported')

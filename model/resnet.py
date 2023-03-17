@@ -126,7 +126,7 @@ class Bottleneck(nn.Module):
 
 class ResNetBase(nn.Module):
     def _decide_num_classes(self):
-        if self.dataset == "cifar10" or self.dataset == "svhn":
+        if self.dataset == "cifar10" or self.dataset == "svhn" or self.dataset == "animal":
             return 10
         elif self.dataset == "cifar100":
             return 100
@@ -134,6 +134,7 @@ class ResNetBase(nn.Module):
             return 1000
         elif self.dataset == "tiny-in":
             return 200
+
 
     def _weight_initialization(self):
         for m in self.modules():
