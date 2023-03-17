@@ -157,7 +157,7 @@ def eval_calibration(args, models, test_loader):
     return np.round(rms_mean/len(models)*100, 2), np.round(mad_mean/len(models)*100, 2), np.round(sf1_mean/len(models)*100, 2)
 
 @torch.no_grad()
-def calibration_error(model, data_loader):
+def calibration_error(model, data_loader, val_loader):
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
     probs = None
 
@@ -173,11 +173,29 @@ def calibration_error(model, data_loader):
             probs = torch.cat((probs, batch_probs), dim=0)
     
     import calibration as cal
-    import uncertainty_toolbox as uct
     labels = data_loader.dataset.targets
-    conf = probs.gather(1, torch.Tensor(labels).cuda().long().unsqueeze(1)).squeeze()
+    # conf = probs.gather(1, torch.Tensor(labels).cuda().long().unsqueeze(1)).squeeze()
     pdb.set_trace()
-    calibration_error = cal.get_calibration_error(probs.detach().cpu(), data_loader.dataset.targets)
+    calibration_error = cal.get_calibration_error(probs.detach().cpu(), labels)
+    
+    # calibrate
+    val_probs = None
+    for data, labels in val_loader:
+        data = data.to(device)
+        labels = labels.to(device)
+        
+        out = model(data)
+        batch_probs = F.softmax(out, dim=1)
+        if val_probs is None:
+            val_probs = batch_probs
+        else:
+            val_probs = torch.cat((val_probs, batch_probs), dim=0)
+    
+    pdb.set_trace()
+    calibrator = cal.PlattBinnerMarginalCalibrator(num_points=10000, num_bins=10)
+    calibrator.train_calibration(val_probs.detach().cpu(), val_loader.dataset.targets)
+    calibrated_probs = calibrator.calibrate(probs.detach().cpu())
+    cal.get_calibration_error(calibrated_probs, labels)
 
 
 if __name__ == '__main__':
