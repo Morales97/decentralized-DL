@@ -157,6 +157,21 @@ def eval_calibration(args, models, test_loader):
     return np.round(rms_mean/len(models)*100, 2), np.round(mad_mean/len(models)*100, 2), np.round(sf1_mean/len(models)*100, 2)
 
 
+def calibration_error(model, data_loader):
+    device = 'cuda' if torch.cuda.is_available() else 'cpu'
+    probs = None
+
+    for data, labels in data_loader:
+        data = data.to(device)
+        labels = labels.to(device)
+        
+        out = model(data)
+        batch_probs = F.softmax(out, dim=1)
+        if probs is None:
+            probs = batch_probs
+        else:
+            probs = torch.cat((probs, batch_probs), dim=0)
+        pdb.set_trace()
 
 
 if __name__ == '__main__':
@@ -174,6 +189,7 @@ if __name__ == '__main__':
     else:
         model = get_avg_model(args, start=0.5, end=1)
 
+    calibration_error(model, test_loader)
     # loss, acc = evaluate_model(model, test_loader, device)
     # print(f'Loss: {loss}, Acc: {acc}')
     
@@ -191,7 +207,6 @@ if __name__ == '__main__':
     print('MAD Calib Error (%): \t\t{:.2f}'.format(100 * mad))
     print('Soft F1 Score (%):   \t\t{:.2f}'.format(100 * sf1))
     
-    ood_gaussian_noise(args, model, test_loader, t_star)
 
 # python robustness_measures/calibration.py --net=vgg16 --dataset=cifar100 --resume=/mloraw1/danmoral/checkpoints/cifar100/vgg16/SGD_0.06_s0/checkpoint_last.pth.tar
 # python robustness_measures/calibration.py --net=vgg16 --dataset=cifar100 --resume=/mloraw1/danmoral/checkpoints/cifar100/vgg16/search_0.06_s0/checkpoint_last.pth.tar
