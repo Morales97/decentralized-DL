@@ -7,6 +7,7 @@ import torch
 import torch.utils.data as data
 import glob
 from torch.utils.data import DataLoader, Dataset
+from PIL import Image
 
 def get_animal_test(args, root, batch_size=100, test_transforms=None):
     '''
@@ -34,7 +35,7 @@ class CustomDataset(Dataset):
         return len(self.files)
 
     def __getitem__(self, idx):
-        data = io.read_image(self.files[idx])
+        data = Image.open(self.files[idx])
         if self.transform:
             data = self.transform(data)
         label = int(self.files[idx][0]) # label is the first char of the file, 0-9
