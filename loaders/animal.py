@@ -38,7 +38,7 @@ class CustomDataset(Dataset):
         data = Image.open(self.files[idx])
         if self.transform:
             data = self.transform(data)
-        label = int(self.files[idx][0]) # label is the first char of the file, 0-9
+        label = int(self.files[idx].split('/')[-1][0]) # label is the first char of the file, 0-9
         return data, label 
 
 def get_cifar_val_test(args, root, val=0, batch_size=100):
