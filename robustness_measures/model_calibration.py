@@ -156,6 +156,31 @@ def eval_calibration(args, models, test_loader):
 
     return np.round(rms_mean/len(models)*100, 2), np.round(mad_mean/len(models)*100, 2), np.round(sf1_mean/len(models)*100, 2)
 
+def eval_calibration_new(args, models, test_loader):
+    import calibration as cal
+
+    cal_mean, ece_mean = 0, 0
+    for model in models:
+        probs = None
+        for data, labels in test_loader:
+            data = data.to(device)
+            labels = labels.to(device)
+            
+            out = model(data)
+            batch_probs = F.softmax(out, dim=1)
+            if probs is None:
+                probs = batch_probs
+            else:
+                probs = torch.cat((probs, batch_probs), dim=0)
+
+        calibration_error = cal.get_calibration_error(probs.detach().cpu(), test_loader.dataset.targets)
+        ece_error = cal.get_ece(probs.detach().cpu(), test_loader.dataset.targets)
+
+        cal_mean += calibration_error
+        ece_mean += ece_error
+
+    return np.round(cal_mean/len(models), 5), np.round(ece_mean/len(models), 2)
+
 @torch.no_grad()
 def calibration_error(model, data_loader, val_loader):
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
@@ -176,7 +201,7 @@ def calibration_error(model, data_loader, val_loader):
     labels = data_loader.dataset.targets
     # conf = probs.gather(1, torch.Tensor(labels).cuda().long().unsqueeze(1)).squeeze()
     pdb.set_trace()
-    calibration_error = cal.get_calibration_error(probs.detach().cpu(), labels)
+    calibration_error = cal.get_calibration_error(probs.detach().cpu(), data_loader.dataset.targets)
     
     # calibrate
     val_probs = None
@@ -192,10 +217,13 @@ def calibration_error(model, data_loader, val_loader):
             val_probs = torch.cat((val_probs, batch_probs), dim=0)
     
     pdb.set_trace()
-    calibrator = cal.PlattBinnerMarginalCalibrator(num_points=10000, num_bins=10)
-    calibrator.train_calibration(val_probs.detach().cpu(), val_loader.dataset.targets)
+    calibrator = cal.PlattBinnerMarginalCalibrator(10000, num_bins=10)
+    calibrator = cal.PlattCalibrator(10000, num_bins=10)
+    np_labels = np.array(val_loader.dataset.dataset.targets)
+    val_labels = np_labels[val_loader.dataset.indices]
+    calibrator.train_calibration(val_probs.detach().cpu(), val_labels)
     calibrated_probs = calibrator.calibrate(probs.detach().cpu())
-    cal.get_calibration_error(calibrated_probs, labels)
+    cal.get_calibration_error(calibrated_probs, data_loader.dataset.targets)
 
 
 if __name__ == '__main__':

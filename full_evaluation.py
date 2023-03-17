@@ -11,7 +11,7 @@ from helpers.utils import get_folder_name
 from helpers.parser import parse_args
 from loaders.data import get_data, ROOT_CLUSTER
 from model.model import get_model
-from robustness_measures.calibration import eval_calibration
+from robustness_measures.model_calibration import eval_calibration, eval_calibration_new
 from robustness_measures.diff_privacy import eval_DP_ranking
 from robustness_measures.img_transforms import eval_common_corruptions
 from robustness_measures.ood_detection import eval_ood, eval_ood_random_images
@@ -70,6 +70,9 @@ def evaluate_all(args, models, test_loader, device):
     # results['Pred JS div'] = _average_non_zero(JS_div)
 
     # # CALIBRATION
+    cal, ece = eval_calibration_new(args, models, test_loader)
+    results['Calibration error'] = cal
+    results['ECE'] = ece
     # rms, mad, sf1 = eval_calibration(args, models, test_loader)
     # results['RMS Calib Error (%)'] = rms
     # results['MAD Calib Error (%)'] = mad
@@ -96,7 +99,7 @@ def evaluate_all(args, models, test_loader, device):
     # results['Adversarial Accuracy (eps=2/255)'] = evaluate_adversarial(args, models, epsilon=2/225)
 
     # DP ranking membership attack
-    results['DP Ranking'] = eval_DP_ranking(args, models)
+    # results['DP Ranking'] = eval_DP_ranking(args, models)
 
     return results
 
