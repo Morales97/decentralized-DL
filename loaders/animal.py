@@ -18,9 +18,9 @@ def get_animal_test(args, root, batch_size=100, test_transforms=None):
                                     #, normalize
                                     ])
 
-    dataset = CustomDataset(root=root+'/animal10/testing', transform=transform)
-    pdb.set_trace()
+    dataset = CustomDataset(root=root+'/animal10/testing/*', transform=transform)
     test_loader = data.DataLoader(dataset, batch_size=batch_size, shuffle=False)     
+    pdb.set_trace()
     return test_loader
 
 class CustomDataset(Dataset):
@@ -37,8 +37,8 @@ class CustomDataset(Dataset):
         data = io.read_image(self.files[idx])
         if self.transform:
             data = self.transform(data)
-
-        return data, 0 # 0 is the class
+        label = int(self.files[idx][0]) # label is the first char of the file, 0-9
+        return data, label 
 
 def get_cifar_val_test(args, root, val=0, batch_size=100):
     '''
