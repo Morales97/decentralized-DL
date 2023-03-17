@@ -2,7 +2,7 @@ import os
 from re import A
 import numpy as np
 import pdb
-from loaders.animal import get_animal_test
+from loaders.animal import get_animal_test, get_animal
 from loaders.mnist import get_heterogeneous_mnist, get_mnist_split, get_mnist_iid
 from loaders.cifar import get_cifar, get_cifar_filtered_samples, get_cifar_test
 from loaders.tiny_imagenet import get_tinyimagenet, load_val_data
@@ -63,6 +63,6 @@ def get_data(args, batch_size, fraction=-1, val_fraction=0, test_transforms=None
     elif args.dataset == 'tiny-in':
         return _get_tiny_imagenet(args, root, batch_size, val_fraction)
     elif args.dataset == 'animal':
-        return get_animal_test(args, root)
+        return get_animal(args, root)
     else:
         raise Exception('Dataset not supported')
