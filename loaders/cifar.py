@@ -135,6 +135,7 @@ def get_cifar(args, root, batch_size, val_fraction, iid=False, fraction=-1, nois
             noise_label = torch.load(os.path.join(root, 'cifar-100-python/CIFAR-10_human.pt'))
         elif args.dataset == 'cifar100':
             noise_label = torch.load(os.path.join(root, 'cifar-100-python/CIFAR-100_human.pt'))
+        pdb.set_trace()
         clean_label = noise_label['clean_label'] 
         noisy_label = noise_label['noisy_label'] 
         traindata.targets = noisy_label.tolist()
