@@ -171,7 +171,10 @@ def calibration_error(model, data_loader):
             probs = batch_probs
         else:
             probs = torch.cat((probs, batch_probs), dim=0)
-        pdb.set_trace()
+    
+    import calibration as cal
+    pdb.set_trace()
+    calibration_error = cal.get_calibration_error(probs, data_loader.dataset.targets)
 
 
 if __name__ == '__main__':
