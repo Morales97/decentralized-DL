@@ -31,7 +31,7 @@ class CustomDataset(Dataset):
         self.files = glob.glob(root)
 
     def __len__(self):
-        return len(self.dataset)
+        return len(self.files)
 
     def __getitem__(self, idx):
         data = io.read_image(self.files[idx])
