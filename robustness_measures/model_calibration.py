@@ -156,7 +156,7 @@ def eval_calibration(args, models, test_loader):
 
     return np.round(rms_mean/len(models)*100, 2), np.round(mad_mean/len(models)*100, 2), np.round(sf1_mean/len(models)*100, 2)
 
-
+@torch.no_grad
 def calibration_error(model, data_loader):
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
     probs = None
@@ -173,8 +173,11 @@ def calibration_error(model, data_loader):
             probs = torch.cat((probs, batch_probs), dim=0)
     
     import calibration as cal
+    import uncertainty_toolbox as uct
+    labels = data_loader.dataset.targets
+    conf = probs.gather(1, torch.Tensor(labels).cuda().long().unsqueeze(1)).squeeze()
     pdb.set_trace()
-    calibration_error = cal.get_calibration_error(probs, data_loader.dataset.targets)
+    calibration_error = cal.get_calibration_error(probs.detach().cpu(), data_loader.dataset.targets)
 
 
 if __name__ == '__main__':
@@ -211,5 +214,5 @@ if __name__ == '__main__':
     print('Soft F1 Score (%):   \t\t{:.2f}'.format(100 * sf1))
     
 
-# python robustness_measures/calibration.py --net=vgg16 --dataset=cifar100 --resume=/mloraw1/danmoral/checkpoints/cifar100/vgg16/SGD_0.06_s0/checkpoint_last.pth.tar
-# python robustness_measures/calibration.py --net=vgg16 --dataset=cifar100 --resume=/mloraw1/danmoral/checkpoints/cifar100/vgg16/search_0.06_s0/checkpoint_last.pth.tar
+# python robustness_measures/model_calibration.py --net=vgg16 --dataset=cifar100 --resume=/mloraw1/danmoral/checkpoints/cifar100/vgg16/SGD_0.06_s0/checkpoint_last.pth.tar
+# python robustness_measures/model_calibration.py --net=vgg16 --dataset=cifar100 --resume=/mloraw1/danmoral/checkpoints/cifar100/vgg16/search_0.06_s0/checkpoint_last.pth.tar
