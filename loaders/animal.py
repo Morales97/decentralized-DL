@@ -21,7 +21,6 @@ def get_animal_test(args, root, batch_size=100, test_transforms=None):
 
     dataset = CustomDataset(root=root+'/animal10/testing/*', transform=transform)
     test_loader = data.DataLoader(dataset, batch_size=batch_size, shuffle=False)     
-    pdb.set_trace()
     return test_loader
 
 class CustomDataset(Dataset):
