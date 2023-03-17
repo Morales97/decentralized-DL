@@ -65,6 +65,8 @@ def evaluate_all(args, models, test_loader, device):
 
     # # REPEATABILITY
     disagreement = eval_repeatability_many(args, models, test_loader)
+    results['Pred Disagr. MANY(%)'] = disagreement
+
     # disagreement, L2_dist, JS_div = eval_repeatability(args, models, test_loader)
     # results['Pred Disagr. (%)'] = _average_non_zero(disagreement)
     # # results['Pred L2 dist'] = _average_non_zero(L2_dist)

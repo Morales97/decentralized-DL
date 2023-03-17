@@ -127,10 +127,9 @@ def eval_repeatability_many(args, models, test_loader):
 
     assert len(models) == 3, 'implemented only for the case of 3 models'
     preds_1_2 = preds[0].eq(preds[1])
-    pres_2_3 = preds[1].eq(preds[2])
-    pdb.set_trace()
-    agree_count = (preds1_2 * preds_2_3).sum().item()
-    pred_disagreement =  (1-agree_count/len(models.dataset))*100
+    preds_2_3 = preds[1].eq(preds[2])
+    agree_count = (preds_1_2 * preds_2_3).sum().item()
+    pred_disagreement = (1-agree_count/len(models.dataset))*100
 
     print('\n ~~~ Prediction disagreement MANY ~~~')
     print('Fraction of test samples prediction with a different class')

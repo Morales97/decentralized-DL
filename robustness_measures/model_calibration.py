@@ -185,7 +185,7 @@ def eval_calibration_new(args, models, test_loader):
         calibration_error_L1_top = cal.get_calibration_error(probs, targets, p=1, mode='top-label')
         ece_error = cal.get_ece(probs.detach().cpu(), test_loader.dataset.targets)
 
-        cal_mean += calibration_error
+        cal_mean += calibration_error_L2
         cal_mean_l1 += calibration_error_L1
         cal_mean_top += calibration_error_top
         cal_mean_l1_top += calibration_error_L1_top
