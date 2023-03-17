@@ -156,7 +156,7 @@ def eval_calibration(args, models, test_loader):
 
     return np.round(rms_mean/len(models)*100, 2), np.round(mad_mean/len(models)*100, 2), np.round(sf1_mean/len(models)*100, 2)
 
-@torch.no_grad
+@torch.no_grad()
 def calibration_error(model, data_loader):
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
     probs = None
