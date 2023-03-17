@@ -17,7 +17,7 @@ def get_animal_test(args, root, batch_size=100, test_transforms=None):
                                     #, normalize
                                     ])
 
-    dataset = datasets.ImageFolder(root=root+'animal10/testing', transform=transform)
+    dataset = datasets.ImageFolder(root=root+'/animal10/testing', transform=transform)
     pdb.set_trace()
     test_loader = data.DataLoader(dataset, batch_size=batch_size, shuffle=False)     
     return test_loader
