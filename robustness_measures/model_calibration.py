@@ -163,7 +163,7 @@ def eval_calibration_new(args, models, test_loader):
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
     cal_mean, ece_mean = 0, 0
-    cal_eman_l1, cal_mean_top, cal_mean_l1_top = 0, 0, 0
+    cal_mean_l1, cal_mean_top, cal_mean_l1_top = 0, 0, 0
     for model in models:
         probs = None
         for data, labels in test_loader:
