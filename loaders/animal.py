@@ -6,6 +6,7 @@ from torchvision import datasets, transforms, io
 import torch
 import torch.utils.data as data
 import glob
+from torch.utils.data import DataLoader, Dataset
 
 def get_animal_test(args, root, batch_size=100, test_transforms=None):
     '''
