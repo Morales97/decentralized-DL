@@ -70,8 +70,11 @@ def evaluate_all(args, models, test_loader, device):
     # results['Pred JS div'] = _average_non_zero(JS_div)
 
     # # CALIBRATION
-    cal, ece = eval_calibration_new(args, models, test_loader)
-    results['Calibration error'] = cal
+    cal, ece, cal_l1, cal_top, cal_l1_top = eval_calibration_new(args, models, test_loader)
+    results['Calibration error L2'] = cal
+    results['Calibration error L1'] = cal_l1
+    results['Calibration error top-label L2'] = cal_top
+    results['Calibration error top-label L1'] = cal_l1_top
     results['ECE'] = ece
     # rms, mad, sf1 = eval_calibration(args, models, test_loader)
     # results['RMS Calib Error (%)'] = rms

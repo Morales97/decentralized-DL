@@ -158,10 +158,12 @@ def eval_calibration(args, models, test_loader):
 
 @torch.no_grad()
 def eval_calibration_new(args, models, test_loader):
+    '''get_calibration_error from https://github.com/p-lambda/verified_calibration/blob/master/calibration/utils.py'''
     import calibration as cal
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
     cal_mean, ece_mean = 0, 0
+    cal_eman_l1, cal_mean_top, cal_mean_l1_top = 0, 0, 0
     for model in models:
         probs = None
         for data, labels in test_loader:
@@ -175,13 +177,21 @@ def eval_calibration_new(args, models, test_loader):
             else:
                 probs = torch.cat((probs, batch_probs), dim=0)
 
-        calibration_error = cal.get_calibration_error(probs.detach().cpu(), test_loader.dataset.targets)
+        probs = probs.detach().cpu()
+        targets = test_loader.dataset.targets
+        calibration_error_L2 = cal.get_calibration_error(probs, targets)
+        calibration_error_L1 = cal.get_calibration_error(probs, targets, p=1)
+        calibration_error_top = cal.get_calibration_error(probs, targets, mode='top-label')
+        calibration_error_L1_top = cal.get_calibration_error(probs, targets, p=1, mode='top-label')
         ece_error = cal.get_ece(probs.detach().cpu(), test_loader.dataset.targets)
 
         cal_mean += calibration_error
+        cal_mean_l1 += calibration_error_L1
+        cal_mean_top += calibration_error_top
+        cal_mean_l1_top += calibration_error_L1_top
         ece_mean += ece_error
 
-    return np.round(cal_mean/len(models), 5), np.round(ece_mean/len(models), 2)
+    return np.round(cal_mean/len(models), 5), np.round(ece_mean/len(models), 2), cal_mean_l1, cal_mean_top, cal_mean_l1_top
 
 @torch.no_grad()
 def calibration_error(model, data_loader, val_loader):

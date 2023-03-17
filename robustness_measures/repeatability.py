@@ -91,6 +91,78 @@ def eval_repeatability(args, models, test_loader):
 
     return pred_disagreement, pred_distance, pred_js_div
 
+def get_model_pred(model, test_loader, device):
+    pred = None
+    for data, labels in test_loader:
+        data = data.to(device)
+
+        out = model(data)
+        batch_pred = out.argmax(dim=1, keepdim=True)
+        if pred is None:
+            pred = batch_pred
+        else:
+            pred = torch.cat((pred, batch_pred))
+
+    return pred
+
+def eval_repeatability_many(args, models, test_loader):
+    ''' Evaluate the repeatability among many models (instead of pair-wise) '''
+    device = 'cuda' if torch.cuda.is_available() else 'cpu'
+
+    # _, acc, soft_acc, losses, accs, soft_accs = eval_ensemble(models, test_loader, device)
+    # # _, avg_model_acc, _, _ = eval_ensemble(models, test_loader, device, avg_model=True)
+    # print('\n ~~~ Models accuracy ~~~')
+    # for i in range(len(accs)):
+    #     print(f'Model {i}:\tAccuracy: {accs[i]:.2f} \tLoss: {losses[i]:.4f} \tSoft accuracy: {soft_accs[i]:.2f}')
+    # print(f'(Prediction) Ensemble Accuracy: {acc:.2f} \tSoft accuracy: {soft_acc:.2f}')
+    # # print(f'(Weight) Ensemble Accuracy: {avg_model_acc:.2f}')
+
+    pred_disagreement = np.zeros((len(models), len(models)))
+    # pred_js_div = np.zeros((len(models), len(models)))
+
+    for model in models:
+        pred = get_model_pred(model, test_loader, device)
+
+    for i, model_i in enumerate(models):
+        pred_disagreement[i,i] = 0
+        
+        for j, model_j in enumerate(models[i+1:]):
+            j = j+i+1
+            
+            results = get_agreement_metrics(model_i, model_j, test_loader, device)
+            pred_distance[i,j] = results['L2']
+            pred_js_div[i,j] = results['JS_div']
+            pred_disagreement[i,j] = results['disagreement']
+            # corr_corr[i,j] = results['correct-correct']
+            # incorr_corr[i,j] = results['correct-incorrect']
+            # incorr_incorr_same[i,j] = results['incorrect-incorrect-same']
+            # incorr_incorr_diff[i,j] = results['incorrect-incorrect-different']
+
+            
+
+    print('\n ~~~ Prediction disagreement ~~~')
+    print('Fraction of test samples prediction with a different class')
+    print(pred_disagreement)
+
+    print('\n ~~~ Prediction distance ~~~')
+    print('Average L2 norm of (prob1 - prob2) in test samples')
+    print(pred_distance)
+
+    print('\n ~~~ Prediction JS divergence ~~~')
+    print('Average JS divergence of (prob1 - prob2) in test samples')
+    print(pred_js_div)
+
+    # print('\nCorrect-Correct')
+    # print(corr_corr)
+    # print('Incorrect-Correct')
+    # print(incorr_corr)
+    # print('Incorrect-Incorrect, same prediction')
+    # print(incorr_incorr_same)
+    # print('Incorrect-Incorrect, different prediction')
+    # print(incorr_incorr_diff)
+
+    return pred_disagreement, pred_distance, pred_js_div
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='')
     parser.add_argument('--resume2', type=str, help='Second model to compare')
