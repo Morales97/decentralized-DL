@@ -1,4 +1,5 @@
 
+from cgi import test
 import torch
 import numpy as np
 
@@ -129,7 +130,7 @@ def eval_repeatability_many(args, models, test_loader):
     preds_1_2 = preds[0].eq(preds[1])
     preds_2_3 = preds[1].eq(preds[2])
     agree_count = (preds_1_2 * preds_2_3).sum().item()
-    pred_disagreement = (1-agree_count/len(models.dataset))*100
+    pred_disagreement = (1-agree_count/len(test_loader.dataset))*100
 
     print('\n ~~~ Prediction disagreement MANY ~~~')
     print('Fraction of test samples prediction with a different class')
