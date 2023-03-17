@@ -138,7 +138,7 @@ def get_parser(parser=None):
                         help='Fraction for val/test split of test set')
     parser.add_argument('--viz_weights', action='store_true',
                         help='For Logistic regression, viz weights for each class')
-    parser.add_argument('--label_noise', action='store_true',
+    parser.add_argument('--label_noise', type=str, default=None
                         help='Use noisy labels (from http://noisylabels.com/, 40% noise on C-100)')
     parser.add_argument('--select_samples', type=str, default='', 
                         help='File of saved subset to select. Used to train with noisy labels.')
