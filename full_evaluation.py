@@ -52,7 +52,7 @@ def evaluate_all(args, models, test_loader, device):
     results = {}
 
     # TEST ACCURACY AND LOSS
-    evaluate_model_per_class(models[0], test_loader, device)
+    # evaluate_model_per_class(models[0], test_loader, device)
     loss, acc, soft_acc, losses, accs, soft_accs = eval_ensemble(models, test_loader, device)
     # _, avg_model_acc, _, _ = eval_ensemble(models, test_loader, device, avg_model=True)
     print('\n ~~~ Models accuracy ~~~')

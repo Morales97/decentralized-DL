@@ -156,8 +156,10 @@ def eval_calibration(args, models, test_loader):
 
     return np.round(rms_mean/len(models)*100, 2), np.round(mad_mean/len(models)*100, 2), np.round(sf1_mean/len(models)*100, 2)
 
+@torch.no_grad()
 def eval_calibration_new(args, models, test_loader):
     import calibration as cal
+    device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
     cal_mean, ece_mean = 0, 0
     for model in models:
