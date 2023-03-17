@@ -2,10 +2,10 @@
 import os
 import numpy as np
 import pdb
-from torchvision import datasets, transforms
+from torchvision import datasets, transforms, io
 import torch
 import torch.utils.data as data
-
+import glob
 
 def get_animal_test(args, root, batch_size=100, test_transforms=None):
     '''
@@ -17,11 +17,27 @@ def get_animal_test(args, root, batch_size=100, test_transforms=None):
                                     #, normalize
                                     ])
 
-    dataset = datasets.ImageFolder(root=root+'/animal10/testing', transform=transform)
+    dataset = CustomDataset(root=root+'/animal10/testing', transform=transform)
     pdb.set_trace()
     test_loader = data.DataLoader(dataset, batch_size=batch_size, shuffle=False)     
     return test_loader
 
+class CustomDataset(Dataset):
+    def __init__(self, root, transform=None):
+        super(CustomDataset, self).__init__()
+        self.root = root
+        self.transform = transform
+        self.files = glob.glob(root)
+
+    def __len__(self):
+        return len(self.dataset)
+
+    def __getitem__(self, idx):
+        data = io.read_image(self.files[idx])
+        if self.transform:
+            data = self.transform(data)
+
+        return data, 0 # 0 is the class
 
 def get_cifar_val_test(args, root, val=0, batch_size=100):
     '''
