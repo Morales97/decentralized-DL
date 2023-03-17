@@ -180,18 +180,18 @@ def eval_calibration_new(args, models, test_loader):
         probs = probs.detach().cpu()
         targets = test_loader.dataset.targets
         calibration_error_L2 = cal.get_calibration_error(probs, targets)
-        calibration_error_L1 = cal.get_calibration_error(probs, targets, p=1)
+        # calibration_error_L1 = cal.get_calibration_error(probs, targets, p=1)
         calibration_error_top = cal.get_calibration_error(probs, targets, mode='top-label')
-        calibration_error_L1_top = cal.get_calibration_error(probs, targets, p=1, mode='top-label')
+        # calibration_error_L1_top = cal.get_calibration_error(probs, targets, p=1, mode='top-label')
         ece_error = cal.get_ece(probs.detach().cpu(), test_loader.dataset.targets)
 
         cal_mean += calibration_error_L2
-        cal_mean_l1 += calibration_error_L1
+        # cal_mean_l1 += calibration_error_L1
         cal_mean_top += calibration_error_top
-        cal_mean_l1_top += calibration_error_L1_top
+        # cal_mean_l1_top += calibration_error_L1_top
         ece_mean += ece_error
 
-    return np.round(cal_mean/len(models), 5), np.round(ece_mean/len(models), 2), cal_mean_l1, cal_mean_top, cal_mean_l1_top
+    return np.round(cal_mean/len(models), 5), np.round(cal_mean_top/len(models), 3), np.round(ece_mean/len(models), 2)
 
 @torch.no_grad()
 def calibration_error(model, data_loader, val_loader):

@@ -65,19 +65,17 @@ def evaluate_all(args, models, test_loader, device):
 
     # # REPEATABILITY
     disagreement = eval_repeatability_many(args, models, test_loader)
-    results['Pred Disagr. MANY(%)'] = disagreement
+    results['Pred Disagr. all-to-all (%)'] = disagreement
 
-    # disagreement, L2_dist, JS_div = eval_repeatability(args, models, test_loader)
-    # results['Pred Disagr. (%)'] = _average_non_zero(disagreement)
+    disagreement, L2_dist, JS_div = eval_repeatability(args, models, test_loader)
+    results['Pred Disagr. (%)'] = _average_non_zero(disagreement)
     # # results['Pred L2 dist'] = _average_non_zero(L2_dist)
-    # results['Pred JS div'] = _average_non_zero(JS_div)
+    results['Pred JS div'] = _average_non_zero(JS_div)
 
     # # CALIBRATION
-    cal, ece, cal_l1, cal_top, cal_l1_top = eval_calibration_new(args, models, test_loader)
-    results['Calibration error L2'] = cal
-    results['Calibration error L1'] = cal_l1
-    results['Calibration error top-label L2'] = cal_top
-    results['Calibration error top-label L1'] = cal_l1_top
+    cal, cal_top, ece = eval_calibration_new(args, models, test_loader)
+    results['RMS Calib error'] = cal
+    results['RMS top-label Calib error'] = cal_top
     results['ECE'] = ece
     # rms, mad, sf1 = eval_calibration(args, models, test_loader)
     # results['RMS Calib Error (%)'] = rms
@@ -105,7 +103,7 @@ def evaluate_all(args, models, test_loader, device):
     # results['Adversarial Accuracy (eps=2/255)'] = evaluate_adversarial(args, models, epsilon=2/225)
 
     # DP ranking membership attack
-    # results['DP Ranking'] = eval_DP_ranking(args, models)
+    results['DP Ranking'] = eval_DP_ranking(args, models)
 
     return results
 
