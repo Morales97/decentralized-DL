@@ -18,7 +18,7 @@ from model.model import get_model
 # more elaborate membership attacks: Shkori et al (multiple shadow models) and Salem et al (one shadow model)
 # Lastly, Tramer et al (2022) propose a superior membership attack
 
-
+@torch.no_grad()
 def rank_DP(args, model, train_loader, test_loader, use_labels=True):
     '''
     use_labels = False -> use top confidence (no label knowledge)
