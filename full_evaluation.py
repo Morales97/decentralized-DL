@@ -15,7 +15,7 @@ from robustness_measures.model_calibration import eval_calibration, eval_calibra
 from robustness_measures.diff_privacy import eval_DP_ranking
 from robustness_measures.img_transforms import eval_common_corruptions
 from robustness_measures.ood_detection import eval_ood, eval_ood_random_images
-from robustness_measures.repeatability import eval_repeatability
+from robustness_measures.repeatability import eval_repeatability, eval_repeatability_many
 from helpers.evaluate import eval_ensemble, evaluate_model_per_class
 
 
@@ -64,6 +64,7 @@ def evaluate_all(args, models, test_loader, device):
     results['Test Loss'] = np.round(np.array(losses).mean(), 2)
 
     # # REPEATABILITY
+    disagreement = eval_repeatability_many(args, models, test_loader)
     # disagreement, L2_dist, JS_div = eval_repeatability(args, models, test_loader)
     # results['Pred Disagr. (%)'] = _average_non_zero(disagreement)
     # # results['Pred L2 dist'] = _average_non_zero(L2_dist)

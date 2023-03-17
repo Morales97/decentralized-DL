@@ -66,7 +66,7 @@ def eval_repeatability(args, models, test_loader):
             # incorr_incorr_same[i,j] = results['incorrect-incorrect-same']
             # incorr_incorr_diff[i,j] = results['incorrect-incorrect-different']
 
-            
+    
 
     print('\n ~~~ Prediction disagreement ~~~')
     print('Fraction of test samples prediction with a different class')
@@ -120,37 +120,21 @@ def eval_repeatability_many(args, models, test_loader):
     pred_disagreement = np.zeros((len(models), len(models)))
     # pred_js_div = np.zeros((len(models), len(models)))
 
+    preds = []
     for model in models:
         pred = get_model_pred(model, test_loader, device)
+        preds.append(pred)
 
-    for i, model_i in enumerate(models):
-        pred_disagreement[i,i] = 0
-        
-        for j, model_j in enumerate(models[i+1:]):
-            j = j+i+1
-            
-            results = get_agreement_metrics(model_i, model_j, test_loader, device)
-            pred_distance[i,j] = results['L2']
-            pred_js_div[i,j] = results['JS_div']
-            pred_disagreement[i,j] = results['disagreement']
-            # corr_corr[i,j] = results['correct-correct']
-            # incorr_corr[i,j] = results['correct-incorrect']
-            # incorr_incorr_same[i,j] = results['incorrect-incorrect-same']
-            # incorr_incorr_diff[i,j] = results['incorrect-incorrect-different']
+    assert len(models) == 3, 'implemented only for the case of 3 models'
+    preds_1_2 = preds[0].eq(preds[1])
+    pres_2_3 = preds[1].eq(preds[2])
+    pdb.set_trace()
+    agree_count = (preds1_2 * preds_2_3).sum().item()
+    pred_disagreement =  (1-agree_count/len(models.dataset))*100
 
-            
-
-    print('\n ~~~ Prediction disagreement ~~~')
+    print('\n ~~~ Prediction disagreement MANY ~~~')
     print('Fraction of test samples prediction with a different class')
     print(pred_disagreement)
-
-    print('\n ~~~ Prediction distance ~~~')
-    print('Average L2 norm of (prob1 - prob2) in test samples')
-    print(pred_distance)
-
-    print('\n ~~~ Prediction JS divergence ~~~')
-    print('Average JS divergence of (prob1 - prob2) in test samples')
-    print(pred_js_div)
 
     # print('\nCorrect-Correct')
     # print(corr_corr)
@@ -161,7 +145,7 @@ def eval_repeatability_many(args, models, test_loader):
     # print('Incorrect-Incorrect, different prediction')
     # print(incorr_incorr_diff)
 
-    return pred_disagreement, pred_distance, pred_js_div
+    return pred_disagreement
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='')
