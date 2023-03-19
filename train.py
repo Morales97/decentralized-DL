@@ -180,7 +180,7 @@ def train(args, wandb):
             if args.cr_ema and epoch > 5:   # NOTE hard-coded warmup epochs
                 # Consistency regularization with EMA teacher
                 ema_target = F.softmax(ema_models[args.cr_ema](input), dim=1)
-                cr_loss = F.cross_entropy(output, ema_target)
+                cr_loss = args.lmbda * F.cross_entropy(output, ema_target)
                 cr_loss.backward(retain_graph=True)
             loss.backward()
             opt.step()

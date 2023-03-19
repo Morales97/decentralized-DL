@@ -128,6 +128,8 @@ def get_parser(parser=None):
     # CR
     parser.add_argument('--cr_ema', type=float, default=None,
                         help='alpha for the EMA model used in Consistency Regularization')
+    parser.add_argument('--lmbda', type=float, default=0.1,
+                        help='weight for CR loss')
 
     # data
     parser.add_argument('--dataset', type=str, default='cifar10',
