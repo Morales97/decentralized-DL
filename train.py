@@ -220,7 +220,7 @@ def train(args, wandb):
                 if args.cr_ema:
                     if not isinstance(cr_loss, int):
                         cr_loss = cr_loss.item()
-                    logger.log_quantity(step, epoch, cr_loss.item(), name=f'CR Loss')
+                    logger.log_quantity(step, epoch, cr_loss, name=f'CR Loss')
 
                 # Log EMA train 
                 if args.log_train_ema:
