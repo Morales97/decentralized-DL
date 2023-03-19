@@ -113,6 +113,7 @@ def train(args, wandb):
 
     step = 0
     epoch = 0
+    cr_loss = 0
     max_acc = MultiAccuracyTracker(['Student', 'EMA', *args.alpha])
     train_tracker = TrainMetricsTracker(['Student', *args.alpha])
 
