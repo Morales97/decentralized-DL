@@ -125,6 +125,10 @@ def get_parser(parser=None):
     parser.add_argument('--wd', type=float, default=1e-4,
                         help='weight decay, L2 regularization')
 
+    # CR
+    parser.add_argument('cr_ema', type=float, defualt=None,
+                        help='alpha for the EMA model used in Consistency Regularization')
+
     # data
     parser.add_argument('--dataset', type=str, default='cifar10',
                         help='') 
