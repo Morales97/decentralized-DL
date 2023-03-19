@@ -8,6 +8,7 @@ import torch.nn as nn
 from torchsummary import summary
 import pdb
 import torchvision 
+import torch.nn.functional as F
 
 __all__ = ["resnet"]
 
@@ -60,6 +61,33 @@ class BasicBlock(nn.Module):
         out += residual
         out = self.relu(out)
 
+        return out
+
+
+
+class PreActBlock(nn.Module):
+    '''Pre-activation version of the BasicBlock.'''
+    expansion = 1
+
+    def __init__(self, in_planes, planes, stride=1, downsample=None):
+        super(PreActBlock, self).__init__()
+        self.bn1 = nn.BatchNorm2d(in_planes)
+        self.conv1 = conv3x3(in_planes, planes, stride)
+        self.bn2 = nn.BatchNorm2d(planes)
+        self.conv2 = conv3x3(planes, planes)
+
+        self.shortcut = nn.Sequential()
+        if stride != 1 or in_planes != self.expansion*planes:
+            self.shortcut = nn.Sequential(
+                nn.Conv2d(in_planes, self.expansion*planes, kernel_size=1, stride=stride, bias=False)
+            )
+
+    def forward(self, x):
+        out = F.relu(self.bn1(x))
+        shortcut = self.shortcut(out)
+        out = self.conv1(out)
+        out = self.conv2(F.relu(self.bn2(out)))
+        out += shortcut
         return out
 
 
@@ -172,7 +200,7 @@ class ResNetBase(nn.Module):
 
 
 class ResNet(ResNetBase):
-    def __init__(self, dataset, resnet_size):
+    def __init__(self, dataset, resnet_size, preact=False):
         super(ResNet, self).__init__()
         self.dataset = dataset
         self.small_input = True if self.dataset in ['cifar10', 'cifar100', 'tiny-in'] else False   # CIFAR is 32x32, not 224x224
@@ -187,6 +215,8 @@ class ResNet(ResNetBase):
         }
         block_fn = model_params[resnet_size]["block"]
         block_nums = model_params[resnet_size]["layers"]
+        if preact:
+            block_fn = PreActBlock     # NOTE quick fix to test PreAct-RN18. 
 
         # decide the num of classes.
         self.num_classes = self._decide_num_classes()
@@ -308,6 +338,9 @@ def resnet20(args):
 def resnet18(args):
     return ResNet(dataset=args.dataset, resnet_size=18)
 
+def preact_resnet18(args):
+    return ResNet(dataset=args.dataset, resnet_size=18, preact=True)
+
 def resnet50(args):
     return ResNet(dataset=args.dataset, resnet_size=50)
 
@@ -317,7 +350,8 @@ def resnet50_in(args):
 if __name__ == '__main__':
     # model = ResNet(dataset='imagenet', resnet_size=18)
     # summary(model, (3, 224, 224))
-    model = ResNet(dataset='cifar10', resnet_size=18)
+    model = ResNet(dataset='cifar100', resnet_size=18)
+    model_pre = ResNet(dataset='cifar100', resnet_size=18, preact=True)
     summary(model, (3, 32, 32))
     pdb.set_trace()
     for param in model.parameters():

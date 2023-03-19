@@ -176,6 +176,12 @@ def train(args, wandb):
             output = model(input)
             opt.zero_grad()
             loss = F.cross_entropy(output, target)
+            if args.cr_ema:
+                # Consistency regularization with EMA teacher
+                ema_target = ema_models[args.cr_ema](input)
+                ema_loss = F.cross_entropy(output, ema_target)
+                pdb.set_trace()
+
             loss.backward()
             opt.step()
             scheduler.step()   
