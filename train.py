@@ -181,8 +181,7 @@ def train(args, wandb):
                 # Consistency regularization with EMA teacher
                 ema_target = F.softmax(ema_models[args.cr_ema](input), dim=1)
                 cr_loss = F.cross_entropy(output, ema_target)
-                loss += cr_loss 
-
+                cr_loss.backward(retain_graph=True)
             loss.backward()
             opt.step()
             scheduler.step()   
