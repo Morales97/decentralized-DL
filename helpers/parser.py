@@ -126,7 +126,7 @@ def get_parser(parser=None):
                         help='weight decay, L2 regularization')
 
     # CR
-    parser.add_argument('cr_ema', type=float, defualt=None,
+    parser.add_argument('cr_ema', type=float, default=None,
                         help='alpha for the EMA model used in Consistency Regularization')
 
     # data
