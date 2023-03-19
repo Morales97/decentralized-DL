@@ -176,11 +176,11 @@ def train(args, wandb):
             output = model(input)
             opt.zero_grad()
             loss = F.cross_entropy(output, target)
-            if args.cr_ema:
+            if args.cr_ema and epoch > 5:   # NOTE hard-coded warmup epochs
                 # Consistency regularization with EMA teacher
-                ema_target = ema_models[args.cr_ema](input)
-                ema_loss = F.cross_entropy(output, ema_target)
-                pdb.set_trace()
+                ema_target = F.softmax(ema_models[args.cr_ema](input), dim=1)
+                cr_loss = F.cross_entropy(output, ema_target)
+                loss += cr_loss 
 
             loss.backward()
             opt.step()
@@ -216,7 +216,9 @@ def train(args, wandb):
             if step % args.train_log_interval == 0:
                 train_acc, train_loss = train_tracker.get('Student')
                 logger.log_step(step, epoch, train_loss, train_acc, ts_total)
-        
+                if args.cr_ema:
+                    logger.log_quantity(step, epoch, cr_loss.item(), name=f'CR Loss')
+
                 # Log EMA train 
                 if args.log_train_ema:
                     best_ema_acc, best_ema_loss = 0, 1e5
