@@ -218,6 +218,8 @@ def train(args, wandb):
                 train_acc, train_loss = train_tracker.get('Student')
                 logger.log_step(step, epoch, train_loss, train_acc, ts_total)
                 if args.cr_ema:
+                    if not isinstance(cr_loss, int):
+                        cr_loss = cr_loss.item()
                     logger.log_quantity(step, epoch, cr_loss.item(), name=f'CR Loss')
 
                 # Log EMA train 
