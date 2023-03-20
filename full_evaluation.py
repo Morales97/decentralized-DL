@@ -95,12 +95,12 @@ def evaluate_all(args, models, test_loader, device):
     # results['AUPR rand (higher better)'] = aupr
 
     # Common corruptions
-    # results['Common corruptions (severity=1)'] = eval_common_corruptions(args, models, severities=[1])
+    results['Common corruptions (severity=1)'] = eval_common_corruptions(args, models, severities=[1])
     # results['Common corruptions (severities=1-5)'] = eval_common_corruptions(args, models, severities=[1,2,3,4,5])
 
     # Adversarial attacks
     # results['Adversarial Accuracy (eps=8/255)'] = evaluate_adversarial(args, models, epsilon=8/225)
-    # results['Adversarial Accuracy (eps=2/255)'] = evaluate_adversarial(args, models, epsilon=2/225)
+    results['Adversarial Accuracy (eps=2/255)'] = evaluate_adversarial(args, models, epsilon=2/225)
 
     # DP ranking membership attack
     results['DP Ranking'] = eval_DP_ranking(args, models)
@@ -202,6 +202,7 @@ if __name__ == '__main__':
 
 # python full_evaluation.py --net=vgg16 --dataset=cifar100 --lr=0.06
 # python full_evaluation.py --net=rn18 --dataset=cifar100 --lr=0.8
+# python full_evaluation.py --net=rn18 --dataset=cifar10 --lr=0.4
 # python full_evaluation.py --net=rn18 --dataset=cifar100 --lr=0.8 --label_noise
 # python full_evaluation.py --net=widern28 --dataset=cifar100 --lr=0.1
 # python full_evaluation.py --net=rn18 --dataset=tiny-in --lr=0.8
