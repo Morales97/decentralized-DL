@@ -1,5 +1,5 @@
 from model.convnet import ConvNet, ConvNet_OP, MLP, LogisticRegression
-from model.resnet import resnet20, resnet18, resnet50
+from model.resnet import resnet20, resnet18, resnet50, preact_resnet18
 from model.vgg import vgg16_C2
 from model.vgg2 import vgg11, vgg11_bn, vgg16, vgg16_bn
 from model.preresnet import preresnet164
@@ -22,6 +22,8 @@ def get_model(args, device):
         model = resnet20(args)
     elif args.net == 'rn18':
         model = resnet18(args)
+    elif args.net == 'prern18':
+        model = preact_resnet18(args)
     elif args.net == 'rn50':
         model = resnet50(args)
     elif args.net == 'vgg':     # modified VGG-16 (Keskar et al, 2017)
