@@ -31,6 +31,9 @@ def evaluate_adversarial(args, models, epsilon):
     acc_mean = []
 
     if args.dataset == 'cifar100':
+        preprocessing = dict(mean=[0.4914, 0.4822, 0.4465], std=[0.2023, 0.1994, 0.2010], axis=-3)
+
+    if args.dataset == 'cifar100':
         preprocessing = dict(mean=[0.5071, 0.4867, 0.4408], std=[0.2675, 0.2565, 0.2761], axis=-3)
 
     if args.dataset == 'tiny-in':
