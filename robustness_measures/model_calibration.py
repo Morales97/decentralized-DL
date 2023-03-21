@@ -157,7 +157,7 @@ def eval_calibration(args, models, test_loader):
     return np.round(rms_mean/len(models)*100, 2), np.round(mad_mean/len(models)*100, 2), np.round(sf1_mean/len(models)*100, 2)
 
 @torch.no_grad()
-def eval_calibration_new(args, models, test_loader):
+def eval_calibration_new(args, models, val_loader, test_loader):
     '''get_calibration_error from https://github.com/p-lambda/verified_calibration/blob/master/calibration/utils.py'''
     import calibration as cal
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
