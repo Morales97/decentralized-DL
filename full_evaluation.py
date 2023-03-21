@@ -84,17 +84,17 @@ def evaluate_all(args, models, val_loader, test_loader, device, expt_name, avera
         disagreement = eval_repeatability_many(args, models, test_loader)
         results['Pred Disagr. all-to-all (%)'] = disagreement
 
-    if True: #not 'Pred Disagr. (%)' in results.keys():
+    if not 'Pred Disagr. (%)' in results.keys():
         disagreement, L2_dist, JS_div = eval_repeatability(args, models, test_loader)
         results['Pred Disagr. (%)'] = _average_non_zero(disagreement)
         results['Pred L2 dist'] = _average_non_zero(L2_dist)
         results['Pred JS div'] = _average_non_zero(JS_div)
 
     # # CALIBRATION
-    # if not 'ECE (Temp. scaling)' in results.keys():
-    #     mce, ece, mce_temp, ece_temp, mce_binner, ece_binner = eval_calibration_new(args, models, val_loader, test_loader)
-    #     results['ECE'] = ece
-    #     results['ECE (Temp. scaling)'] = ece_temp
+    if not 'ECE (Temp. scaling)' in results.keys():
+        mce, ece, mce_temp, ece_temp, mce_binner, ece_binner = eval_calibration_new(args, models, val_loader, test_loader)
+        results['ECE'] = ece
+        results['ECE (Temp. scaling)'] = ece_temp
         
         # results['MCE'] = mce
         # results['MCE (Temp. scaling)'] = mce_temp
@@ -119,18 +119,18 @@ def evaluate_all(args, models, val_loader, test_loader, device, expt_name, avera
     # results['AUPR rand (higher better)'] = aupr
 
     # Common corruptions
-    # if not 'Common corruptions (severity=1)' in results.keys():
-    #     results['Common corruptions (severity=1)'] = eval_common_corruptions(args, models, severities=[1])
-    #     # results['Common corruptions (severities=1-5)'] = eval_common_corruptions(args, models, severities=[1,2,3,4,5])
+    if not 'Common corruptions (severity=1)' in results.keys():
+        results['Common corruptions (severity=1)'] = eval_common_corruptions(args, models, severities=[1])
+        # results['Common corruptions (severities=1-5)'] = eval_common_corruptions(args, models, severities=[1,2,3,4,5])
 
     # # Adversarial attacks
-    # if not 'Adversarial Accuracy (eps=2/255)' in results.keys():
-    #     # results['Adversarial Accuracy (eps=8/255)'] = evaluate_adversarial(args, models, epsilon=8/225)
-    #     results['Adversarial Accuracy (eps=2/255)'] = evaluate_adversarial(args, models, epsilon=2/225)
+    if not 'Adversarial Accuracy (eps=2/255)' in results.keys():
+        # results['Adversarial Accuracy (eps=8/255)'] = evaluate_adversarial(args, models, epsilon=8/225)
+        results['Adversarial Accuracy (eps=2/255)'] = evaluate_adversarial(args, models, epsilon=2/225)
 
     # # DP ranking membership attack
-    # if not 'DP Ranking' in results.keys():
-    #     results['DP Ranking'] = eval_DP_ranking(args, models)
+    if not 'DP Ranking' in results.keys():
+        results['DP Ranking'] = eval_DP_ranking(args, models)
 
     # save results
     expt_name = _get_expt_name(args, expt_name)
@@ -224,23 +224,23 @@ def full_evaluation(args, seeds=[0,1,2]):
         results_dict[key] = results[:,i]
     
     # Drop keys to show only desired metrics
-    # results_dict.pop('Pred Disagr. all-to-all (%)', None)
-    results_dict.pop('Pred Disagr. (%)', None)
-    results_dict.pop('Pred JS div', None)
-    # results_dict.pop('Pred L2 dist', None)
-    results_dict.pop('ECE', None)
-    results_dict.pop('ECE (Temp. scaling)', None)
-    results_dict.pop('Common corruptions (severity=1)', None)
-    results_dict.pop('Adversarial Accuracy (eps=2/255)', None)
-    results_dict.pop('DP Ranking', None)
+    results_dict.pop('Pred Disagr. all-to-all (%)', None)
+    # results_dict.pop('Pred Disagr. (%)', None)
+    # results_dict.pop('Pred JS div', None)
+    results_dict.pop('Pred L2 dist', None)
+    # results_dict.pop('ECE', None)
+    # results_dict.pop('ECE (Temp. scaling)', None)
+    # results_dict.pop('Common corruptions (severity=1)', None)
+    # results_dict.pop('Adversarial Accuracy (eps=2/255)', None)
+    # results_dict.pop('DP Ranking', None)
 
     # drop deprecated keys (which may still be in old saved results)
-    # results_dict.pop('RMS Calib error', None)
-    # results_dict.pop('RMS top-label Calib error', None)
-    # results_dict.pop('MCE', None)
-    # results_dict.pop('MCE (Temp. scaling)', None)
-    # results_dict.pop('MCE (Binner scaling)', None)
-    # results_dict.pop('ECE (Binner scaling)', None)
+    results_dict.pop('RMS Calib error', None)
+    results_dict.pop('RMS top-label Calib error', None)
+    results_dict.pop('MCE', None)
+    results_dict.pop('MCE (Temp. scaling)', None)
+    results_dict.pop('MCE (Binner scaling)', None)
+    results_dict.pop('ECE (Binner scaling)', None)
 
     # print(tabulate([[key, *value] for key, value in results_dict.items()], headers=['', 'SGD (No averaging)', 'EMA Accuracy', 'EMA Validation', 'Uniform (EMA acc)'], tablefmt="pretty"))
     # print(tabulate([[key, *value] for key, value in results_dict.items()], headers=['', 'SGD (No averaging)', 'EMA Accuracy', 'Uniform (EMA val)'], tablefmt="pretty"))
