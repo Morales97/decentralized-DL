@@ -163,6 +163,8 @@ def eval_calibration_new(args, models, test_loader):
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
     cal_mean, cal_mean_top, ece_mean = 0, 0, 0
+    mce_temp_mean, ece_temp_mean = 0, 0
+    mce_binner_mean, ece_binner_mean = 0, 0
     for model in models:
         probs = None
         for data, labels in test_loader:
@@ -205,17 +207,25 @@ def eval_calibration_new(args, models, test_loader):
         # Platt-scale calibration (temperature, Guo et al)
         calibrator = cal.PlattCalibrator(len(val_labels), num_bins=10)
         val_max_prob = val_probs.gather(1, torch.Tensor(val_labels).cuda().long().unsqueeze(1)).squeeze()
-        calibrator.train_calibration(val_max_prob.detach().cpu().numpy(), val_labels)
+        calibrator.train_calibration(val_max_prob.detach().cpu().numpy(), val_labels)   # temperature should be set based on max probabilities
         calibrated_probs = calibrator.calibrate(probs.detach().cpu().numpy())
 
-        rms_temperature = cal.get_calibration_error(calibrated_probs, targets)
+        mce_temperature = cal.get_calibration_error(calibrated_probs, targets)
         ece_temperature = cal.get_ece(calibrated_probs, targets)
+        mce_temp_mean += mce_temperature
+        ece_temp_mean += ece_temperature
 
-        # histogram binning calibration (Verified Uncertainty Calibration, Kumar et al)
+        # binning marginal calibration (Verified Uncertainty Calibration, Kumar et al)
         calibrator = cal.PlattBinnerMarginalCalibrator(len(val_labels), num_bins=10)
-        calibrator.train_calibration(val_probs.detach().cpu().numpy(), val_labels)
+        calibrator.train_calibration(val_probs.detach().cpu().numpy(), val_labels)      # this other calibrator should take probabilities for ALL classes
+        calibrated_probs = calibrator.calibrate(probs.detach().cpu().numpy())
 
-    return np.round(cal_mean/len(models), 5), np.round(cal_mean_top/len(models), 3), np.round(ece_mean/len(models), 2)
+        mce_binner = cal.get_calibration_error(calibrated_probs, targets)
+        ece_binner = cal.get_ece(calibrated_probs, targets)
+        mce_binner_mean += mce_binner
+        ece_binner_mean += ece_binner
+
+    return np.round(cal_mean/len(models), 5), np.round(ece_mean/len(models), 2), np.round(mce_temp_mean/len(models), 5), np.round(ece_temp_mean/len(models), 2), np.round(mce_binner_mean/len(models), 5), np.round(ece_binner_mean/len(models), 2)
 
 @torch.no_grad()
 def calibration_error(model, data_loader, val_loader):

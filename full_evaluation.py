@@ -91,11 +91,15 @@ def evaluate_all(args, models, val_loader, test_loader, device, expt_name, avera
     #     results['Pred JS div'] = _average_non_zero(JS_div)
 
     # # CALIBRATION
-    if not 'RMS Calib error' in results.keys():
-        cal, cal_top, ece = eval_calibration_new(args, models, val_loader, test_loader)
-        results['RMS Calib error'] = cal
-        results['RMS top-label Calib error'] = cal_top
+    if not 'MCE' in results.keys():
+        mce, ece, mce_temp, ece_temp, mce_binner, ece_binner = eval_calibration_new(args, models, val_loader, test_loader)
+        results['MCE'] = mce
+        results['MCE (Temp. scaling)'] = mce_temp
+        results['MCE (Binner scaling)'] = mce_binner
         results['ECE'] = ece
+        results['ECE (Temp. scaling)'] = ece_temp
+        results['ECE (Binner scaling)'] = ece_binner
+
         # rms, mad, sf1 = eval_calibration(args, models, test_loader)
         # results['RMS Calib Error (%)'] = rms
         # results['MAD Calib Error (%)'] = mad
@@ -222,8 +226,8 @@ def full_evaluation(args, seeds=[0,1,2]):
     results_dict.pop('Pred Disagr. all-to-all (%)', None)
     results_dict.pop('Pred Disagr. (%)', None)
     results_dict.pop('Pred JS div', None)
-    # results_dict.pop('RMS Calib error', None)
-    # results_dict.pop('RMS top-label Calib error', None)
+    results_dict.pop('RMS Calib error', None)
+    results_dict.pop('RMS top-label Calib error', None)
     # results_dict.pop('ECE', None)
     results_dict.pop('Common corruptions (severity=1)', None)
     results_dict.pop('Adversarial Accuracy (eps=2/255)', None)
