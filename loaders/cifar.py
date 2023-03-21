@@ -156,9 +156,9 @@ def get_cifar(args, root, batch_size, val_fraction, iid=False, fraction=-1, nois
                     for i in range(50000):
                         if i in noise_idx:
                             # symmetric noise
-                            if dataset=='cifar10': 
+                            if args.dataset=='cifar10':     # NOTE need to fix implementation to have this out of the 'cifar100' case
                                 noiselabel = random.randint(0,9)
-                            elif dataset=='cifar100':    
+                            elif args.dataset=='cifar100':    
                                 noiselabel = random.randint(0,99)
                             noise_label.append(noiselabel)                   
                         else:    
@@ -166,7 +166,7 @@ def get_cifar(args, root, batch_size, val_fraction, iid=False, fraction=-1, nois
                     torch.save(noise_label, noise_file)  
                     noisy_label = noise_label
                 pdb.set_trace()
-                
+
         traindata.targets = noisy_label.tolist()
 
     # Use a random subset of CIFAR
