@@ -224,18 +224,22 @@ def full_evaluation(args, seeds=[0,1,2]):
         results_dict[key] = results[:,i]
     
     # Drop keys to show only desired metrics
-    results_dict.pop('Pred Disagr. all-to-all (%)', None)
-    results_dict.pop('Pred Disagr. (%)', None)
-    results_dict.pop('Pred JS div', None)
+    # results_dict.pop('Pred Disagr. all-to-all (%)', None)
+    # results_dict.pop('Pred Disagr. (%)', None)
+    # results_dict.pop('Pred JS div', None)
+    results_dict.pop('ECE', None)
+    results_dict.pop('ECE (Temp. scaling)', None)
+    results_dict.pop('Common corruptions (severity=1)', None)
+    results_dict.pop('Adversarial Accuracy (eps=2/255)', None)
+    results_dict.pop('DP Ranking', None)
+
+    # drop deprecated keys (which may still be in old saved results)
     results_dict.pop('RMS Calib error', None)
     results_dict.pop('RMS top-label Calib error', None)
     results_dict.pop('MCE', None)
     results_dict.pop('MCE (Temp. scaling)', None)
     results_dict.pop('MCE (Binner scaling)', None)
     results_dict.pop('ECE (Binner scaling)', None)
-    results_dict.pop('Common corruptions (severity=1)', None)
-    results_dict.pop('Adversarial Accuracy (eps=2/255)', None)
-    results_dict.pop('DP Ranking', None)
 
     # print(tabulate([[key, *value] for key, value in results_dict.items()], headers=['', 'SGD (No averaging)', 'EMA Accuracy', 'EMA Validation', 'Uniform (EMA acc)'], tablefmt="pretty"))
     # print(tabulate([[key, *value] for key, value in results_dict.items()], headers=['', 'SGD (No averaging)', 'EMA Accuracy', 'Uniform (EMA val)'], tablefmt="pretty"))
