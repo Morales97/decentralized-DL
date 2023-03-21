@@ -7,6 +7,7 @@ import numpy as np
 import torch.nn.functional as F
 
 import os
+from robustness_measures.temperature_scaling import ModelWithTemperature
 import sys
 sys.path.insert(0, os.path.join(sys.path[0], '..'))
 from helpers.parser import parse_args
@@ -215,6 +216,22 @@ def eval_calibration_new(args, models, val_loader, test_loader):
         mce_temp_mean += mce_temperature
         ece_temp_mean += ece_temperature
 
+        scaled_model = ModelWithTemperature(model)
+        scaled_model.set_temperature(val_loader)
+        probs_scaled = None
+        for data, labels in test_loader:
+            data = data.to(device)
+            labels = labels.to(device)
+            
+            out = scaled_model(data)
+            batch_probs_scaled = F.softmax(out, dim=1)
+            if probs_scaled is None:
+                probs_scaled = batch_probs_scaled
+            else:
+                probs_scaled = torch.cat((probs_scaled, batch_probs_scaled), dim=0)
+        new_ece_temperature = cal.get_ece(probs_scaled.detach().cpu(), targets)
+        print(f'ECE: {ece_temperature}, ECE 2: {new_ece_temperature}')
+
         # binning marginal calibration (Verified Uncertainty Calibration, Kumar et al)
         calibrator = cal.PlattBinnerMarginalCalibrator(len(val_labels), num_bins=10)
         calibrator.train_calibration(val_probs.detach().cpu().numpy(), val_labels)      # this other calibrator should take probabilities for ALL classes
@@ -292,7 +309,7 @@ if __name__ == '__main__':
     else:
         model = get_avg_model(args, start=0.5, end=1)
 
-    from robustness_measures.temperature_scaling import ModelWithTemperature
+    
     scaled_model = ModelWithTemperature(model)
     scaled_model.set_temperature(val_loader)
 
