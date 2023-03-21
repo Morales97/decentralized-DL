@@ -91,7 +91,7 @@ def evaluate_all(args, models, val_loader, test_loader, device, expt_name, avera
     #     results['Pred JS div'] = _average_non_zero(JS_div)
 
     # # CALIBRATION
-    if True: #not 'MCE' in results.keys():
+    if not 'ECE (Temp. scaling)' in results.keys():
         mce, ece, mce_temp, ece_temp, mce_binner, ece_binner = eval_calibration_new(args, models, val_loader, test_loader)
         # results['MCE'] = mce
         # results['MCE (Temp. scaling)'] = mce_temp
@@ -228,7 +228,10 @@ def full_evaluation(args, seeds=[0,1,2]):
     results_dict.pop('Pred JS div', None)
     results_dict.pop('RMS Calib error', None)
     results_dict.pop('RMS top-label Calib error', None)
-    # results_dict.pop('ECE', None)
+    results_dict.pop('MCE', None)
+    results_dict.pop('MCE (Temp. scaling)', None)
+    results_dict.pop('MCE (Binner scaling)', None)
+    results_dict.pop('ECE (Binner scaling)', None)
     results_dict.pop('Common corruptions (severity=1)', None)
     results_dict.pop('Adversarial Accuracy (eps=2/255)', None)
     results_dict.pop('DP Ranking', None)
