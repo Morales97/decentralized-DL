@@ -91,7 +91,7 @@ def evaluate_all(args, models, val_loader, test_loader, device, expt_name, avera
     #     results['Pred JS div'] = _average_non_zero(JS_div)
 
     # # CALIBRATION
-    if not 'ECE (Temp. scaling)' in results.keys():
+    if True: #not 'ECE (Temp. scaling)' in results.keys():
         mce, ece, mce_temp, ece_temp, mce_binner, ece_binner = eval_calibration_new(args, models, val_loader, test_loader)
         # results['MCE'] = mce
         # results['MCE (Temp. scaling)'] = mce_temp
