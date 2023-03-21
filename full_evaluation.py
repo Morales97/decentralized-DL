@@ -108,12 +108,12 @@ def evaluate_all(args, models, test_loader, device, expt_name):
     # results['AUPR rand (higher better)'] = aupr
 
     # Common corruptions
-    results['Common corruptions (severity=1)'] = eval_common_corruptions(args, models, severities=[1])
+    # results['Common corruptions (severity=1)'] = eval_common_corruptions(args, models, severities=[1])
     # results['Common corruptions (severities=1-5)'] = eval_common_corruptions(args, models, severities=[1,2,3,4,5])
 
     # Adversarial attacks
     # results['Adversarial Accuracy (eps=8/255)'] = evaluate_adversarial(args, models, epsilon=8/225)
-    results['Adversarial Accuracy (eps=2/255)'] = evaluate_adversarial(args, models, epsilon=2/225)
+    # results['Adversarial Accuracy (eps=2/255)'] = evaluate_adversarial(args, models, epsilon=2/225)
 
     # DP ranking membership attack
     results['DP Ranking'] = eval_DP_ranking(args, models)
@@ -184,17 +184,17 @@ def full_evaluation(args, seeds=[0,1,2]):
     results_SGD = evaluate_all(args, models, test_loader, device, expt_name='val')
 
 
-    print('\n *** Evaluating EMA Accuracy (train/val)... ***')
-    models = []
-    for seed in seeds:
-        models.append(_load_model(args, device, seed, expt_name='val', averaging='EMA_acc', ckpt_name='best_ema_acc.pth.tar'))
-    results_EMA_acc = evaluate_all(args, models, test_loader, device, expt_name='val')
+    # print('\n *** Evaluating EMA Accuracy (train/val)... ***')
+    # models = []
+    # for seed in seeds:
+    #     models.append(_load_model(args, device, seed, expt_name='val', averaging='EMA_acc', ckpt_name='best_ema_acc.pth.tar'))
+    # results_EMA_acc = evaluate_all(args, models, test_loader, device, expt_name='val')
 
-    print('\n *** Evaluating EMA Validation (train/val)... ***')
-    models = []
-    for seed in seeds:
-        models.append(_load_model(args, device, seed, expt_name='val', averaging='EMA_val', ckpt_name='best_ema_loss.pth.tar'))
-    results_EMA_val = evaluate_all(args, models, test_loader, device, expt_name='val')
+    # print('\n *** Evaluating EMA Validation (train/val)... ***')
+    # models = []
+    # for seed in seeds:
+    #     models.append(_load_model(args, device, seed, expt_name='val', averaging='EMA_val', ckpt_name='best_ema_loss.pth.tar'))
+    # results_EMA_val = evaluate_all(args, models, test_loader, device, expt_name='val')
 
     results = np.vstack((
         np.array([*results_SGD.values()]), 

@@ -145,7 +145,7 @@ def eval_repeatability_many(args, models, test_loader):
     # print('Incorrect-Incorrect, different prediction')
     # print(incorr_incorr_diff)
 
-    return pred_disagreement
+    return np.round(pred_disagreement, 2)
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='')
