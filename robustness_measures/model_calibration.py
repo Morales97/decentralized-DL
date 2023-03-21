@@ -233,6 +233,7 @@ def calibration_error(model, data_loader, val_loader):
     np_labels = np.array(val_loader.dataset.dataset.targets)
     val_labels = np_labels[val_loader.dataset.indices]
     pdb.set_trace()
+    val_probs = val_probs.gather(1, torch.Tensor(val_labels).cuda().long().unsqueeze(1)).squeeze()
     calibrator.train_calibration(val_probs.detach().cpu().numpy(), val_labels)
     calibrated_probs = calibrator.calibrate(probs.detach().cpu().numpy())
     new_cal_error = cal.get_calibration_error(calibrated_probs, data_loader.dataset.targets)
