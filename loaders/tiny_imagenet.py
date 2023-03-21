@@ -18,7 +18,7 @@ class ImageNetDataset(Dataset):
         super(ImageNetDataset, self).__init__()
         assert(len(dataset) == len(labels))
         self.dataset = dataset
-        self.labels = labels
+        self.targets = labels
         self.transform = transform
         self.normalize = normalize
 
@@ -34,7 +34,7 @@ class ImageNetDataset(Dataset):
         if self.normalize:
             data = self.normalize(data)
 
-        return data, self.labels[idx]
+        return data, self.targets[idx]
 
 def load_train_data(batch_size, file_path, val_fraction=0):
     with open(file_path, 'rb') as f:

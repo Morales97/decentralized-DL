@@ -218,6 +218,7 @@ def full_evaluation(args, seeds=[0,1,2]):
     for i, key in enumerate(results_SGD.keys()):
         results_dict[key] = results[:,i]
     
+    # Drop keys to show only desired metrics
     results_dict.pop('Pred Disagr. all-to-all (%)', None)
     results_dict.pop('Pred Disagr. (%)', None)
     results_dict.pop('Pred JS div', None)
