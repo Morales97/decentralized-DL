@@ -5,6 +5,7 @@ import pdb
 from torchvision import datasets, transforms
 import torch
 import torch.utils.data as data
+import random
 
 
 def get_cifar_test(args, root, batch_size=100, test_transforms=None):
@@ -140,9 +141,32 @@ def get_cifar(args, root, batch_size, val_fraction, iid=False, fraction=-1, nois
                 noise_label = torch.load(os.path.join(root, 'cifar-100-python/CIFAR-100_human.pt'))
                 noisy_label = noise_label['noisy_label'] 
             else:
-                # NOTE denote noise as 'sym_xx)
+                # NOTE denote noise as 'sym_xx')
                 noise_file = os.path.join(root, f'cifar-100-python/noise_{noisy}.pt')
-        
+                if os.path.exists(noise_file):
+                    noisy_label = torch.load(noise_file)
+                else:
+                    # generate noise labels
+                    noise_label = []
+                    noise_percentage = int(noisy[-2:])  
+                    idx = list(range(50000))
+                    random.shuffle(idx)
+                    num_noise = int(noise_percentage*50000)            
+                    noise_idx = idx[:num_noise]
+                    for i in range(50000):
+                        if i in noise_idx:
+                            # symmetric noise
+                            if dataset=='cifar10': 
+                                noiselabel = random.randint(0,9)
+                            elif dataset=='cifar100':    
+                                noiselabel = random.randint(0,99)
+                            noise_label.append(noiselabel)                   
+                        else:    
+                            noise_label.append(traindata.targets[i]) 
+                    torch.save(noise_label, noise_file)  
+                    noisy_label = noise_label
+                pdb.set_trace()
+                
         traindata.targets = noisy_label.tolist()
 
     # Use a random subset of CIFAR
