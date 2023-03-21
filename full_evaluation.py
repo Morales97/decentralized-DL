@@ -125,7 +125,7 @@ def evaluate_all(args, models, val_loader, test_loader, device, expt_name, avera
 
     # # Adversarial attacks
     if not 'Adversarial Accuracy (eps=2/255)' in results.keys():
-        # results['Adversarial Accuracy (eps=8/255)'] = evaluate_adversarial(args, models, epsilon=8/225)
+        results['Adversarial Accuracy (eps=8/255)'] = evaluate_adversarial(args, models, epsilon=8/225)
         results['Adversarial Accuracy (eps=2/255)'] = evaluate_adversarial(args, models, epsilon=2/225)
 
     # # DP ranking membership attack
