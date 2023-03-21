@@ -145,7 +145,7 @@ def full_evaluation(args, seeds=[0,1,2]):
     Average of 3 seeds. Always use last model (no early stopping on test set)
     '''
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
-    train_loader, val_loader, test_loader = get_data(args, args.batch_size[0], args.data_fraction, val_fraction=0)
+    train_loader, val_loader, test_loader = get_data(args, args.batch_size[0], args.data_fraction, val_fraction=args.val_fraction)
 
     # SGD
     # print('\n *** Evaluating SGD... ***')
