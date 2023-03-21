@@ -213,6 +213,7 @@ def calibration_error(model, data_loader, val_loader):
     labels = data_loader.dataset.targets
     # conf = probs.gather(1, torch.Tensor(labels).cuda().long().unsqueeze(1)).squeeze()
     calibration_error = cal.get_calibration_error(probs.detach().cpu(), data_loader.dataset.targets)
+    # calibration_error = cal.get_ece(probs.detach().cpu(), data_loader.dataset.targets)
     
     # calibrate
     val_probs = None
@@ -227,13 +228,15 @@ def calibration_error(model, data_loader, val_loader):
         else:
             val_probs = torch.cat((val_probs, batch_probs), dim=0)
     
-    calibrator = cal.PlattBinnerMarginalCalibrator(10000, num_bins=10)
-    # calibrator = cal.PlattCalibrator(10000, num_bins=10)
+    # calibrator = cal.PlattBinnerMarginalCalibrator(10000, num_bins=10)
+    calibrator = cal.PlattCalibrator(10000, num_bins=10)
     np_labels = np.array(val_loader.dataset.dataset.targets)
     val_labels = np_labels[val_loader.dataset.indices]
     calibrator.train_calibration(val_probs.detach().cpu(), val_labels)
-    calibrated_probs = calibrator.calibrate(probs.detach().cpu())
+    calibrated_probs = calibrator.calibrate(probs.detach().cpu().numpy())
     new_cal_error = cal.get_calibration_error(calibrated_probs, data_loader.dataset.targets)
+    # new_cal_error = cal.get_ece(calibrated_probs, data_loader.dataset.targets)
+
     pdb.set_trace()
 
 
