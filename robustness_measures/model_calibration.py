@@ -162,8 +162,7 @@ def eval_calibration_new(args, models, test_loader):
     import calibration as cal
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
-    cal_mean, ece_mean = 0, 0
-    cal_mean_l1, cal_mean_top, cal_mean_l1_top = 0, 0, 0
+    cal_mean, cal_mean_top, ece_mean = 0, 0, 0
     for model in models:
         probs = None
         for data, labels in test_loader:
@@ -180,16 +179,41 @@ def eval_calibration_new(args, models, test_loader):
         probs = probs.detach().cpu()
         targets = test_loader.dataset.targets
         calibration_error_L2 = cal.get_calibration_error(probs, targets)
-        # calibration_error_L1 = cal.get_calibration_error(probs, targets, p=1)
         calibration_error_top = cal.get_calibration_error(probs, targets, mode='top-label')
-        # calibration_error_L1_top = cal.get_calibration_error(probs, targets, p=1, mode='top-label')
         ece_error = cal.get_ece(probs.detach().cpu(), test_loader.dataset.targets)
 
         cal_mean += calibration_error_L2
-        # cal_mean_l1 += calibration_error_L1
         cal_mean_top += calibration_error_top
-        # cal_mean_l1_top += calibration_error_L1_top
         ece_mean += ece_error
+
+        # calibrate
+        val_probs = None
+        for data, labels in val_loader:
+            data = data.to(device)
+            labels = labels.to(device)
+            
+            out = model(data)
+            batch_probs = F.softmax(out, dim=1)
+            if val_probs is None:
+                val_probs = batch_probs
+            else:
+                val_probs = torch.cat((val_probs, batch_probs), dim=0)
+
+        np_labels = np.array(val_loader.dataset.dataset.targets)
+        val_labels = np_labels[val_loader.dataset.indices]
+
+        # Platt-scale calibration (temperature, Guo et al)
+        calibrator = cal.PlattCalibrator(len(val_labels), num_bins=10)
+        val_max_prob = val_probs.gather(1, torch.Tensor(val_labels).cuda().long().unsqueeze(1)).squeeze()
+        calibrator.train_calibration(val_max_prob.detach().cpu().numpy(), val_labels)
+        calibrated_probs = calibrator.calibrate(probs.detach().cpu().numpy())
+
+        rms_temperature = cal.get_calibration_error(calibrated_probs, targets)
+        ece_temperature = cal.get_ece(calibrated_probs, targets)
+
+        # histogram binning calibration (Verified Uncertainty Calibration, Kumar et al)
+        calibrator = cal.PlattBinnerMarginalCalibrator(len(val_labels), num_bins=10)
+        calibrator.train_calibration(val_probs.detach().cpu().numpy(), val_labels)
 
     return np.round(cal_mean/len(models), 5), np.round(cal_mean_top/len(models), 3), np.round(ece_mean/len(models), 2)
 
@@ -228,8 +252,8 @@ def calibration_error(model, data_loader, val_loader):
         else:
             val_probs = torch.cat((val_probs, batch_probs), dim=0)
     
-    # calibrator = cal.PlattBinnerMarginalCalibrator(10000, num_bins=10)
-    calibrator = cal.PlattCalibrator(10000, num_bins=10)
+    calibrator = cal.PlattBinnerMarginalCalibrator(10000, num_bins=10)
+    # calibrator = cal.PlattCalibrator(10000, num_bins=10)
     np_labels = np.array(val_loader.dataset.dataset.targets)
     val_labels = np_labels[val_loader.dataset.indices]
     pdb.set_trace()

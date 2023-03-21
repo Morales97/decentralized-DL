@@ -62,7 +62,7 @@ def _average_non_zero(arr):
     non_zeros = arr[np.nonzero(arr)]
     return np.round(non_zeros.mean(), 2)
 
-def evaluate_all(args, models, test_loader, device, expt_name, averaging):
+def evaluate_all(args, models, val_loader, test_loader, device, expt_name, averaging):
     
     results = _load_saved_results(args, expt_name, averaging)
 
@@ -92,7 +92,7 @@ def evaluate_all(args, models, test_loader, device, expt_name, averaging):
 
     # # CALIBRATION
     if not 'RMS Calib error' in results.keys():
-        cal, cal_top, ece = eval_calibration_new(args, models, test_loader)
+        cal, cal_top, ece = eval_calibration_new(args, models, val_loader, test_loader)
         results['RMS Calib error'] = cal
         results['RMS top-label Calib error'] = cal_top
         results['ECE'] = ece
@@ -148,14 +148,14 @@ def full_evaluation(args, seeds=[0,1,2]):
     # models = []
     # for seed in seeds:
     #     models.append(_load_model(args, device, seed, expt_name='SGD'))
-    # results_SGD = evaluate_all(args, models, test_loader, device, expt_name='SGD')
+    # results_SGD = evaluate_all(args, models, val_loader, test_loader, device, expt_name='SGD')
 
     # # EMA acc
     # print('\n *** Evaluating EMA Accuracy... ***')
     # models = []
     # for seed in seeds:
     #     models.append(_load_model(args, device, seed, expt_name='EMA_acc'))
-    # results_EMA_acc = evaluate_all(args, models, test_loader, device, expt_name='EMA_acc')
+    # results_EMA_acc = evaluate_all(args, models, val_loader, test_loader, device, expt_name='EMA_acc')
 
 
     # # EMA val
@@ -163,46 +163,46 @@ def full_evaluation(args, seeds=[0,1,2]):
     # models = []
     # for seed in seeds:
     #     models.append(_load_model(args, device, seed, expt_name='EMA_val'))
-    # results_EMA_val = evaluate_all(args, models, test_loader, device, expt_name='EMA_val')
+    # results_EMA_val = evaluate_all(args, models, val_loader, test_loader, device, expt_name='EMA_val')
     
     # # Uniform avg of SGD
     # print('\n *** Evaluating Uniform average of SGD since epoch 100... ***')
     # models = []
     # for seed in seeds:
     #     models.append(get_avg_model(args, start=0.5, end=1, expt_name=_get_expt_name(args, 'SGD'), seed=seed))
-    # results_uniform_sgd = evaluate_all(args, models, test_loader, device, expt_name=_get_expt_name(args, 'SGD'))
+    # results_uniform_sgd = evaluate_all(args, models, val_loader, test_loader, device, expt_name=_get_expt_name(args, 'SGD'))
 
     # # Uniform avg of EMA acc
     # print('\n *** Evaluating Uniform average of EMA Acc... ***')
     # models = []
     # for seed in seeds:
     #     models.append(get_avg_model(args, start=0, end=1, expt_name=_get_expt_name(args, 'EMA_acc'), seed=seed))
-    # results_uniform_acc = evaluate_all(args, models, test_loader, device, expt_name=_get_expt_name(args, 'EMA_acc'))
+    # results_uniform_acc = evaluate_all(args, models, val_loader, test_loader, device, expt_name=_get_expt_name(args, 'EMA_acc'))
 
     # # Uniform avg of EMA val
     # print('\n *** Evaluating Uniform average of EMA Val... ***')
     # models = []
     # for seed in seeds:
     #     models.append(get_avg_model(args, start=0, end=1, expt_name=_get_expt_name(args, 'EMA_val'), seed=seed))
-    # results_uniform_val = evaluate_all(args, models, test_loader, device, expt_name=_get_expt_name(args, 'EMA_val'))
+    # results_uniform_val = evaluate_all(args, models, val_loader, test_loader, device, expt_name=_get_expt_name(args, 'EMA_val'))
 
     print('\n *** Evaluating SGD (train/val)... ***')
     models = []
     for seed in seeds:
         models.append(_load_model(args, device, seed, expt_name='val', averaging='SGD', ckpt_name='checkpoint_last.pth.tar'))
-    results_SGD = evaluate_all(args, models, test_loader, device, expt_name='val', averaging='SGD')
+    results_SGD = evaluate_all(args, models, val_loader, test_loader, device, expt_name='val', averaging='SGD')
 
     print('\n *** Evaluating EMA Accuracy (train/val)... ***')
     models = []
     for seed in seeds:
         models.append(_load_model(args, device, seed, expt_name='val', averaging='EMA_acc', ckpt_name='best_ema_acc.pth.tar'))
-    results_EMA_acc = evaluate_all(args, models, test_loader, device, expt_name='val', averaging='EMA_acc')
+    results_EMA_acc = evaluate_all(args, models, val_loader, test_loader, device, expt_name='val', averaging='EMA_acc')
 
     print('\n *** Evaluating EMA Validation (train/val)... ***')
     models = []
     for seed in seeds:
         models.append(_load_model(args, device, seed, expt_name='val', averaging='EMA_val', ckpt_name='best_ema_loss.pth.tar'))
-    results_EMA_val = evaluate_all(args, models, test_loader, device, expt_name='val', averaging='EMA_val')
+    results_EMA_val = evaluate_all(args, models, val_loader, test_loader, device, expt_name='val', averaging='EMA_val')
 
     
 
