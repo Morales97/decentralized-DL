@@ -54,6 +54,7 @@ def _load_saved_results(args, expt_name, seed=0):
     
     with open(os.path.join(path, 'full_eval_results.pkl'), 'rb') as f:
         results = pickle.load(f)
+        print(f'Loaded results for {results.keys()}')
     return results
 
 def _average_non_zero(arr):
@@ -183,18 +184,17 @@ def full_evaluation(args, seeds=[0,1,2]):
         models.append(_load_model(args, device, seed, expt_name='val', averaging='SGD', ckpt_name='checkpoint_last.pth.tar'))
     results_SGD = evaluate_all(args, models, test_loader, device, expt_name='val')
 
+    print('\n *** Evaluating EMA Accuracy (train/val)... ***')
+    models = []
+    for seed in seeds:
+        models.append(_load_model(args, device, seed, expt_name='val', averaging='EMA_acc', ckpt_name='best_ema_acc.pth.tar'))
+    results_EMA_acc = evaluate_all(args, models, test_loader, device, expt_name='val')
 
-    # print('\n *** Evaluating EMA Accuracy (train/val)... ***')
-    # models = []
-    # for seed in seeds:
-    #     models.append(_load_model(args, device, seed, expt_name='val', averaging='EMA_acc', ckpt_name='best_ema_acc.pth.tar'))
-    # results_EMA_acc = evaluate_all(args, models, test_loader, device, expt_name='val')
-
-    # print('\n *** Evaluating EMA Validation (train/val)... ***')
-    # models = []
-    # for seed in seeds:
-    #     models.append(_load_model(args, device, seed, expt_name='val', averaging='EMA_val', ckpt_name='best_ema_loss.pth.tar'))
-    # results_EMA_val = evaluate_all(args, models, test_loader, device, expt_name='val')
+    print('\n *** Evaluating EMA Validation (train/val)... ***')
+    models = []
+    for seed in seeds:
+        models.append(_load_model(args, device, seed, expt_name='val', averaging='EMA_val', ckpt_name='best_ema_loss.pth.tar'))
+    results_EMA_val = evaluate_all(args, models, test_loader, device, expt_name='val')
 
     results = np.vstack((
         np.array([*results_SGD.values()]), 
