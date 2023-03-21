@@ -66,35 +66,39 @@ def evaluate_all(args, models, test_loader, device, expt_name):
     results = _load_saved_results(args, expt_name)
 
     # TEST ACCURACY AND LOSS
-    # evaluate_model_per_class(models[0], test_loader, device)
-    loss, acc, soft_acc, losses, accs, soft_accs = eval_ensemble(models, test_loader, device)
-    # _, avg_model_acc, _, _ = eval_ensemble(models, test_loader, device, avg_model=True)
-    print('\n ~~~ Models accuracy ~~~')
-    for i in range(len(accs)):
-        print(f'Model {i}:\tAccuracy: {accs[i]:.2f} \tLoss: {losses[i]:.4f} \tSoft accuracy: {soft_accs[i]:.2f}')
-    print(f'(Prediction) Ensemble Accuracy: {acc:.2f} \tSoft accuracy: {soft_acc:.2f}')
+    if not 'Test Accuracy (%)' in results.keys():
+        # evaluate_model_per_class(models[0], test_loader, device)
+        loss, acc, soft_acc, losses, accs, soft_accs = eval_ensemble(models, test_loader, device)
+        # _, avg_model_acc, _, _ = eval_ensemble(models, test_loader, device, avg_model=True)
+        print('\n ~~~ Models accuracy ~~~')
+        for i in range(len(accs)):
+            print(f'Model {i}:\tAccuracy: {accs[i]:.2f} \tLoss: {losses[i]:.4f} \tSoft accuracy: {soft_accs[i]:.2f}')
+        print(f'(Prediction) Ensemble Accuracy: {acc:.2f} \tSoft accuracy: {soft_acc:.2f}')
 
-    results['Test Accuracy (%)'] = np.round(np.array(accs).mean(), 2)
-    results['Test Loss'] = np.round(np.array(losses).mean(), 2)
+        results['Test Accuracy (%)'] = np.round(np.array(accs).mean(), 2)
+        results['Test Loss'] = np.round(np.array(losses).mean(), 2)
 
     # # REPEATABILITY
-    disagreement = eval_repeatability_many(args, models, test_loader)
-    results['Pred Disagr. all-to-all (%)'] = disagreement
+    if not 'Pred Disagr. all-to-all (%)' in results.keys():
+        disagreement = eval_repeatability_many(args, models, test_loader)
+        results['Pred Disagr. all-to-all (%)'] = disagreement
 
-    disagreement, L2_dist, JS_div = eval_repeatability(args, models, test_loader)
-    results['Pred Disagr. (%)'] = _average_non_zero(disagreement)
-    # # results['Pred L2 dist'] = _average_non_zero(L2_dist)
-    results['Pred JS div'] = _average_non_zero(JS_div)
+    if not 'Pred Disagr. (%)' in results.keys():
+        disagreement, L2_dist, JS_div = eval_repeatability(args, models, test_loader)
+        results['Pred Disagr. (%)'] = _average_non_zero(disagreement)
+        # # results['Pred L2 dist'] = _average_non_zero(L2_dist)
+        results['Pred JS div'] = _average_non_zero(JS_div)
 
     # # CALIBRATION
-    cal, cal_top, ece = eval_calibration_new(args, models, test_loader)
-    results['RMS Calib error'] = cal
-    results['RMS top-label Calib error'] = cal_top
-    results['ECE'] = ece
-    # rms, mad, sf1 = eval_calibration(args, models, test_loader)
-    # results['RMS Calib Error (%)'] = rms
-    # results['MAD Calib Error (%)'] = mad
-    # # results['Soft F1 Score (%)'] = sf1
+    if not 'RMS Calib error' in results.keys():
+        cal, cal_top, ece = eval_calibration_new(args, models, test_loader)
+        results['RMS Calib error'] = cal
+        results['RMS top-label Calib error'] = cal_top
+        results['ECE'] = ece
+        # rms, mad, sf1 = eval_calibration(args, models, test_loader)
+        # results['RMS Calib Error (%)'] = rms
+        # results['MAD Calib Error (%)'] = mad
+        # # results['Soft F1 Score (%)'] = sf1
     
     # # OOD Detection - Anomalous data
     # auroc, aupr, fpr = eval_ood(args, models, test_loader)
@@ -109,15 +113,18 @@ def evaluate_all(args, models, test_loader, device, expt_name):
     # results['AUPR rand (higher better)'] = aupr
 
     # Common corruptions
-    # results['Common corruptions (severity=1)'] = eval_common_corruptions(args, models, severities=[1])
-    # results['Common corruptions (severities=1-5)'] = eval_common_corruptions(args, models, severities=[1,2,3,4,5])
+    # if not 'Common corruptions (severity=1)' in results.keys():
+    #     results['Common corruptions (severity=1)'] = eval_common_corruptions(args, models, severities=[1])
+    #     results['Common corruptions (severities=1-5)'] = eval_common_corruptions(args, models, severities=[1,2,3,4,5])
 
     # Adversarial attacks
-    # results['Adversarial Accuracy (eps=8/255)'] = evaluate_adversarial(args, models, epsilon=8/225)
-    # results['Adversarial Accuracy (eps=2/255)'] = evaluate_adversarial(args, models, epsilon=2/225)
+    # if not 'Adversarial Accuracy (eps=2/255)' in results.keys():
+    #     # results['Adversarial Accuracy (eps=8/255)'] = evaluate_adversarial(args, models, epsilon=8/225)
+    #     results['Adversarial Accuracy (eps=2/255)'] = evaluate_adversarial(args, models, epsilon=2/225)
 
     # DP ranking membership attack
-    results['DP Ranking'] = eval_DP_ranking(args, models)
+    if not 'DP Ranking' in results.keys():
+        results['DP Ranking'] = eval_DP_ranking(args, models)
 
     # save results
     expt_name = _get_expt_name(args, expt_name)
