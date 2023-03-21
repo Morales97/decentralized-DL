@@ -232,6 +232,7 @@ def calibration_error(model, data_loader, val_loader):
     calibrator = cal.PlattCalibrator(10000, num_bins=10)
     np_labels = np.array(val_loader.dataset.dataset.targets)
     val_labels = np_labels[val_loader.dataset.indices]
+    pdb.set_trace()
     calibrator.train_calibration(val_probs.detach().cpu().numpy(), val_labels)
     calibrated_probs = calibrator.calibrate(probs.detach().cpu().numpy())
     new_cal_error = cal.get_calibration_error(calibrated_probs, data_loader.dataset.targets)
