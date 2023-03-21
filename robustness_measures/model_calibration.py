@@ -228,7 +228,7 @@ def calibration_error(model, data_loader, val_loader):
             val_probs = torch.cat((val_probs, batch_probs), dim=0)
     
     calibrator = cal.PlattBinnerMarginalCalibrator(10000, num_bins=10)
-    calibrator = cal.PlattCalibrator(10000, num_bins=10)
+    # calibrator = cal.PlattCalibrator(10000, num_bins=10)
     np_labels = np.array(val_loader.dataset.dataset.targets)
     val_labels = np_labels[val_loader.dataset.indices]
     calibrator.train_calibration(val_probs.detach().cpu(), val_labels)
@@ -271,5 +271,5 @@ if __name__ == '__main__':
     print('Soft F1 Score (%):   \t\t{:.2f}'.format(100 * sf1))
     
 
-# python robustness_measures/model_calibration.py --net=vgg16 --dataset=cifar100 --resume=/mloraw1/danmoral/checkpoints/cifar100/vgg16/SGD_0.06_s0/checkpoint_last.pth.tar
+# python robustness_measures/model_calibration.py --net=vgg16 --dataset=cifar100 --resume=/mloraw1/danmoral/checkpoints/cifar100/vgg16/val_0.06_s0/checkpoint_last.pth.tar
 # python robustness_measures/model_calibration.py --net=vgg16 --dataset=cifar100 --resume=/mloraw1/danmoral/checkpoints/cifar100/vgg16/search_0.06_s0/checkpoint_last.pth.tar
