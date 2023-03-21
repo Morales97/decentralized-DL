@@ -93,12 +93,12 @@ def evaluate_all(args, models, val_loader, test_loader, device, expt_name, avera
     # # CALIBRATION
     if True: #not 'MCE' in results.keys():
         mce, ece, mce_temp, ece_temp, mce_binner, ece_binner = eval_calibration_new(args, models, val_loader, test_loader)
-        results['MCE'] = mce
-        results['MCE (Temp. scaling)'] = mce_temp
-        results['MCE (Binner scaling)'] = mce_binner
+        # results['MCE'] = mce
+        # results['MCE (Temp. scaling)'] = mce_temp
+        # results['MCE (Binner scaling)'] = mce_binner
         results['ECE'] = ece
         results['ECE (Temp. scaling)'] = ece_temp
-        results['ECE (Binner scaling)'] = ece_binner
+        # results['ECE (Binner scaling)'] = ece_binner
 
         # rms, mad, sf1 = eval_calibration(args, models, test_loader)
         # results['RMS Calib Error (%)'] = rms

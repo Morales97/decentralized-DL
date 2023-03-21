@@ -189,33 +189,7 @@ def eval_calibration_new(args, models, val_loader, test_loader):
         cal_mean_top += calibration_error_top
         ece_mean += ece_error
 
-        # calibrate
-        val_probs = None
-        for data, labels in val_loader:
-            data = data.to(device)
-            labels = labels.to(device)
-            
-            out = model(data)
-            batch_probs = F.softmax(out, dim=1)
-            if val_probs is None:
-                val_probs = batch_probs
-            else:
-                val_probs = torch.cat((val_probs, batch_probs), dim=0)
-
-        np_labels = np.array(val_loader.dataset.dataset.targets)
-        val_labels = np_labels[val_loader.dataset.indices]
-
-        # Platt-scale calibration (temperature, Guo et al)
-        calibrator = cal.PlattCalibrator(len(val_labels), num_bins=10)
-        val_max_prob = val_probs.gather(1, torch.Tensor(val_labels).cuda().long().unsqueeze(1)).squeeze()
-        calibrator.train_calibration(val_max_prob.detach().cpu().numpy(), val_labels)   # temperature should be set based on max probabilities
-        calibrated_probs = calibrator.calibrate(probs.detach().cpu().numpy())
-
-        mce_temperature = cal.get_calibration_error(calibrated_probs, targets)
-        ece_temperature = cal.get_ece(calibrated_probs, targets)
-        mce_temp_mean += mce_temperature
-        ece_temp_mean += ece_temperature
-
+        # calibrate (Temperature scaling, from https://github.com/gpleiss/temperature_scaling)
         scaled_model = ModelWithTemperature(model)
         scaled_model.set_temperature(val_loader)
         probs_scaled = None
@@ -229,18 +203,45 @@ def eval_calibration_new(args, models, val_loader, test_loader):
                 probs_scaled = batch_probs_scaled
             else:
                 probs_scaled = torch.cat((probs_scaled, batch_probs_scaled), dim=0)
-        new_ece_temperature = cal.get_ece(probs_scaled.detach().cpu(), targets)
-        print(f'ECE: {ece_temperature}, ECE 2: {new_ece_temperature}')
+        ece_temperature = cal.get_ece(probs_scaled.detach().cpu(), targets)
+        ece_temp_mean += ece_temperature
+        
+        # calibrate (from https://github.com/p-lambda/verified_calibration/tree/ee81c346895e3377653bd347c429a95bd631058d)
+        # val_probs = None
+        # for data, labels in val_loader:
+        #     data = data.to(device)
+        #     labels = labels.to(device)
+            
+        #     out = model(data)
+        #     batch_probs = F.softmax(out, dim=1)
+        #     if val_probs is None:
+        #         val_probs = batch_probs
+        #     else:
+        #         val_probs = torch.cat((val_probs, batch_probs), dim=0)
 
-        # binning marginal calibration (Verified Uncertainty Calibration, Kumar et al)
-        calibrator = cal.PlattBinnerMarginalCalibrator(len(val_labels), num_bins=10)
-        calibrator.train_calibration(val_probs.detach().cpu().numpy(), val_labels)      # this other calibrator should take probabilities for ALL classes
-        calibrated_probs = calibrator.calibrate(probs.detach().cpu().numpy())
+        # np_labels = np.array(val_loader.dataset.dataset.targets)
+        # val_labels = np_labels[val_loader.dataset.indices]
 
-        mce_binner = cal.get_calibration_error(calibrated_probs, targets)
-        ece_binner = cal.get_ece(calibrated_probs, targets)
-        mce_binner_mean += mce_binner
-        ece_binner_mean += ece_binner
+        # # Platt-scale calibration (temperature, Guo et al)
+        # calibrator = cal.PlattCalibrator(len(val_labels), num_bins=10)
+        # val_max_prob = val_probs.gather(1, torch.Tensor(val_labels).cuda().long().unsqueeze(1)).squeeze()
+        # calibrator.train_calibration(val_max_prob.detach().cpu().numpy(), val_labels)   # temperature should be set based on max probabilities
+        # calibrated_probs = calibrator.calibrate(probs.detach().cpu().numpy())
+
+        # mce_temperature = cal.get_calibration_error(calibrated_probs, targets)
+        # ece_temperature = cal.get_ece(calibrated_probs, targets)
+        # mce_temp_mean += mce_temperature
+        # ece_temp_mean += ece_temperature
+
+        # # binning marginal calibration (Verified Uncertainty Calibration, Kumar et al)
+        # calibrator = cal.PlattBinnerMarginalCalibrator(len(val_labels), num_bins=10)
+        # calibrator.train_calibration(val_probs.detach().cpu().numpy(), val_labels)      # this other calibrator should take probabilities for ALL classes
+        # calibrated_probs = calibrator.calibrate(probs.detach().cpu().numpy())
+
+        # mce_binner = cal.get_calibration_error(calibrated_probs, targets)
+        # ece_binner = cal.get_ece(calibrated_probs, targets)
+        # mce_binner_mean += mce_binner
+        # ece_binner_mean += ece_binner
 
     return np.round(cal_mean/len(models), 5), np.round(ece_mean/len(models), 2), np.round(mce_temp_mean/len(models), 5), np.round(ece_temp_mean/len(models), 2), np.round(mce_binner_mean/len(models), 5), np.round(ece_binner_mean/len(models), 2)
 
