@@ -1,3 +1,4 @@
+from pyrsistent import v
 import torch
 import numpy as np
 import os
@@ -203,6 +204,8 @@ def full_evaluation(args, seeds=[0,1,2]):
         models.append(_load_model(args, device, seed, expt_name='val', averaging='EMA_val', ckpt_name='best_ema_loss.pth.tar'))
     results_EMA_val = evaluate_all(args, models, test_loader, device, expt_name='val', averaging='EMA_val')
 
+    
+
     results = np.vstack((
         np.array([*results_SGD.values()]), 
         np.array([*results_EMA_acc.values()]),
@@ -215,6 +218,16 @@ def full_evaluation(args, seeds=[0,1,2]):
     for i, key in enumerate(results_SGD.keys()):
         results_dict[key] = results[:,i]
     
+    results_dict.pop('Pred Disagr. all-to-all (%)', None)
+    results_dict.pop('Pred Disagr. (%)', None)
+    results_dict.pop('Pred JS div', None)
+    # results_dict.pop('RMS Calib error', None)
+    # results_dict.pop('RMS top-label Calib error', None)
+    # results_dict.pop('ECE', None)
+    results_dict.pop('Common corruptions (severity=1)', None)
+    results_dict.pop('Adversarial Accuracy (eps=2/255)', None)
+    results_dict.pop('DP Ranking', None)
+
     # print(tabulate([[key, *value] for key, value in results_dict.items()], headers=['', 'SGD (No averaging)', 'EMA Accuracy', 'EMA Validation', 'Uniform (EMA acc)'], tablefmt="pretty"))
     # print(tabulate([[key, *value] for key, value in results_dict.items()], headers=['', 'SGD (No averaging)', 'EMA Accuracy', 'Uniform (EMA val)'], tablefmt="pretty"))
     # print(tabulate([[key, *value] for key, value in results_dict.items()], headers=['', 'SGD (No averaging)', 'EMA Accuracy', 'EMA Validation', 'Uniform (SGD)', 'Uniform (EMA acc)', 'Uniform (EMA val)'], tablefmt="pretty"))
