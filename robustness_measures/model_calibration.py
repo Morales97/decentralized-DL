@@ -291,6 +291,11 @@ if __name__ == '__main__':
     else:
         model = get_avg_model(args, start=0.5, end=1)
 
+    from robustness_measures.temperature_scaling import ModelWithTemperature
+    scaled_model = ModelWithTemperature(model)
+    scaled_model.set_temperature(val_loader)
+
+
     calibration_error(model, test_loader, val_loader)
     # loss, acc = evaluate_model(model, test_loader, device)
     # print(f'Loss: {loss}, Acc: {acc}')
