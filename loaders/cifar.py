@@ -136,15 +136,17 @@ def get_cifar(args, root, batch_size, val_fraction, iid=False, fraction=-1, nois
             noise_label = torch.load(os.path.join(root, 'cifar-100-python/CIFAR-10_human.pt'))
             assert noisy in ['aggre_label', 'worse_label', 'random_label1', 'random_label2', 'random_label3']
             noisy_label = noise_label[noisy] 
+            traindata.targets = noisy_label.tolist()
         elif args.dataset == 'cifar100':
             if noisy == '40':
                 noise_label = torch.load(os.path.join(root, 'cifar-100-python/CIFAR-100_human.pt'))
                 noisy_label = noise_label['noisy_label'] 
+                traindata.targets = noisy_label.tolist()
             else:
                 # NOTE denote noise as 'sym_xx')
                 noise_file = os.path.join(root, f'cifar-100-python/noise_{noisy}.pt')
                 if os.path.exists(noise_file):
-                    noisy_label = torch.load(noise_file)
+                    noise_label = torch.load(noise_file)
                 else:
                     # generate noise labels
                     noise_label = []
@@ -164,10 +166,10 @@ def get_cifar(args, root, batch_size, val_fraction, iid=False, fraction=-1, nois
                         else:    
                             noise_label.append(traindata.targets[i]) 
                     torch.save(noise_label, noise_file)  
-                    noisy_label = noise_label
-                pdb.set_trace()
+                    
+                traindata.targets = noise_label
 
-        traindata.targets = noisy_label.tolist()
+        
 
     # Use a random subset of CIFAR
     if fraction > 0:
