@@ -286,8 +286,8 @@ if __name__ == '__main__':
     if args.resume:
         model = get_model(args, device)
         ckpt = torch.load(args.resume)
-        model.load_state_dict(ckpt['state_dict'])
-        # model.load_state_dict(ckpt['ema_state_dict'])
+        # model.load_state_dict(ckpt['state_dict'])
+        model.load_state_dict(ckpt['ema_state_dict'])
     else:
         model = get_avg_model(args, start=0.5, end=1)
 
@@ -316,4 +316,5 @@ if __name__ == '__main__':
     
 
 # python robustness_measures/model_calibration.py --net=vgg16 --dataset=cifar100 --resume=/mloraw1/danmoral/checkpoints/cifar100/vgg16/val_0.06_s0/checkpoint_last.pth.tar
+# python robustness_measures/model_calibration.py --net=vgg16 --dataset=cifar100 --resume=/mloraw1/danmoral/checkpoints/cifar100/vgg16/val_0.06_s0/best_ema_val.pth.tar
 # python robustness_measures/model_calibration.py --net=vgg16 --dataset=cifar100 --resume=/mloraw1/danmoral/checkpoints/cifar100/vgg16/search_0.06_s0/checkpoint_last.pth.tar
