@@ -30,7 +30,7 @@ def pgd_attack(fmodel, test_loader, epsilon):
 def evaluate_adversarial(args, models, epsilon):
     acc_mean = []
 
-    if args.dataset == 'cifar100':
+    if args.dataset == 'cifar10':
         preprocessing = dict(mean=[0.4914, 0.4822, 0.4465], std=[0.2023, 0.1994, 0.2010], axis=-3)
 
     if args.dataset == 'cifar100':

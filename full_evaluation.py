@@ -3,6 +3,7 @@ import numpy as np
 import os
 import sys
 import pdb
+import pickle
 from tabulate import tabulate
 from adversarial.adv_eval import evaluate_adversarial
 from avg_index.search_avg import get_avg_model
@@ -43,11 +44,19 @@ def _load_model(args, device, seed, expt_name, averaging=None, ckpt_name='checkp
 
     return model
 
+def _load_saved_results(args, expt_name, seed=0):
+    ''' Load previously computed results. Results are usually for seed=[0,1,2], but saved in folder of seed=0 by defualt '''
+    expt_name = _get_expt_name(args, expt_name)
+    path = get_folder_name(args, expt_name=expt_name, seed=seed)
+    with open(os.path.join(path, 'full_eval_results.pkl'), 'rb') as f:
+        results = pickle.load(f)
+    return results
+
 def _average_non_zero(arr):
     non_zeros = arr[np.nonzero(arr)]
     return np.round(non_zeros.mean(), 2)
 
-def evaluate_all(args, models, test_loader, device):
+def evaluate_all(args, models, test_loader, device, expt_name):
     
     results = {}
 
@@ -104,6 +113,12 @@ def evaluate_all(args, models, test_loader, device):
 
     # DP ranking membership attack
     results['DP Ranking'] = eval_DP_ranking(args, models)
+
+    # save results
+    expt_name = _get_expt_name(args, expt_name)
+    path = get_folder_name(args, expt_name=expt_name, seed=0)   # NOTE using folder with seed=0 by default
+    with open(os.path.join(path, 'full_eval_results.pkl'), 'wb') as f:
+        pickle.dump(results, f)
 
     return results
 
@@ -162,6 +177,7 @@ def full_evaluation(args, seeds=[0,1,2]):
     models = []
     for seed in seeds:
         models.append(_load_model(args, device, seed, expt_name='val', averaging='SGD', ckpt_name='checkpoint_last.pth.tar'))
+    results_SGD = 
     results_SGD = evaluate_all(args, models, test_loader, device)
 
 
