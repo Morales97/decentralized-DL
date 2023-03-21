@@ -148,7 +148,7 @@ def get_cifar(args, root, batch_size, val_fraction, iid=False, fraction=-1, nois
                 else:
                     # generate noise labels
                     noise_label = []
-                    noise_percentage = int(noisy[-2:]/100)  
+                    noise_percentage = int(noisy[-2:])/100  
                     idx = list(range(50000))
                     random.shuffle(idx)
                     num_noise = int(noise_percentage*50000)            
