@@ -139,9 +139,11 @@ def get_cifar(args, root, batch_size, val_fraction, iid=False, fraction=-1, nois
             traindata.targets = noisy_label.tolist()
         elif args.dataset == 'cifar100':
             if noisy == '40':
+                # Human label noise (CIFAR-100-N with 40%)
                 noise_label = torch.load(os.path.join(root, 'cifar-100-python/CIFAR-100_human.pt'))
                 noisy_label = noise_label['noisy_label'] 
                 traindata.targets = noisy_label.tolist()
+                # TODO experiment with a lower label noise ratio
             else:
                 # NOTE denote noise as 'sym_xx')
                 noise_file = os.path.join(root, f'cifar-100-python/noise_{noisy}.pt')

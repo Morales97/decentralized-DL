@@ -341,6 +341,9 @@ def resnet18(args):
 def preact_resnet18(args):
     return ResNet(dataset=args.dataset, resnet_size=18, preact=True)
 
+def resnet34(args):
+    return ResNet(dataset=args.dataset, resnet_size=34)
+
 def resnet50(args):
     return ResNet(dataset=args.dataset, resnet_size=50)
 
