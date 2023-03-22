@@ -146,10 +146,10 @@ def get_cifar(args, root, batch_size, val_fraction, iid=False, fraction=-1, nois
             elif 'sym' not in noisy:
                 # subset of CIFAR-100-N
                 assert int(noisy) < 40
-                n_noise_labels = 50000 * int(noisy) / 40    # take a fraction of the 40% noisy
+                n_noise_labels = int(50000 * int(noisy) / 40)    # take a fraction of the 40% noisy
                 noise_label = torch.load(os.path.join(root, 'cifar-100-python/CIFAR-100_human.pt'))
-                pdb.set_trace()
-                noisy_label = noise_label['noisy_label'][:n_noise_labels]
+                noisy_label = np.concatenate((noise_label['noisy_label'][:n_noise_labels], noise_label['clean_label'][n_noise_labels:]), axis=0) 
+                traindata.targets = noisy_label.tolist()
             else:
                 # NOTE denote noise as 'sym_xx')
                 noise_file = os.path.join(root, f'cifar-100-python/noise_{noisy}.pt')
