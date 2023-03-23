@@ -119,18 +119,18 @@ def evaluate_all(args, models, val_loader, test_loader, device, expt_name, avera
     # results['AUPR rand (higher better)'] = aupr
 
     # Common corruptions
-    if not 'Common corruptions (severity=1)' in results.keys():
-        results['Common corruptions (severity=1)'] = eval_common_corruptions(args, models, severities=[1])
-        # results['Common corruptions (severities=1-5)'] = eval_common_corruptions(args, models, severities=[1,2,3,4,5])
+    # if not 'Common corruptions (severity=1)' in results.keys():
+    #     results['Common corruptions (severity=1)'] = eval_common_corruptions(args, models, severities=[1])
+    #     # results['Common corruptions (severities=1-5)'] = eval_common_corruptions(args, models, severities=[1,2,3,4,5])
 
-    # # Adversarial attacks
-    if not 'Adversarial Accuracy (eps=2/255)' in results.keys():
-        results['Adversarial Accuracy (eps=8/255)'] = evaluate_adversarial(args, models, epsilon=8/225)
-        results['Adversarial Accuracy (eps=2/255)'] = evaluate_adversarial(args, models, epsilon=2/225)
+    # # # Adversarial attacks
+    # if not 'Adversarial Accuracy (eps=2/255)' in results.keys():
+    #     results['Adversarial Accuracy (eps=8/255)'] = evaluate_adversarial(args, models, epsilon=8/225)
+    #     results['Adversarial Accuracy (eps=2/255)'] = evaluate_adversarial(args, models, epsilon=2/225)
 
-    # # DP ranking membership attack
-    if not 'DP Ranking' in results.keys():
-        results['DP Ranking'] = eval_DP_ranking(args, models)
+    # # # DP ranking membership attack
+    # if not 'DP Ranking' in results.keys():
+    #     results['DP Ranking'] = eval_DP_ranking(args, models)
 
     # save results
     expt_name = _get_expt_name(args, expt_name)
@@ -140,7 +140,7 @@ def evaluate_all(args, models, val_loader, test_loader, device, expt_name, avera
 
     return results
 
-def full_evaluation(args, seeds=[0]):
+def full_evaluation(args, seeds=[0,1,2]):
     '''
     Evaluate SGD vs EMA solution on mulitple metrics.
     Average of 3 seeds. Always use last model (no early stopping on test set)
@@ -222,6 +222,7 @@ def full_evaluation(args, seeds=[0]):
         models.append(_load_model(args, device, seed, expt_name='finetune200_val_EMAval', averaging='EMA_val', ckpt_name='best_ema_loss.pth.tar'))
     results_EMA_val = evaluate_all(args, models, val_loader, test_loader, device, expt_name='finetune200_val_EMAval', averaging='EMA_val')
     
+    pdb.set_trace()
 
     results = np.vstack((
         #np.array([*results_SGD.values()]), 
