@@ -140,7 +140,7 @@ def evaluate_all(args, models, val_loader, test_loader, device, expt_name, avera
 
     return results
 
-def full_evaluation(args, seeds=[0,1,2]):
+def full_evaluation(args, seeds=[0]):
     '''
     Evaluate SGD vs EMA solution on mulitple metrics.
     Average of 3 seeds. Always use last model (no early stopping on test set)
