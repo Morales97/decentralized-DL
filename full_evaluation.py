@@ -140,7 +140,7 @@ def evaluate_all(args, models, val_loader, test_loader, device, expt_name, avera
 
     return results
 
-def full_evaluation(args, seeds=[0,1,2]):
+def full_evaluation(args, seeds=[0]):
     '''
     Evaluate SGD vs EMA solution on mulitple metrics.
     Average of 3 seeds. Always use last model (no early stopping on test set)
@@ -269,3 +269,5 @@ if __name__ == '__main__':
 # python full_evaluation.py --net=rn18 --dataset=cifar100 --lr=0.8 --label_noise
 # python full_evaluation.py --net=widern28 --dataset=cifar100 --lr=0.1
 # python full_evaluation.py --net=rn18 --dataset=tiny-in --lr=0.8
+
+# python full_evaluation.py --net=rn18 --dataset=cifar100 --lr=0.8
