@@ -79,16 +79,16 @@ def evaluate_all(args, models, val_loader, test_loader, device, expt_name, avera
         results['Test Accuracy (%)'] = np.round(np.array(accs).mean(), 2)
         results['Test Loss'] = np.round(np.array(losses).mean(), 2)
 
-    # # # REPEATABILITY
-    # if not 'Pred Disagr. all-to-all (%)' in results.keys():
-    #     disagreement = eval_repeatability_many(args, models, test_loader)
-    #     results['Pred Disagr. all-to-all (%)'] = disagreement
+    # # REPEATABILITY
+    if not 'Pred Disagr. all-to-all (%)' in results.keys():
+        disagreement = eval_repeatability_many(args, models, test_loader)
+        results['Pred Disagr. all-to-all (%)'] = disagreement
 
-    # if not 'Pred Disagr. (%)' in results.keys():
-    #     disagreement, L2_dist, JS_div = eval_repeatability(args, models, test_loader)
-    #     results['Pred Disagr. (%)'] = _average_non_zero(disagreement)
-    #     results['Pred L2 dist'] = _average_non_zero(L2_dist)
-    #     results['Pred JS div'] = _average_non_zero(JS_div)
+    if not 'Pred Disagr. (%)' in results.keys():
+        disagreement, L2_dist, JS_div = eval_repeatability(args, models, test_loader)
+        results['Pred Disagr. (%)'] = _average_non_zero(disagreement)
+        results['Pred L2 dist'] = _average_non_zero(L2_dist)
+        results['Pred JS div'] = _average_non_zero(JS_div)
 
     # # CALIBRATION
     if not 'ECE (Temp. scaling)' in results.keys():
@@ -118,19 +118,19 @@ def evaluate_all(args, models, val_loader, test_loader, device, expt_name, avera
     # results['AUROC rand (higher better)'] = auroc
     # results['AUPR rand (higher better)'] = aupr
 
-    # Common corruptions
-    # if not 'Common corruptions (severity=1)' in results.keys():
-    #     results['Common corruptions (severity=1)'] = eval_common_corruptions(args, models, severities=[1])
-    #     # results['Common corruptions (severities=1-5)'] = eval_common_corruptions(args, models, severities=[1,2,3,4,5])
+    # # Common corruptions
+    if not 'Common corruptions (severity=1)' in results.keys():
+        results['Common corruptions (severity=1)'] = eval_common_corruptions(args, models, severities=[1])
+        # results['Common corruptions (severities=1-5)'] = eval_common_corruptions(args, models, severities=[1,2,3,4,5])
 
-    # # # Adversarial attacks
-    # if not 'Adversarial Accuracy (eps=2/255)' in results.keys():
-    #     results['Adversarial Accuracy (eps=8/255)'] = evaluate_adversarial(args, models, epsilon=8/225)
-    #     results['Adversarial Accuracy (eps=2/255)'] = evaluate_adversarial(args, models, epsilon=2/225)
+    # # Adversarial attacks
+    if not 'Adversarial Accuracy (eps=2/255)' in results.keys():
+        results['Adversarial Accuracy (eps=8/255)'] = evaluate_adversarial(args, models, epsilon=8/225)
+        results['Adversarial Accuracy (eps=2/255)'] = evaluate_adversarial(args, models, epsilon=2/225)
 
-    # # # DP ranking membership attack
-    # if not 'DP Ranking' in results.keys():
-    #     results['DP Ranking'] = eval_DP_ranking(args, models)
+    # # DP ranking membership attack
+    if not 'DP Ranking' in results.keys():
+        results['DP Ranking'] = eval_DP_ranking(args, models)
 
     # save results
     expt_name = _get_expt_name(args, expt_name)
@@ -140,7 +140,7 @@ def evaluate_all(args, models, val_loader, test_loader, device, expt_name, avera
 
     return results
 
-def full_evaluation(args, seeds=[0]):
+def full_evaluation(args, seeds=[0,1,2]):
     '''
     Evaluate SGD vs EMA solution on mulitple metrics.
     Average of 3 seeds. Always use last model (no early stopping on test set)
@@ -191,41 +191,29 @@ def full_evaluation(args, seeds=[0]):
     #     models.append(get_avg_model(args, start=0, end=1, expt_name=_get_expt_name(args, 'EMA_val'), seed=seed))
     # results_uniform_val = evaluate_all(args, models, val_loader, test_loader, device, expt_name=_get_expt_name(args, 'EMA_val'))
 
-    # print('\n *** Evaluating SGD (train/val)... ***')
-    # models = []
-    # for seed in seeds:
-    #     models.append(_load_model(args, device, seed, expt_name='val', averaging='SGD', ckpt_name='checkpoint_last.pth.tar'))
-    # results_SGD = evaluate_all(args, models, val_loader, test_loader, device, expt_name='val', averaging='SGD')
-
-    # print('\n *** Evaluating EMA Accuracy (train/val)... ***')
-    # models = []
-    # for seed in seeds:
-    #     models.append(_load_model(args, device, seed, expt_name='val', averaging='EMA_acc', ckpt_name='best_ema_acc.pth.tar'))
-    # results_EMA_acc = evaluate_all(args, models, val_loader, test_loader, device, expt_name='val', averaging='EMA_acc')
-
-    # print('\n *** Evaluating EMA Validation (train/val)... ***')
-    # models = []
-    # for seed in seeds:
-    #     models.append(_load_model(args, device, seed, expt_name='val', averaging='EMA_val', ckpt_name='best_ema_loss.pth.tar'))
-    # results_EMA_val = evaluate_all(args, models, val_loader, test_loader, device, expt_name='val', averaging='EMA_val')
-
+    print('\n *** Evaluating SGD (train/val)... ***')
+    models = []
+    for seed in seeds:
+        models.append(_load_model(args, device, seed, expt_name='val', averaging='SGD', ckpt_name='checkpoint_last.pth.tar'))
+    results_SGD = evaluate_all(args, models, val_loader, test_loader, device, expt_name='val', averaging='SGD')
 
     print('\n *** Evaluating EMA Accuracy (train/val)... ***')
     models = []
     for seed in seeds:
-        models.append(_load_model(args, device, seed, expt_name='val', averaging='EMA_val', ckpt_name='best_ema_loss.pth.tar'))
-    results_EMA_acc = evaluate_all(args, models, val_loader, test_loader, device, expt_name='val', averaging='EMA_val')
+        models.append(_load_model(args, device, seed, expt_name='val', averaging='EMA_acc', ckpt_name='best_ema_acc.pth.tar'))
+    results_EMA_acc = evaluate_all(args, models, val_loader, test_loader, device, expt_name='val', averaging='EMA_acc')
 
     print('\n *** Evaluating EMA Validation (train/val)... ***')
     models = []
     for seed in seeds:
-        models.append(_load_model(args, device, seed, expt_name='finetune200_val_EMAval', averaging='EMA_val', ckpt_name='best_ema_loss.pth.tar'))
-    results_EMA_val = evaluate_all(args, models, val_loader, test_loader, device, expt_name='finetune200_val_EMAval', averaging='EMA_val')
+        models.append(_load_model(args, device, seed, expt_name='val', averaging='EMA_val', ckpt_name='best_ema_loss.pth.tar'))
+    results_EMA_val = evaluate_all(args, models, val_loader, test_loader, device, expt_name='val', averaging='EMA_val')
+
     
     pdb.set_trace()
 
     results = np.vstack((
-        #np.array([*results_SGD.values()]), 
+        np.array([*results_SGD.values()]), 
         np.array([*results_EMA_acc.values()]),
         np.array([*results_EMA_val.values()]),
         # np.array([*results_uniform_sgd.values()]),
@@ -257,7 +245,7 @@ def full_evaluation(args, seeds=[0]):
 
     # print(tabulate([[key, *value] for key, value in results_dict.items()], headers=['', 'SGD (No averaging)', 'EMA Accuracy', 'EMA Validation', 'Uniform (SGD)', 'Uniform (EMA acc)', 'Uniform (EMA val)'], tablefmt="pretty"))
     print(tabulate([[key, *value] for key, value in results_dict.items()], headers=['', 'SGD (No averaging)', 'EMA Accuracy', 'EMA Validation'], tablefmt="pretty"))
-    print(tabulate([[key, *value] for key, value in results_dict.items()], headers=['', 'EMA Val no pt', 'EMA Val T-IN pt'], tablefmt="pretty"))
+    # print(tabulate([[key, *value] for key, value in results_dict.items()], headers=['', 'EMA Val no pt', 'EMA Val T-IN pt'], tablefmt="pretty"))
 
 if __name__ == '__main__':
     ''' For debugging purposes '''
