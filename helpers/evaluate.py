@@ -10,6 +10,7 @@ from model.model import get_model
 from loaders.data import get_data
 from helpers.parser import parse_args
 from helpers.utils import get_folder_name
+from helpers.wa import update_bn
 from topology import get_average_model
 
 def evaluate_model(model, data_loader, device):
@@ -189,9 +190,9 @@ if __name__ == '__main__':
     
     # CHOOSE CHECKPOINT
     expt_name = 'val_0.8'
-    seed = 0
-    ckpt_name='checkpoint_last.pth.tar'
-    # ckpt_name='best_ema_acc.pth.tar'
+    seed = 1
+    # ckpt_name='checkpoint_last.pth.tar'
+    ckpt_name='best_ema_acc.pth.tar'
     # ckpt_name='best_ema_loss.pth.tar'
 
     model = get_model(args, device)
@@ -207,4 +208,7 @@ if __name__ == '__main__':
     loss, acc = evaluate_model(model, test_loader, device)
     print(f'Model Test Accuracy: {acc}\t Test Loss: {loss}')
     pdb.set_trace()
+
+    update_bn(args, train_loader, model, device)
+
 # python helpers/evaluate.py --dataset=cifar100 --net=rn18
