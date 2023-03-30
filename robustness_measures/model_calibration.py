@@ -243,7 +243,7 @@ def eval_calibration_new(args, models, val_loader, test_loader):
         # mce_binner_mean += mce_binner
         # ece_binner_mean += ece_binner
 
-    return np.round(cal_mean/len(models), 5), np.round(ece_mean/len(models), 2), np.round(mce_temp_mean/len(models), 5), np.round(ece_temp_mean/len(models), 2), np.round(mce_binner_mean/len(models), 5), np.round(ece_binner_mean/len(models), 2)
+    return np.round(cal_mean/len(models), 5), np.round(ece_mean/len(models)*100, 2), np.round(mce_temp_mean/len(models), 5), np.round(ece_temp_mean/len(models)*100, 2), np.round(mce_binner_mean/len(models), 5), np.round(ece_binner_mean/len(models), 2)
 
 @torch.no_grad()
 def calibration_error(model, data_loader, val_loader):

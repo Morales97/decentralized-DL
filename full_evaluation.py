@@ -96,7 +96,7 @@ def evaluate_all(args, models, val_loader, test_loader, device, expt_name, avera
         results['Pred JS div'] = _average_non_zero(JS_div)
 
     # # CALIBRATION
-    if not 'ECE (Temp. scaling)' in results.keys():
+    if True: #not 'ECE (Temp. scaling)' in results.keys():
         mce, ece, mce_temp, ece_temp, mce_binner, ece_binner = eval_calibration_new(args, models, val_loader, test_loader)
         results['ECE'] = ece
         results['ECE (Temp. scaling)'] = ece_temp
@@ -232,7 +232,7 @@ def full_evaluation(args, seeds=[0,1,2]):
         if key not in results_EMA_acc_BN.keys():
             results_EMA_acc_BN[key] = 0
             results_EMA_val_BN[key] = 0
-            
+
     results = np.vstack((
         np.array([*results_SGD.values()]), 
         np.array([*results_EMA_acc.values()]),
