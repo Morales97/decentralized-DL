@@ -218,13 +218,13 @@ def full_evaluation(args, seeds=[0,1,2]):
     models = []
     for seed in seeds:
         models.append(_load_model(args, device, seed, expt_name='val', averaging='EMA_acc', ckpt_name='best_ema_acc.pth.tar', alpha=0.998, compute_bn=True, train_loader=train_loader))
-    results_EMA_acc_BN = evaluate_all(args, models, val_loader, test_loader, device, expt_name='val', averaging='EMA_acc')
+    results_EMA_acc_BN = evaluate_all(args, models, val_loader, test_loader, device, expt_name='val', averaging='EMA_acc_BN_0.998')
 
     print('\n *** Evaluating EMA Validation (alpha=0.998, BN recompute)... ***')
     models = []
     for seed in seeds:
         models.append(_load_model(args, device, seed, expt_name='val', averaging='EMA_val', ckpt_name='best_ema_loss.pth.tar', alpha=0.998, compute_bn=True, train_loader=train_loader))
-    results_EMA_val_BN = evaluate_all(args, models, val_loader, test_loader, device, expt_name='val', averaging='EMA_val')
+    results_EMA_val_BN = evaluate_all(args, models, val_loader, test_loader, device, expt_name='val', averaging='EMA_val_BN_0.998')
     
     pdb.set_trace()
 
@@ -249,9 +249,9 @@ def full_evaluation(args, seeds=[0,1,2]):
     results_dict.pop('Pred L2 dist', None)
     # results_dict.pop('ECE', None)
     # results_dict.pop('ECE (Temp. scaling)', None)
-    # results_dict.pop('Common corruptions (severity=1)', None)
-    # results_dict.pop('Adversarial Accuracy (eps=2/255)', None)
-    # results_dict.pop('DP Ranking', None)
+    results_dict.pop('Common corruptions (severity=1)', None)
+    results_dict.pop('Adversarial Accuracy (eps=2/255)', None)
+    results_dict.pop('DP Ranking', None)
 
     # drop deprecated keys (which may still be in old saved results)
     results_dict.pop('RMS Calib error', None)
