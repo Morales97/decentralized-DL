@@ -206,3 +206,5 @@ if __name__ == '__main__':
     # EVAL
     loss, acc = evaluate_model(model, test_loader, device)
     print(f'Model Test Accuracy: {acc}\t Test Loss: {loss}')
+    pdb.set_trace()
+# python helpers/evaluate.py --dataset=cifar100 --net=rn18
