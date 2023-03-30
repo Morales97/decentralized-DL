@@ -228,6 +228,11 @@ def full_evaluation(args, seeds=[0,1,2]):
     
     pdb.set_trace()
 
+    for key in results_SGD.keys():
+        if key not in results_EMA_acc_BN.keys():
+            results_EMA_acc_BN[key] = 0
+            results_EMA_val_BN[key] = 0
+            
     results = np.vstack((
         np.array([*results_SGD.values()]), 
         np.array([*results_EMA_acc.values()]),
