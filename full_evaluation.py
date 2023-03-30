@@ -89,12 +89,12 @@ def evaluate_all(args, models, val_loader, test_loader, device, expt_name, avera
         disagreement = eval_repeatability_many(args, models, test_loader)
         results['Pred Disagr. all-to-all (%)'] = disagreement
 
-    if True: #not 'Pred Disagr. (%)' in results.keys():
+    if not 'Pred Disagr. (%)' in results.keys():
         disagreement, L2_dist, JS_div = eval_repeatability(args, models, test_loader)
         results['Pred Disagr. (%)'] = _average_non_zero(disagreement)
         results['Pred L2 dist'] = _average_non_zero(L2_dist)
         results['Pred JS div'] = _average_non_zero(JS_div)
-        pdb.set_trace()
+
     # # CALIBRATION
     if not 'ECE (Temp. scaling)' in results.keys():
         mce, ece, mce_temp, ece_temp, mce_binner, ece_binner = eval_calibration_new(args, models, val_loader, test_loader)
@@ -232,6 +232,11 @@ def full_evaluation(args, seeds=[0,1,2]):
         if key not in results_EMA_acc_BN.keys():
             results_EMA_acc_BN[key] = 0
             results_EMA_val_BN[key] = 0
+
+    for key in results_EMA_acc_BN.keys():
+        if key not in results_SGD.keys():
+            results_EMA_acc_BN.pop(key)
+            results_EMA_val_BN.pop(key)
 
     results = np.vstack((
         np.array([*results_SGD.values()]), 
