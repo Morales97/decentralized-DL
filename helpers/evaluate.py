@@ -190,7 +190,7 @@ def eval_all_ema_updated_bn(args, ckpt):
         loss, acc = evaluate_model(model, test_loader, device)
         update_bn(args, train_loader, model, device)
         loss2, acc2 = evaluate_model(model, test_loader, device)
-        print(f'Alpha: {alpha}\tTest Accuracy: {acc}\tTest Acc. (after BN recompute): {acc2}')
+        print(f'Alpha: {alpha}\tTest Accuracy: {acc:.f2}\tTest Acc. (after BN recompute): {acc2}')
 
 if __name__ == '__main__':
     args = parse_args()
