@@ -200,8 +200,8 @@ if __name__ == '__main__':
     # CHOOSE CHECKPOINT
     expt_name = 'val_0.8'
     seed = 1
-    # ckpt_name='checkpoint_last.pth.tar'
-    ckpt_name='best_ema_acc.pth.tar'
+    ckpt_name='checkpoint_last.pth.tar'
+    # ckpt_name='best_ema_acc.pth.tar'
     # ckpt_name='best_ema_loss.pth.tar'
 
     model = get_model(args, device)
