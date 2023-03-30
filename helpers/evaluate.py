@@ -6,6 +6,10 @@ import os
 import sys
 
 sys.path.insert(0, os.path.join(sys.path[0], '..'))
+from model.model import get_model
+from loaders.data import get_data
+from helpers.parser import parse_args
+from helpers.utils import get_folder_name
 from topology import get_average_model
 
 def evaluate_model(model, data_loader, device):
@@ -178,3 +182,27 @@ def eval_on_cifar_corrputed_test(model, dataset, device, root, distortions=None,
 
     return mean_acc
 
+if __name__ == '__main__':
+    args = parse_args()
+    device = 'cuda:0' if torch.cuda.is_available() else 'cpu'
+    train_loader, val_loader, test_loader = get_data(args, args.batch_size[0], args.data_fraction, val_fraction=args.val_fraction)
+    
+    # CHOOSE CHECKPOINT
+    expt_name = 'val_0.8'
+    seed = 0
+    ckpt_name='checkpoint_last.pth.tar'
+    # ckpt_name='best_ema_acc.pth.tar'
+    # ckpt_name='best_ema_loss.pth.tar'
+
+    model = get_model(args, device)
+    path = get_folder_name(args, expt_name=expt_name, seed=seed)
+    ckpt = torch.load(os.path.join(path, ckpt_name))
+    
+    # LOAD MODEL
+    # model.load_state_dict(ckpt['state_dict'])
+    alpha = 0.998
+    model.load_state_dict(ckpt['ema_state_dict_' + str(alpha)])
+
+    # EVAL
+    loss, acc = evaluate_model(model, test_loader, device)
+    print(f'Model Test Accuracy: {acc}\t Test Loss: {loss}')

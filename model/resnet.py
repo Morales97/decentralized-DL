@@ -353,7 +353,7 @@ def resnet50_in(args):
 if __name__ == '__main__':
     # model = ResNet(dataset='imagenet', resnet_size=18)
     # summary(model, (3, 224, 224))
-    model = ResNet(dataset='cifar100', resnet_size=18)
+    model = ResNet(dataset='cifar100', resnet_size=50)
     model_pre = ResNet(dataset='cifar100', resnet_size=18, preact=True)
     summary(model, (3, 32, 32))
     pdb.set_trace()
