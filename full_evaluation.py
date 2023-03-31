@@ -217,15 +217,15 @@ def full_evaluation(args, seeds=[0,1,2]):
     print('\n *** Evaluating EMA Accuracy (alpha=0.998, BN recompute)... ***')
     models = []
     for seed in seeds:
-        models = None
-        # models.append(_load_model(args, device, seed, expt_name='val', averaging='EMA_acc', ckpt_name='best_ema_acc.pth.tar', alpha=0.998, compute_bn=True, train_loader=train_loader))
+        # models = None
+        models.append(_load_model(args, device, seed, expt_name='val', averaging='EMA_acc', ckpt_name='best_ema_acc.pth.tar', alpha=0.998, compute_bn=True, train_loader=train_loader))
     results_EMA_acc_BN = evaluate_all(args, models, val_loader, test_loader, device, expt_name='val', averaging='EMA_acc_BN_0.998')
 
     print('\n *** Evaluating EMA Validation (alpha=0.998, BN recompute)... ***')
     models = []
     for seed in seeds:
-        models = None
-        # models.append(_load_model(args, device, seed, expt_name='val', averaging='EMA_val', ckpt_name='best_ema_loss.pth.tar', alpha=0.998, compute_bn=True, train_loader=train_loader))
+        # models = None
+        models.append(_load_model(args, device, seed, expt_name='val', averaging='EMA_val', ckpt_name='best_ema_loss.pth.tar', alpha=0.998, compute_bn=True, train_loader=train_loader))
     results_EMA_val_BN = evaluate_all(args, models, val_loader, test_loader, device, expt_name='val', averaging='EMA_val_BN_0.998')
 
     for key in results_SGD.keys():
