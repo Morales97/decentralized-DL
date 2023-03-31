@@ -70,7 +70,7 @@ def _average_non_zero(arr):
 def evaluate_all(args, models, val_loader, test_loader, device, expt_name, averaging):
     
     results = _load_saved_results(args, expt_name, averaging)
-    results = {}
+    
     # TEST ACCURACY AND LOSS
     if not 'Test Accuracy (%)' in results.keys():
         # evaluate_model_per_class(models[0], test_loader, device)
@@ -225,8 +225,6 @@ def full_evaluation(args, seeds=[0,1,2]):
     for seed in seeds:
         models.append(_load_model(args, device, seed, expt_name='val', averaging='EMA_val', ckpt_name='best_ema_loss.pth.tar', alpha=0.998, compute_bn=True, train_loader=train_loader))
     results_EMA_val_BN = evaluate_all(args, models, val_loader, test_loader, device, expt_name='val', averaging='EMA_val_BN_0.998')
-    
-    pdb.set_trace()
 
     for key in results_SGD.keys():
         if key not in results_EMA_acc_BN.keys():
@@ -259,9 +257,9 @@ def full_evaluation(args, seeds=[0,1,2]):
     results_dict.pop('Pred L2 dist', None)
     # results_dict.pop('ECE', None)
     # results_dict.pop('ECE (Temp. scaling)', None)
-    results_dict.pop('Common corruptions (severity=1)', None)
-    results_dict.pop('Adversarial Accuracy (eps=2/255)', None)
-    results_dict.pop('DP Ranking', None)
+    # results_dict.pop('Common corruptions (severity=1)', None)
+    # results_dict.pop('Adversarial Accuracy (eps=2/255)', None)
+    # results_dict.pop('DP Ranking', None)
 
     # drop deprecated keys (which may still be in old saved results)
     results_dict.pop('RMS Calib error', None)
