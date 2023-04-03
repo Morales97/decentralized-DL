@@ -88,7 +88,7 @@ class OptimizerEMA_IN(object):
 
     def update(self, model, ema_model):
         if self.ramp_up:
-            _alpha = min(self.alpha, (self.step + 1)/(self.step + 10)) 
+            _alpha = min(self.alpha, (self.step + 1)/(self.step + 3)) 
         else:
             _alpha = self.alpha        
         self.step += 1
