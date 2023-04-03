@@ -93,7 +93,7 @@ def train(args, wandb):
     swa_model = AveragedModel(model, device, use_buffers=True)
 
     # init aux model for EMA BN evaluation
-    if args.eval_ema_bn:
+    if args.ema_bn_eval:
         ema_bn_model = get_model(args, device)
         for param in ema_bn_model.parameters():
             param.detach_()
@@ -268,7 +268,7 @@ def train(args, wandb):
             logger.log_acc(step, epoch, best_ema_acc, best_ema_loss, name='EMA')  
             
             # EMA (updating BN)
-            if args.eval_ema_bn:
+            if args.ema_bn_eval:
                 for alpha in args.alpha: 
                     ema_bn_model.load_state_dict(ema_models[alpha].state_dict())
                     update_bn_and_eval(ema_bn_model, train_loader, val_loader, device, logger, step, epoch, log_name='EMA BN ' + str(alpha))
