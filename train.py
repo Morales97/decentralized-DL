@@ -91,6 +91,12 @@ def train(args, wandb):
         ema_models[alpha], ema_opts[alpha] = get_ema_model(args, model, device, alpha)
     swa_model = AveragedModel(model, device, use_buffers=True)
 
+    # init aux model for EMA BN evaluation
+    if args.eval_ema_bn:
+        ema_bn_model = get_model(args, device)
+        for param in ema_bn_model.parameters():
+            param.detach_()
+
     # Average Index
     if args.avg_index:
         checkpoint_period = np.ceil(n_samples/args.batch_size[0]) * 2 // args.ema_period   # Saving index every 2 epochs -- empirically, this is more than often enough
@@ -259,6 +265,12 @@ def train(args, wandb):
             max_acc.update(best_ema_acc, best_ema_loss, 'EMA')
             logger.log_acc(step, epoch, best_ema_acc, best_ema_loss, name='EMA')  
             
+            # EMA (updating BN)
+            if args.eval_ema_bn:
+                for alpha in args.alpha: 
+                    ema_bn_model.load_state_dict(ema_models[alpha].state_dict())
+                    update_bn_and_eval(ema_bn_model, train_loader, val_loader, device, logger, step, epoch, log_name='EMA BN ' + str(alpha))
+
             # SWA
             if epoch > args.epoch_swa:
                 update_bn_and_eval(swa_model, train_loader, val_loader, device, logger, step, epoch, log_name='SWA')

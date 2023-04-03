@@ -162,6 +162,8 @@ def get_parser(parser=None):
                         help='evaluate after each epoch or at step evaluation interval')
     parser.add_argument('--eval_on_test', type=boolfromstr, default=True,
                         help='evaluate best models on test set')
+    parser.add_argument('--ema_bn_eval', action='store_true',
+                        help='Evaluate on EMA with BN update')  
     return parser 
 
 def check_assertions(args):
