@@ -64,7 +64,6 @@ def update_bn_and_eval(model, train_loader, test_loader, device, logger, step=0,
     _model = deepcopy(model)
     update_bn(args, train_loader, _model, device)
     _, acc = evaluate_model(_model, test_loader, device)
-    print(f'EMA BN acc: {acc}')
     logger.log_quantity(step, epoch, acc, name=log_name)
 
 ########################################################################################
@@ -257,7 +256,6 @@ def train(args, wandb):
             best_ema_loss = 1e5
             for alpha in args.alpha: 
                 ema_loss, ema_acc = evaluate_model(ema_models[alpha], val_loader, device)
-                print(f'EMA acc: {ema_acc}')
                 logger.log_acc(step, epoch, ema_acc, ema_loss, name='EMA ' + str(alpha))
                 max_acc.update(ema_acc, ema_loss, alpha)
                 if ema_acc > best_ema_acc:
