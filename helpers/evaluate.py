@@ -222,3 +222,4 @@ if __name__ == '__main__':
     update_bn(args, train_loader, model, device)
 
 # python helpers/evaluate.py --dataset=cifar100 --net=rn18
+# python helpers/evaluate.py --dataset=cifar100 --net=vgg16

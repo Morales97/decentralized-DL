@@ -70,7 +70,7 @@ def _average_non_zero(arr):
 def evaluate_all(args, models, val_loader, test_loader, device, expt_name, averaging):
     
     results = _load_saved_results(args, expt_name, averaging)
-    results = {}
+    # results = {}
 
     # TEST ACCURACY AND LOSS
     if not 'Test Accuracy (%)' in results.keys():
