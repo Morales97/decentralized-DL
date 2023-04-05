@@ -2,7 +2,8 @@ import argparse
 import pdb
 
 # Directory to save checkpoints to
-SAVE_DIR = '/mloraw1/danmoral/checkpoints/' 
+# SAVE_DIR = '/mloraw1/danmoral/checkpoints/' 
+SAVE_DIR = '/mlodata1/danmoral/checkpoints/' 
 
 # wandb
 SCRATCH_DIR = '/mloraw1/danmoral/scratch/' # directory to cache wandb artifacts in
