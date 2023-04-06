@@ -174,6 +174,8 @@ def train(args, wandb):
         if True:
             pass #opt = torch.optim.LBFGS()
 
+    
+
     # TRAIN LOOP
     while epoch < args.epochs:
         
@@ -276,6 +278,7 @@ def train(args, wandb):
                     loss, acc = update_bn_and_eval(ema_bn_model, train_loader, val_loader, device, logger, step, epoch, log_name='EMA BN ' + str(alpha))
                     max_acc.update(acc, loss, str(alpha) + '_BN')
 
+
             # SWA
             if epoch > args.epoch_swa:
                 update_bn_and_eval(swa_model, train_loader, val_loader, device, logger, step, epoch, log_name='SWA')
@@ -287,6 +290,11 @@ def train(args, wandb):
                 (epoch, step, float(acc), float(ema_acc), val_loss, train_loss, time.time() - ts_total, time.time() - ts_steps_eval, time.time() - ts_eval))
             max_acc.update(acc, val_loss, 'Student')
             ts_steps_eval = time.time()
+
+            # Bootstrap model with EMA
+            if args.bootstrap_with_ema:
+                assert 0.992 in args.alpha
+                model.load_state_dict(ema_models[0.992].state_dict())
 
         # save checkpoint periodically
         epoch_int = np.round(epoch).astype(int)
