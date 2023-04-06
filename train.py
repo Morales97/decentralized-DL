@@ -63,8 +63,10 @@ def compute_model_tracking_metrics(args, logger, model, ema_models, opt, step, e
 def update_bn_and_eval(model, train_loader, test_loader, device, logger, step=0, epoch=0, log_name=''):
     _model = deepcopy(model)
     update_bn(args, train_loader, _model, device)
-    _, acc = evaluate_model(_model, test_loader, device)
+    loss, acc = evaluate_model(_model, test_loader, device)
     logger.log_quantity(step, epoch, acc, name=log_name)
+    logger.log_quantity(step, epoch, loss, name=log_name + ' Loss')
+    return loss, acc
 
 ########################################################################################
 
@@ -91,12 +93,6 @@ def train(args, wandb):
         ema_models[alpha], ema_opts[alpha] = get_ema_model(args, model, device, alpha)
     swa_model = AveragedModel(model, device, use_buffers=True)
 
-    # init aux model for EMA BN evaluation
-    if args.ema_bn_eval:
-        ema_bn_model = get_model(args, device)
-        for param in ema_bn_model.parameters():
-            param.detach_()
-
     # Average Index
     if args.avg_index:
         checkpoint_period = np.ceil(n_samples/args.batch_size[0]) * 2 // args.ema_period   # Saving index every 2 epochs -- empirically, this is more than often enough
@@ -122,6 +118,14 @@ def train(args, wandb):
     cr_loss = 0
     max_acc = MultiAccuracyTracker(['Student', 'EMA', *args.alpha])
     train_tracker = TrainMetricsTracker(['Student', *args.alpha])
+
+    # init aux model for EMA BN evaluation
+    if args.ema_bn_eval:
+        ema_bn_model = get_model(args, device)
+        for param in ema_bn_model.parameters():
+            param.detach_()
+        for alpha in args.alpha:
+            max_acc._init(str(alpha) + '_BN')
 
     # Load checkpoint
     if args.resume:
@@ -269,7 +273,8 @@ def train(args, wandb):
             if args.ema_bn_eval:
                 for alpha in args.alpha: 
                     ema_bn_model.load_state_dict(ema_models[alpha].state_dict())
-                    update_bn_and_eval(ema_bn_model, train_loader, val_loader, device, logger, step, epoch, log_name='EMA BN ' + str(alpha))
+                    loss, acc = update_bn_and_eval(ema_bn_model, train_loader, val_loader, device, logger, step, epoch, log_name='EMA BN ' + str(alpha))
+                    max_acc.update(acc, loss, str(alpha) + '_BN')
 
             # SWA
             if epoch > args.epoch_swa:
@@ -314,6 +319,10 @@ def train(args, wandb):
 
     logger.log_single(max_acc.get_acc('Student'), log_as='Max Val Accuracy')
     logger.log_single(max_acc.get_acc('EMA'), log_as='Max EMA Val Accuracy')
+    for alpha in args.alpha:
+        logger.log_single(max_acc.get_acc(alpha), log_as=f'Max EMA {alpha} Val Accuracy')
+        if args.ema_bn_eval:
+            logger.log_single(max_acc.get_acc(str(alpha) + '_BN'), log_as=f'Max EMA BN {alpha} Val Accuracy')
 
     if epoch > args.epoch_swa:
         update_bn_and_eval(swa_model, train_loader, val_loader, device, logger, log_name='SWA Acc (after BN)')
