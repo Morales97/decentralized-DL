@@ -125,7 +125,7 @@ def train(args, wandb):
         for param in ema_bn_model.parameters():
             param.detach_()
         for alpha in args.alpha:
-            max_acc._init(str(alpha) + '_BN')
+            max_acc._init([str(alpha) + '_BN'])
 
     # Load checkpoint
     if args.resume:
