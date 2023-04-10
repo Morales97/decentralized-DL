@@ -235,7 +235,7 @@ def full_evaluation(args, expt_name='val', seeds=[0,1,2]):
 if __name__ == '__main__':
     ''' For debugging purposes '''
     args = parse_args()
-    expt_name = 'val'   # NOTE first part of experiment name. this will eval models from folders 'val_[lr]_s*'
+    expt_name = 'SGD'   # NOTE first part of experiment name. this will eval models from folders 'val_[lr]_s*'
     full_evaluation(args, expt_name)
 
 # python full_evaluation.py --net=vgg16 --dataset=cifar100 --lr=0.06
