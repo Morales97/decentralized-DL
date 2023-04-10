@@ -146,36 +146,47 @@ def evaluate_all(args, models, val_loader, test_loader, device, expt_name, avera
 
     return results
 
-def full_evaluation(args, seeds=[0,1,2]):
+def full_evaluation(args, expt_name='val', seeds=[0,1,2]):
     '''
     Evaluate SGD vs EMA solution on mulitple metrics.
     Average of 3 seeds. Always use last model (no early stopping on test set)
     '''
+
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
     train_loader, val_loader, test_loader = get_data(args, args.batch_size[0], args.data_fraction, val_fraction=args.val_fraction)
 
-    # SGD
-    # print('\n *** Evaluating SGD... ***')
-    # models = []
-    # for seed in seeds:
-    #     models.append(_load_model(args, device, seed, expt_name='SGD'))
-    # results_SGD = evaluate_all(args, models, val_loader, test_loader, device, expt_name='SGD')
+    print('\n *** Evaluating SGD (train/val)... ***')
+    models = []
+    for seed in seeds:
+        models.append(_load_model(args, device, seed, expt_name=expt_name, averaging='SGD', ckpt_name='checkpoint_last.pth.tar'))
+    results_SGD = evaluate_all(args, models, val_loader, test_loader, device, expt_name=expt_name, averaging='SGD')
 
-    # # EMA acc
-    # print('\n *** Evaluating EMA Accuracy... ***')
-    # models = []
-    # for seed in seeds:
-    #     models.append(_load_model(args, device, seed, expt_name='EMA_acc'))
-    # results_EMA_acc = evaluate_all(args, models, val_loader, test_loader, device, expt_name='EMA_acc')
+    print('\n *** Evaluating EMA Accuracy (train/val)... ***')
+    models = []
+    for seed in seeds:
+        models.append(_load_model(args, device, seed, expt_name=expt_name, averaging='EMA_acc', ckpt_name='best_ema_acc.pth.tar'))
+    results_EMA_acc = evaluate_all(args, models, val_loader, test_loader, device, expt_name=expt_name, averaging='EMA_acc')
 
+    print('\n *** Evaluating EMA Validation (train/val)... ***')
+    models = []
+    for seed in seeds:
+        models.append(_load_model(args, device, seed, expt_name=expt_name, averaging='EMA_val', ckpt_name='best_ema_loss.pth.tar'))
+    results_EMA_val = evaluate_all(args, models, val_loader, test_loader, device, expt_name=expt_name, averaging='EMA_val')
 
-    # # EMA val
-    # print('\n *** Evaluating EMA Validation... ***')
-    # models = []
-    # for seed in seeds:
-    #     models.append(_load_model(args, device, seed, expt_name='EMA_val'))
-    # results_EMA_val = evaluate_all(args, models, val_loader, test_loader, device, expt_name='EMA_val')
-    
+    print('\n *** Evaluating EMA Accuracy (alpha=0.998, BN recompute)... ***')
+    models = []
+    for seed in seeds:
+        # models = None
+        models.append(_load_model(args, device, seed, expt_name=expt_name, averaging='EMA_acc', ckpt_name='best_ema_acc.pth.tar', alpha=0.998, compute_bn=True, train_loader=train_loader))
+    results_EMA_acc_BN = evaluate_all(args, models, val_loader, test_loader, device, expt_name=expt_name, averaging='EMA_acc_BN_0.998')
+
+    print('\n *** Evaluating EMA Validation (alpha=0.998, BN recompute)... ***')
+    models = []
+    for seed in seeds:
+        # models = None
+        models.append(_load_model(args, device, seed, expt_name=expt_name, averaging='EMA_val', ckpt_name='best_ema_loss.pth.tar', alpha=0.998, compute_bn=True, train_loader=train_loader))
+    results_EMA_val_BN = evaluate_all(args, models, val_loader, test_loader, device, expt_name=expt_name, averaging='EMA_val_BN_0.998')
+
     # # Uniform avg of SGD
     # print('\n *** Evaluating Uniform average of SGD since epoch 100... ***')
     # models = []
@@ -183,71 +194,13 @@ def full_evaluation(args, seeds=[0,1,2]):
     #     models.append(get_avg_model(args, start=0.5, end=1, expt_name=_get_expt_name(args, 'SGD'), seed=seed))
     # results_uniform_sgd = evaluate_all(args, models, val_loader, test_loader, device, expt_name=_get_expt_name(args, 'SGD'))
 
-    # # Uniform avg of EMA acc
-    # print('\n *** Evaluating Uniform average of EMA Acc... ***')
-    # models = []
-    # for seed in seeds:
-    #     models.append(get_avg_model(args, start=0, end=1, expt_name=_get_expt_name(args, 'EMA_acc'), seed=seed))
-    # results_uniform_acc = evaluate_all(args, models, val_loader, test_loader, device, expt_name=_get_expt_name(args, 'EMA_acc'))
-
-    # # Uniform avg of EMA val
-    # print('\n *** Evaluating Uniform average of EMA Val... ***')
-    # models = []
-    # for seed in seeds:
-    #     models.append(get_avg_model(args, start=0, end=1, expt_name=_get_expt_name(args, 'EMA_val'), seed=seed))
-    # results_uniform_val = evaluate_all(args, models, val_loader, test_loader, device, expt_name=_get_expt_name(args, 'EMA_val'))
-
-    print('\n *** Evaluating SGD (train/val)... ***')
-    models = []
-    for seed in seeds:
-        models.append(_load_model(args, device, seed, expt_name='val', averaging='SGD', ckpt_name='checkpoint_last.pth.tar'))
-    results_SGD = evaluate_all(args, models, val_loader, test_loader, device, expt_name='val', averaging='SGD')
-
-    print('\n *** Evaluating EMA Accuracy (train/val)... ***')
-    models = []
-    for seed in seeds:
-        models.append(_load_model(args, device, seed, expt_name='val', averaging='EMA_acc', ckpt_name='best_ema_acc.pth.tar'))
-    results_EMA_acc = evaluate_all(args, models, val_loader, test_loader, device, expt_name='val', averaging='EMA_acc')
-
-    print('\n *** Evaluating EMA Validation (train/val)... ***')
-    models = []
-    for seed in seeds:
-        models.append(_load_model(args, device, seed, expt_name='val', averaging='EMA_val', ckpt_name='best_ema_loss.pth.tar'))
-    results_EMA_val = evaluate_all(args, models, val_loader, test_loader, device, expt_name='val', averaging='EMA_val')
-
-    print('\n *** Evaluating EMA Accuracy (alpha=0.998, BN recompute)... ***')
-    models = []
-    for seed in seeds:
-        # models = None
-        models.append(_load_model(args, device, seed, expt_name='val', averaging='EMA_acc', ckpt_name='best_ema_acc.pth.tar', alpha=0.998, compute_bn=True, train_loader=train_loader))
-    results_EMA_acc_BN = evaluate_all(args, models, val_loader, test_loader, device, expt_name='val', averaging='EMA_acc_BN_0.998')
-
-    print('\n *** Evaluating EMA Validation (alpha=0.998, BN recompute)... ***')
-    models = []
-    for seed in seeds:
-        # models = None
-        models.append(_load_model(args, device, seed, expt_name='val', averaging='EMA_val', ckpt_name='best_ema_loss.pth.tar', alpha=0.998, compute_bn=True, train_loader=train_loader))
-    results_EMA_val_BN = evaluate_all(args, models, val_loader, test_loader, device, expt_name='val', averaging='EMA_val_BN_0.998')
-
-    # for key in results_SGD.keys():
-    #     if key not in results_EMA_acc_BN.keys():
-    #         results_EMA_acc_BN[key] = 0
-    #         results_EMA_val_BN[key] = 0
-
-    # for key in results_EMA_acc_BN.keys():
-    #     if key not in results_SGD.keys():
-    #         results_EMA_acc_BN.pop(key)
-    #         results_EMA_val_BN.pop(key)
-
     results = np.vstack((
         np.array([*results_SGD.values()]), 
         np.array([*results_EMA_acc.values()]),
         np.array([*results_EMA_val.values()]),
-        # np.array([*results_EMA_acc_BN.values()]),
-        # np.array([*results_EMA_val_BN.values()]),
-        # np.array([*results_uniform_sgd.values()]),
-        # np.array([*results_uniform_acc.values()]),
-        # np.array([*results_uniform_val.values()])
+        np.array([*results_EMA_acc_BN.values()]),
+        np.array([*results_EMA_val_BN.values()]),
+        # np.array([*results_uniform_sgd.values()])
         ))
     results_dict = {}
     for i, key in enumerate(results_EMA_acc.keys()):
@@ -282,7 +235,8 @@ def full_evaluation(args, seeds=[0,1,2]):
 if __name__ == '__main__':
     ''' For debugging purposes '''
     args = parse_args()
-    full_evaluation(args)
+    expt_name = 'val'   # NOTE first part of experiment name. this will eval models from folders 'val_[lr]_s*'
+    full_evaluation(args, expt_name)
 
 # python full_evaluation.py --net=vgg16 --dataset=cifar100 --lr=0.06
 # python full_evaluation.py --net=rn18 --dataset=cifar100 --lr=0.8
