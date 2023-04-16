@@ -76,7 +76,7 @@ def evaluate_all(args, models, val_loader, test_loader, device, expt_name, avera
         results = _load_saved_results(args, expt_name, averaging)
     else:
         results = _load_saved_results(args, expt_name, averaging + '_best_per_seed')   # potentially mixed between different configs
-    results = {}
+    # results = {}
 
     # TEST ACCURACY AND LOSS
     if not 'Test Accuracy (%)' in results.keys():
@@ -96,17 +96,17 @@ def evaluate_all(args, models, val_loader, test_loader, device, expt_name, avera
     #     disagreement = eval_repeatability_many(args, models, test_loader)
     #     results['Pred Disagr. all-to-all (%)'] = disagreement
 
-    # if not 'Pred Disagr. (%)' in results.keys():
-    #     disagreement, L2_dist, JS_div = eval_repeatability(args, models, test_loader)
-    #     results['Pred Disagr. (%)'] = _average_non_zero(disagreement)
-    #     results['Pred L2 dist'] = _average_non_zero(L2_dist)
-    #     results['Pred JS div'] = _average_non_zero(JS_div)
+    if not 'Pred Disagr. (%)' in results.keys():
+        disagreement, L2_dist, JS_div = eval_repeatability(args, models, test_loader)
+        results['Pred Disagr. (%)'] = _average_non_zero(disagreement)
+        results['Pred L2 dist'] = _average_non_zero(L2_dist)
+        results['Pred JS div'] = _average_non_zero(JS_div)
 
-    # # # CALIBRATION
-    # if not 'ECE (Temp. scaling)' in results.keys():
-    #     mce, ece, mce_temp, ece_temp, mce_binner, ece_binner = eval_calibration_new(args, models, val_loader, test_loader)
-    #     results['ECE'] = ece
-    #     results['ECE (Temp. scaling)'] = ece_temp
+    # # CALIBRATION
+    if not 'ECE (Temp. scaling)' in results.keys():
+        mce, ece, mce_temp, ece_temp, mce_binner, ece_binner = eval_calibration_new(args, models, val_loader, test_loader)
+        results['ECE'] = ece
+        results['ECE (Temp. scaling)'] = ece_temp
         
         # results['MCE'] = mce
         # results['MCE (Temp. scaling)'] = mce_temp
