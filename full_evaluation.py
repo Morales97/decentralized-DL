@@ -48,7 +48,7 @@ def _load_model(args, device, seed, expt_name, averaging=None, ckpt_name='checkp
     if compute_bn:
         update_bn(args, train_loader, model, device)
 
-    return model
+    return model, ckpt['epoch']
 
 def _load_saved_results(args, expt_name, averaging, seed=0):
     ''' Load previously computed results. Results are usually for seed=[0,1,2], but saved in folder of seed=0 by defualt '''
@@ -156,11 +156,14 @@ def full_evaluation(args, expt_name='val', seeds=[0,1,2]):
     train_loader, val_loader, test_loader = get_data(args, args.batch_size[0], args.data_fraction, val_fraction=args.val_fraction)
 
     print('\n *** Evaluating SGD (train/val)... ***')
-    models = []
+    models, epochs = [], []
     for seed in seeds:
-        models.append(_load_model(args, device, seed, expt_name=expt_name, averaging='SGD', ckpt_name='checkpoint_last.pth.tar'))
+        model, epoch = _load_model(args, device, seed, expt_name=expt_name, averaging='SGD', ckpt_name='checkpoint_last.pth.tar')
+        models.append(model)
+        epochs.append(epoch)
     results_SGD = evaluate_all(args, models, val_loader, test_loader, device, expt_name=expt_name, averaging='SGD')
-
+    results_SGD['epochs'] = epochs
+    pdb.set_trace()
     print('\n *** Evaluating EMA Accuracy (train/val)... ***')
     models = []
     for seed in seeds:
