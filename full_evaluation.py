@@ -407,8 +407,8 @@ def full_evaluation_best_per_seed(args, expt_name='val', folder_names=['val_1.2_
 if __name__ == '__main__':
     ''' For debugging purposes '''
     args = parse_args()
-    expt_name = 'val'   # NOTE first part of experiment name. this will eval models from folders 'val_[lr]_s*'
-    # expt_name = 'SGD'   
+    # expt_name = 'val'   # NOTE first part of experiment name. this will eval models from folders 'val_[lr]_s*'
+    expt_name = 'SGD'   
 
     # DEFAULT
     full_evaluation(args, expt_name)
