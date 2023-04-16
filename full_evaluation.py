@@ -411,7 +411,7 @@ if __name__ == '__main__':
     # expt_name = 'SGD'   
 
     # DEFAULT
-    # full_evaluation(args, expt_name)
+    full_evaluation(args, expt_name)
 
     # RN-18, C-100, best configs
     # full_evaluation_best_per_seed(args, expt_name, folder_names=['val_1.2_s0', 'val_0.8_s1', 'val_1.2_s2'], lrs=[1.2, 0.8, 1.2])  # NOTE for mixed configs
