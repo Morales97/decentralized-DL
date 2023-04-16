@@ -66,9 +66,9 @@ def _load_saved_results(args, expt_name, averaging, seed=0):
         print(f'Loaded results for {results.keys()}')
     return results
 
-def _average_non_zero(arr):
+def _average_non_zero(arr, round_dec=2):
     non_zeros = arr[np.nonzero(arr)]
-    return np.round(non_zeros.mean(), 2)
+    return np.round(non_zeros.mean(), round_dec)
 
 def evaluate_all(args, models, val_loader, test_loader, device, expt_name, averaging, best_per_seed=False):
     
@@ -100,7 +100,7 @@ def evaluate_all(args, models, val_loader, test_loader, device, expt_name, avera
         disagreement, L2_dist, JS_div = eval_repeatability(args, models, test_loader)
         results['Pred Disagr. (%)'] = _average_non_zero(disagreement)
         results['Pred L2 dist'] = _average_non_zero(L2_dist)
-        results['Pred JS div'] = _average_non_zero(JS_div)
+        results['Pred JS div'] = _average_non_zero(JS_div, round_dec=3)
 
     # # CALIBRATION
     if not 'ECE (Temp. scaling)' in results.keys():
@@ -407,8 +407,8 @@ def full_evaluation_best_per_seed(args, expt_name='val', folder_names=['val_1.2_
 if __name__ == '__main__':
     ''' For debugging purposes '''
     args = parse_args()
-    expt_name = 'val'   # NOTE first part of experiment name. this will eval models from folders 'val_[lr]_s*'
-    # expt_name = 'SGD'   
+    # expt_name = 'val'   # NOTE first part of experiment name. this will eval models from folders 'val_[lr]_s*'
+    expt_name = 'SGD'   
 
     # DEFAULT
     full_evaluation(args, expt_name)
