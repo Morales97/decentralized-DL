@@ -200,9 +200,9 @@ def full_evaluation(args, expt_name='val', seeds=[0,1,2]):
     models, epochs = [], []
     for seed in seeds:
         if expt_name == 'val':
-            model, epoch = _load_model(args, device, seed, expt_name=expt_name, averaging='EMA_acc', ckpt_name='best_ema_acc.pth.tar', alpha=0.998, compute_bn=True, train_loader=train_loader)
+            model, epoch, _ = _load_model(args, device, seed, expt_name=expt_name, averaging='EMA_acc', ckpt_name='best_ema_acc.pth.tar', alpha=0.998, compute_bn=True, train_loader=train_loader)
         if expt_name == 'SGD':
-            model, epoch = _load_model(args, device, seed, expt_name=expt_name, averaging='EMA_acc', ckpt_name='ema_acc_epoch.pth.tar', alpha=0.998, compute_bn=True, train_loader=train_loader)
+            model, epoch, _ = _load_model(args, device, seed, expt_name=expt_name, averaging='EMA_acc', ckpt_name='ema_acc_epoch.pth.tar', alpha=0.998, compute_bn=True, train_loader=train_loader)
         models.append(model)
         epochs.append(int(epoch))
     results_EMA_acc_BN = evaluate_all(args, models, val_loader, test_loader, device, expt_name=expt_name, averaging='EMA_acc_BN_0.998')
@@ -213,9 +213,9 @@ def full_evaluation(args, expt_name='val', seeds=[0,1,2]):
     models, epochs = [], []
     for seed in seeds:
         if expt_name == 'val':
-            model, epoch = _load_model(args, device, seed, expt_name=expt_name, averaging='EMA_val', ckpt_name='best_ema_loss.pth.tar', alpha=0.998, compute_bn=True, train_loader=train_loader)
+            model, epoch, _ = _load_model(args, device, seed, expt_name=expt_name, averaging='EMA_val', ckpt_name='best_ema_loss.pth.tar', alpha=0.998, compute_bn=True, train_loader=train_loader)
         if expt_name == 'SGD':
-            model, epoch = _load_model(args, device, seed, expt_name=expt_name, averaging='EMA_val', ckpt_name='ema_val_epoch.pth.tar', alpha=0.998, compute_bn=True, train_loader=train_loader)
+            model, epoch, _ = _load_model(args, device, seed, expt_name=expt_name, averaging='EMA_val', ckpt_name='ema_val_epoch.pth.tar', alpha=0.998, compute_bn=True, train_loader=train_loader)
         models.append(model)
         epochs.append(int(epoch))
     results_EMA_val_BN = evaluate_all(args, models, val_loader, test_loader, device, expt_name=expt_name, averaging='EMA_val_BN_0.998')
