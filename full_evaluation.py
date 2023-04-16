@@ -73,9 +73,9 @@ def _average_non_zero(arr):
 def evaluate_all(args, models, val_loader, test_loader, device, expt_name, averaging, best_per_seed=False):
     
     if not best_per_seed:
-        results = _load_saved_results(args, expt_name, averaging, best_per_seed=False)
+        results = _load_saved_results(args, expt_name, averaging)
     else:
-        results = _load_saved_results(args, expt_name, averaging + '_best_per_seed', best_per_seed=False)   # potentially mixed between different configs
+        results = _load_saved_results(args, expt_name, averaging + '_best_per_seed')   # potentially mixed between different configs
     # results = {}
 
     # TEST ACCURACY AND LOSS
@@ -358,7 +358,7 @@ def full_evaluation_best_per_seed(args, expt_name='val', folder_names=['val_0.8_
     results_EMA_val_BN['epochs'] = epochs
     results_EMA_val_BN['EMA decay'] = 0.998
     results_EMA_val_BN['LR'] = None
-    
+
     # # Uniform avg of SGD
     # print('\n *** Evaluating Uniform average of SGD since epoch 100... ***')
     # models = []
