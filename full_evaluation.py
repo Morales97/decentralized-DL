@@ -28,13 +28,16 @@ def _get_expt_name(args, opt):
         expt_name += '_noise40'
     return expt_name
     
-def _load_model(args, device, seed, expt_name, averaging=None, ckpt_name='checkpoint_last.pth.tar', alpha=None, compute_bn=False, train_loader=None):
+def _load_model(args, device, seed, expt_name, averaging=None, ckpt_name='checkpoint_last.pth.tar', alpha=None, compute_bn=False, train_loader=None, folder_name=None):
 
     if averaging is None:
         averaging = expt_name
     model = get_model(args, device)
     expt_name = _get_expt_name(args, expt_name)
-    path = get_folder_name(args, expt_name=expt_name, seed=seed)
+    if folder_name is None:
+        path = get_folder_name(args, expt_name=expt_name, seed=seed)
+    else:
+        path = os.path.join(args.save_dir, args.dataset, args.net, folder_name)
     ckpt = torch.load(os.path.join(path, ckpt_name))
 
     if averaging == 'SGD':
@@ -67,9 +70,12 @@ def _average_non_zero(arr):
     non_zeros = arr[np.nonzero(arr)]
     return np.round(non_zeros.mean(), 2)
 
-def evaluate_all(args, models, val_loader, test_loader, device, expt_name, averaging):
+def evaluate_all(args, models, val_loader, test_loader, device, expt_name, averaging, best_per_seed=False):
     
-    results = _load_saved_results(args, expt_name, averaging)
+    if not best_per_seed:
+        results = _load_saved_results(args, expt_name, averaging, best_per_seed=False)
+    else:
+        results = _load_saved_results(args, expt_name, averaging + '_best_per_seed', best_per_seed=False)   # potentially mixed between different configs
     # results = {}
 
     # TEST ACCURACY AND LOSS
@@ -90,17 +96,17 @@ def evaluate_all(args, models, val_loader, test_loader, device, expt_name, avera
     #     disagreement = eval_repeatability_many(args, models, test_loader)
     #     results['Pred Disagr. all-to-all (%)'] = disagreement
 
-    if not 'Pred Disagr. (%)' in results.keys():
-        disagreement, L2_dist, JS_div = eval_repeatability(args, models, test_loader)
-        results['Pred Disagr. (%)'] = _average_non_zero(disagreement)
-        results['Pred L2 dist'] = _average_non_zero(L2_dist)
-        results['Pred JS div'] = _average_non_zero(JS_div)
+    # if not 'Pred Disagr. (%)' in results.keys():
+    #     disagreement, L2_dist, JS_div = eval_repeatability(args, models, test_loader)
+    #     results['Pred Disagr. (%)'] = _average_non_zero(disagreement)
+    #     results['Pred L2 dist'] = _average_non_zero(L2_dist)
+    #     results['Pred JS div'] = _average_non_zero(JS_div)
 
-    # # CALIBRATION
-    if not 'ECE (Temp. scaling)' in results.keys():
-        mce, ece, mce_temp, ece_temp, mce_binner, ece_binner = eval_calibration_new(args, models, val_loader, test_loader)
-        results['ECE'] = ece
-        results['ECE (Temp. scaling)'] = ece_temp
+    # # # CALIBRATION
+    # if not 'ECE (Temp. scaling)' in results.keys():
+    #     mce, ece, mce_temp, ece_temp, mce_binner, ece_binner = eval_calibration_new(args, models, val_loader, test_loader)
+    #     results['ECE'] = ece
+    #     results['ECE (Temp. scaling)'] = ece_temp
         
         # results['MCE'] = mce
         # results['MCE (Temp. scaling)'] = mce_temp
@@ -141,8 +147,12 @@ def evaluate_all(args, models, val_loader, test_loader, device, expt_name, avera
     # save results
     expt_name = _get_expt_name(args, expt_name)
     path = get_folder_name(args, expt_name=expt_name, seed=0)   # NOTE using folder with seed=0 by default
-    with open(os.path.join(path, f'full_eval_results_{averaging}.pkl'), 'wb') as f:
-        pickle.dump(results, f)
+    if not best_per_seed:
+        with open(os.path.join(path, f'full_eval_results_{averaging}.pkl'), 'wb') as f:
+            pickle.dump(results, f)
+    else: 
+        with open(os.path.join(path, f'full_eval_results_{averaging}_best_per_seed.pkl'), 'wb') as f:
+            pickle.dump(results, f)
 
     return results
 
@@ -267,12 +277,142 @@ def full_evaluation(args, expt_name='val', seeds=[0,1,2]):
     # print(tabulate([[key, *value] for key, value in results_dict.items()], headers=['', 'EMA Val no pt', 'EMA Val T-IN pt'], tablefmt="pretty"))
     pdb.set_trace()
 
+# for mixed configs
+def full_evaluation_best_per_seed(args, expt_name='val', folder_names=['val_0.8_s0', 'val_1.2_s1', 'val_0.8_s2'], lrs=[0.8, 1.2, 0.8]):
+    '''
+    Evaluate SGD vs EMA solution on mulitple metrics.
+    Select best configuration per seed (e.g., different LRs for different seeds)
+    '''
+
+    device = 'cuda' if torch.cuda.is_available() else 'cpu'
+    train_loader, val_loader, test_loader = get_data(args, args.batch_size[0], args.data_fraction, val_fraction=args.val_fraction)
+
+    print('\n *** Evaluating SGD (train/val)... ***')
+    models, epochs = [], []
+    for folder in folder_names:
+        if expt_name == 'val':  # use best student accuracy
+            model, epoch, _ = _load_model(args, device, None, expt_name=expt_name, averaging='SGD', ckpt_name='best_student_acc.pth.tar', folder_name=folder)
+        if expt_name == 'SGD':  # use last checkpoint. Reason: cannot use best bc we don't want to eval on Test set, and we discard the "best validation epoch" because we reason that SGD, without implicit regularization, will tend to be always best at last epoch
+            model, epoch, _ = _load_model(args, device, None, expt_name=expt_name, averaging='SGD', ckpt_name='checkpoint_last.pth.tar', folder_name=folder)
+        models.append(model)
+        epochs.append(int(epoch))
+    results_SGD = evaluate_all(args, models, val_loader, test_loader, device, expt_name=expt_name, averaging='SGD', best_per_seed=True)
+    results_SGD['epochs'] = epochs
+    results_SGD['EMA decay'] = 0
+    results_SGD['LR'] = None
+
+    print('\n *** Evaluating EMA Accuracy (train/val)... ***')
+    models, epochs, alphas = [], [], []
+    for folder in folder_names:
+        if expt_name == 'val':  # use best VAL accuracy
+            model, epoch, alpha = _load_model(args, device, None, expt_name=expt_name, averaging='EMA_acc', ckpt_name='best_ema_acc.pth.tar', folder_name=folder)
+        if expt_name == 'SGD':  # use epoch of best VAL accuracy
+            model, epoch, alpha = _load_model(args, device, None, expt_name=expt_name, averaging='EMA_acc', ckpt_name='ema_acc_epoch.pth.tar', folder_name=folder)
+        models.append(model)
+        epochs.append(int(epoch))
+        alphas.append(alpha)
+    results_EMA_acc = evaluate_all(args, models, val_loader, test_loader, device, expt_name=expt_name, averaging='EMA_acc', best_per_seed=True)
+    results_EMA_acc['epochs'] = epochs
+    results_EMA_acc['EMA decay'] = alphas
+    results_EMA_acc['LR'] = lrs
+
+    print('\n *** Evaluating EMA Validation (train/val)... ***')
+    models, epochs, alphas = [], [], []
+    for folder in folder_names:
+        if expt_name == 'val':  # use best VAL accuracy
+            model, epoch, alpha = _load_model(args, device, None, expt_name=expt_name, averaging='EMA_val', ckpt_name='best_ema_loss.pth.tar', folder_name=folder)
+        if expt_name == 'SGD':  # use epoch of best VAL accuracy
+            model, epoch, alpha = _load_model(args, device, None, expt_name=expt_name, averaging='EMA_val', ckpt_name='ema_val_epoch.pth.tar', folder_name=folder)
+        models.append(model)
+        epochs.append(int(epoch))
+        alphas.append(alpha)
+    results_EMA_val = evaluate_all(args, models, val_loader, test_loader, device, expt_name=expt_name, averaging='EMA_val', best_per_seed=True)
+    results_EMA_val['epochs'] = epochs
+    results_EMA_val['EMA decay'] = alphas
+    results_EMA_val['LR'] = None
+
+    print('\n *** Evaluating EMA Accuracy (alpha=0.998, BN recompute)... ***')
+    models, epochs = [], []
+    for folder in folder_names:
+        if expt_name == 'val':
+            model, epoch, _ = _load_model(args, device, None, expt_name=expt_name, averaging='EMA_acc', ckpt_name='best_ema_acc.pth.tar', alpha=0.998, compute_bn=True, train_loader=train_loader, folder_name=folder)
+        if expt_name == 'SGD':
+            model, epoch, _ = _load_model(args, device, None, expt_name=expt_name, averaging='EMA_acc', ckpt_name='ema_acc_epoch.pth.tar', alpha=0.998, compute_bn=True, train_loader=train_loader, folder_name=folder)
+        models.append(model)
+        epochs.append(int(epoch))
+    results_EMA_acc_BN = evaluate_all(args, models, val_loader, test_loader, device, expt_name=expt_name, averaging='EMA_acc_BN_0.998', best_per_seed=True)
+    results_EMA_acc_BN['epochs'] = epochs
+    results_EMA_acc_BN['EMA decay'] = 0.998
+    results_EMA_acc_BN['LR'] = None
+
+    print('\n *** Evaluating EMA Validation (alpha=0.998, BN recompute)... ***')
+    models, epochs = [], []
+    for folder in folder_names:
+        if expt_name == 'val':
+            model, epoch, _ = _load_model(args, device, None, expt_name=expt_name, averaging='EMA_val', ckpt_name='best_ema_loss.pth.tar', alpha=0.998, compute_bn=True, train_loader=train_loader, folder_name=folder)
+        if expt_name == 'SGD':
+            model, epoch, _ = _load_model(args, device, None, expt_name=expt_name, averaging='EMA_val', ckpt_name='ema_val_epoch.pth.tar', alpha=0.998, compute_bn=True, train_loader=train_loader, folder_name=folder)
+        models.append(model)
+        epochs.append(int(epoch))
+    results_EMA_val_BN = evaluate_all(args, models, val_loader, test_loader, device, expt_name=expt_name, averaging='EMA_val_BN_0.998', best_per_seed=True)
+    results_EMA_val_BN['epochs'] = epochs
+    results_EMA_val_BN['EMA decay'] = 0.998
+    results_EMA_val_BN['LR'] = None
+    
+    # # Uniform avg of SGD
+    # print('\n *** Evaluating Uniform average of SGD since epoch 100... ***')
+    # models = []
+    # for seed in seeds:
+    #     models.append(get_avg_model(args, start=0.5, end=1, expt_name=_get_expt_name(args, 'SGD'), seed=seed))
+    # results_uniform_sgd = evaluate_all(args, models, val_loader, test_loader, device, expt_name=_get_expt_name(args, 'SGD'))
+
+    results = np.vstack((
+        np.array([*results_SGD.values()]), 
+        np.array([*results_EMA_acc.values()]),
+        np.array([*results_EMA_val.values()]),
+        np.array([*results_EMA_acc_BN.values()]),
+        np.array([*results_EMA_val_BN.values()]),
+        # np.array([*results_uniform_sgd.values()])
+        ))
+    results_dict = {}
+    for i, key in enumerate(results_EMA_acc.keys()):
+        results_dict[key] = results[:,i]
+    
+    # Drop keys to show only desired metrics
+    results_dict.pop('Pred Disagr. all-to-all (%)', None)
+    # results_dict.pop('Pred Disagr. (%)', None)
+    # results_dict.pop('Pred JS div', None)
+    results_dict.pop('Pred L2 dist', None)
+    # results_dict.pop('ECE', None)
+    # results_dict.pop('ECE (Temp. scaling)', None)
+    # results_dict.pop('Common corruptions (severity=1)', None)
+    # results_dict.pop('Adversarial Accuracy (eps=2/255)', None)
+    # results_dict.pop('DP Ranking', None)
+
+    # drop deprecated keys (which may still be in old saved results)
+    results_dict.pop('RMS Calib error', None)
+    results_dict.pop('RMS top-label Calib error', None)
+    results_dict.pop('MCE', None)
+    results_dict.pop('MCE (Temp. scaling)', None)
+    results_dict.pop('MCE (Binner scaling)', None)
+    results_dict.pop('ECE (Binner scaling)', None)
+
+    # print(tabulate([[key, *value] for key, value in results_dict.items()], headers=['', 'SGD (No averaging)', 'EMA Accuracy', 'EMA Validation', 'Uniform (SGD)', 'Uniform (EMA acc)', 'Uniform (EMA val)'], tablefmt="pretty"))
+    # print(tabulate([[key, *value] for key, value in results_dict.items()], headers=['', 'SGD (No averaging)', 'EMA Accuracy', 'EMA Validation'], tablefmt="pretty"))
+    print(tabulate([[key, *value] for key, value in results_dict.items()], headers=['', 'SGD (No averaging)', 'EMA Accuracy', 'EMA Validation', 'EMA Accuracy (BN)', 'EMA Validation (BN)'], tablefmt="pretty"))
+    print(tabulate([[key, *value] for key, value in results_dict.items()], headers=['', 'SGD', 'EMA Acc.', 'EMA Val.', 'EMA Acc. (BN)', 'EMA Val. (BN)'], tablefmt="latex_booktabs"))
+    # print(tabulate([[key, *value] for key, value in results_dict.items()], headers=['', 'EMA Val no pt', 'EMA Val T-IN pt'], tablefmt="pretty"))
+    
+
+
 if __name__ == '__main__':
     ''' For debugging purposes '''
     args = parse_args()
     expt_name = 'val'   # NOTE first part of experiment name. this will eval models from folders 'val_[lr]_s*'
-    # expt_name = 'SGD'   # NOTE first part of experiment name. this will eval models from folders 'val_[lr]_s*'
-    full_evaluation(args, expt_name)
+    # expt_name = 'SGD'   
+
+    # full_evaluation(args, expt_name)
+    full_evaluation_best_per_seed(args, expt_name)  # NOTE for mixed configs
 
 # python full_evaluation.py --net=vgg16 --dataset=cifar100 --lr=0.06
 # python full_evaluation.py --net=rn18 --dataset=cifar100 --lr=0.8
