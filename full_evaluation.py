@@ -408,11 +408,12 @@ def full_evaluation_best_per_seed(args, expt_name='val', folder_names=['val_1.2_
 if __name__ == '__main__':
     ''' For debugging purposes '''
     args = parse_args()
-    expt_name = 'val'   # NOTE first part of experiment name. this will eval models from folders 'val_[lr]_s*'
-    # expt_name = 'SGD'   
+    # expt_name = 'val'   # NOTE first part of experiment name. this will eval models from folders 'val_[lr]_s*'
+    expt_name = 'SGD'   
 
     # full_evaluation(args, expt_name)
-    full_evaluation_best_per_seed(args, expt_name, folder_names=['val_1.2_s0', 'val_0.8_s1', 'val_1.2_s2'], lrs=[1.2, 0.8, 1.2])  # NOTE for mixed configs
+    # full_evaluation_best_per_seed(args, expt_name, folder_names=['val_1.2_s0', 'val_0.8_s1', 'val_1.2_s2'], lrs=[1.2, 0.8, 1.2])  # NOTE for mixed configs
+    full_evaluation_best_per_seed(args, expt_name, folder_names=['SGD_1.2_s0', 'SGD_0.8_s1', 'SGD_1.2_s2'], lrs=[1.2, 0.8, 1.2])  # NOTE for mixed configs. need to set expt_name=SGD as well
 
 # python full_evaluation.py --net=vgg16 --dataset=cifar100 --lr=0.06
 # python full_evaluation.py --net=rn18 --dataset=cifar100 --lr=0.8
