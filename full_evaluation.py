@@ -401,15 +401,14 @@ def full_evaluation_best_per_seed(args, expt_name='val', folder_names=['val_1.2_
     # print(tabulate([[key, *value] for key, value in results_dict.items()], headers=['', 'SGD (No averaging)', 'EMA Accuracy', 'EMA Validation'], tablefmt="pretty"))
     print(tabulate([[key, *value] for key, value in results_dict.items()], headers=['', 'SGD (No averaging)', 'EMA Accuracy', 'EMA Validation', 'EMA Accuracy (BN)', 'EMA Validation (BN)'], tablefmt="pretty"))
     print(tabulate([[key, *value] for key, value in results_dict.items()], headers=['', 'SGD', 'EMA Acc.', 'EMA Val.', 'EMA Acc. (BN)', 'EMA Val. (BN)'], tablefmt="latex_booktabs"))
-    # print(tabulate([[key, *value] for key, value in results_dict.items()], headers=['', 'EMA Val no pt', 'EMA Val T-IN pt'], tablefmt="pretty"))
     
 
 
 if __name__ == '__main__':
     ''' For debugging purposes '''
     args = parse_args()
-    expt_name = 'val'   # NOTE first part of experiment name. this will eval models from folders 'val_[lr]_s*'
-    # expt_name = 'SGD'   
+    # expt_name = 'val'   # NOTE first part of experiment name. this will eval models from folders 'val_[lr]_s*'
+    expt_name = 'SGD'   
 
     # DEFAULT
     # full_evaluation(args, expt_name)
@@ -419,8 +418,8 @@ if __name__ == '__main__':
     # full_evaluation_best_per_seed(args, expt_name, folder_names=['SGD_1.2_s0', 'SGD_0.8_s1', 'SGD_1.2_s2'], lrs=[1.2, 0.8, 1.2])  # NOTE for mixed configs. need to set expt_name=SGD as well
 
     # RN-18, C-10, best configs
-    full_evaluation_best_per_seed(args, expt_name, folder_names=['val_0.4_s0', 'val_0.8_s1', 'val_0.4_s2'], lrs=[0.4, 0.8, 0.4])  # NOTE for mixed configs
-    # full_evaluation_best_per_seed(args, expt_name, folder_names=['SGD_0.4_s0', 'SGD_0.8_s1', 'SGD_0.4_s2'], lrs=[0.4, 0.8, 1.2])  # NOTE for mixed configs. need to set expt_name=SGD as well
+    # full_evaluation_best_per_seed(args, expt_name, folder_names=['val_0.4_s0', 'val_0.8_s1', 'val_0.4_s2'], lrs=[0.4, 0.8, 0.4])  # NOTE for mixed configs
+    full_evaluation_best_per_seed(args, expt_name, folder_names=['SGD_0.4_s0', 'SGD_0.8_s1', 'SGD_0.4_s2'], lrs=[0.4, 0.8, 1.2])  # NOTE for mixed configs. need to set expt_name=SGD as well
 
 
 # python full_evaluation.py --net=vgg16 --dataset=cifar100 --lr=0.06
