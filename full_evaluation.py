@@ -76,7 +76,7 @@ def evaluate_all(args, models, val_loader, test_loader, device, expt_name, avera
         results = _load_saved_results(args, expt_name, averaging)
     else:
         results = _load_saved_results(args, expt_name, averaging + '_best_per_seed')   # potentially mixed between different configs
-    # results = {}
+    results = {}
 
     # TEST ACCURACY AND LOSS
     if not 'Test Accuracy (%)' in results.keys():
@@ -278,7 +278,7 @@ def full_evaluation(args, expt_name='val', seeds=[0,1,2]):
     pdb.set_trace()
 
 # for mixed configs
-def full_evaluation_best_per_seed(args, expt_name='val', folder_names=['val_0.8_s0', 'val_1.2_s1', 'val_0.8_s2'], lrs=[0.8, 1.2, 0.8]):
+def full_evaluation_best_per_seed(args, expt_name='val', folder_names=['val_1.2_s0', 'val_0.8_s1', 'val_1.2_s2'], lrs=[1.2, 0.8, 1.2]):
     '''
     Evaluate SGD vs EMA solution on mulitple metrics.
     Select best configuration per seed (e.g., different LRs for different seeds)
@@ -412,7 +412,7 @@ if __name__ == '__main__':
     # expt_name = 'SGD'   
 
     # full_evaluation(args, expt_name)
-    full_evaluation_best_per_seed(args, expt_name)  # NOTE for mixed configs
+    full_evaluation_best_per_seed(args, expt_name, folder_names=['val_1.2_s0', 'val_0.8_s1', 'val_1.2_s2'], lrs=[1.2, 0.8, 1.2])  # NOTE for mixed configs
 
 # python full_evaluation.py --net=vgg16 --dataset=cifar100 --lr=0.06
 # python full_evaluation.py --net=rn18 --dataset=cifar100 --lr=0.8
