@@ -158,9 +158,10 @@ def full_evaluation(args, expt_name='val', seeds=[0,1,2]):
     print('\n *** Evaluating SGD (train/val)... ***')
     models, epochs = [], []
     for seed in seeds:
-        model, epoch = _load_model(args, device, seed, expt_name=expt_name, averaging='SGD', ckpt_name='checkpoint_last.pth.tar')
+        # model, epoch = _load_model(args, device, seed, expt_name=expt_name, averaging='SGD', ckpt_name='checkpoint_last.pth.tar')
+        model, epoch = _load_model(args, device, seed, expt_name=expt_name, averaging='SGD', ckpt_name='best_student_acc.pth.tar')
         models.append(model)
-        epochs.append(epoch)
+        epochs.append(int(epoch))
     results_SGD = evaluate_all(args, models, val_loader, test_loader, device, expt_name=expt_name, averaging='SGD')
     results_SGD['epochs'] = epochs
     pdb.set_trace()
