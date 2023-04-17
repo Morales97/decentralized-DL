@@ -57,6 +57,7 @@ def _load_saved_results(args, expt_name, averaging, seed=0):
     ''' Load previously computed results. Results are usually for seed=[0,1,2], but saved in folder of seed=0 by defualt '''
     expt_name = _get_expt_name(args, expt_name)
     path = get_folder_name(args, expt_name=expt_name, seed=seed)
+    pdb.set_trace()
     file_path = os.path.join(path, f'full_eval_results_{averaging}.pkl')
     if not os.path.exists(file_path):
         return {}
@@ -425,7 +426,7 @@ if __name__ == '__main__':
 # python full_evaluation.py --net=vgg16 --dataset=cifar100 --lr=0.06
 # python full_evaluation.py --net=rn18 --dataset=cifar100 --lr=0.8
 # python full_evaluation.py --net=rn18 --dataset=cifar10 --lr=0.4
-# python full_evaluation.py --net=rn18 --dataset=cifar100 --lr=0.8 --label_noise
+# python full_evaluation.py --net=rn18 --dataset=cifar100 --lr=0.8 --label_noise=40
 # python full_evaluation.py --net=widern28 --dataset=cifar100 --lr=0.1
 # python full_evaluation.py --net=rn18 --dataset=tiny-in --lr=0.8
 
