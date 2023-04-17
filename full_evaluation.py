@@ -24,7 +24,7 @@ from helpers.wa import update_bn
 
 def _get_expt_name(args, opt):
     expt_name = opt + '_' + str(args.lr[0])
-    if args.label_noise == 40:
+    if args.label_noise == '40':
         expt_name += '_noise40'
     return expt_name
     
@@ -408,8 +408,8 @@ def full_evaluation_best_per_seed(args, expt_name='val', folder_names=['val_1.2_
 if __name__ == '__main__':
     ''' For debugging purposes '''
     args = parse_args()
-    expt_name = 'val'   # NOTE first part of experiment name. this will eval models from folders 'val_[lr]_s*'
-    # expt_name = 'SGD'   
+    # expt_name = 'val'   # NOTE first part of experiment name. this will eval models from folders 'val_[lr]_s*'
+    expt_name = 'SGD'   
 
     # DEFAULT
     full_evaluation(args, expt_name)
