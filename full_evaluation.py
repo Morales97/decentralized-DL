@@ -76,7 +76,7 @@ def evaluate_all(args, models, val_loader, test_loader, device, expt_name, avera
         results = _load_saved_results(args, expt_name, averaging)
     else:
         results = _load_saved_results(args, expt_name, averaging + '_best_per_seed')   # potentially mixed between different configs
-    # results = {}
+    results = {}
 
     # TEST ACCURACY AND LOSS
     if not 'Test Accuracy (%)' in results.keys():
