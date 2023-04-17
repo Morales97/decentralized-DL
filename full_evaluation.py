@@ -24,7 +24,7 @@ from helpers.wa import update_bn
 
 def _get_expt_name(args, opt):
     expt_name = opt + '_' + str(args.lr[0])
-    if args.label_noise:
+    if args.label_noise == 40:
         expt_name += '_noise40'
     return expt_name
     
