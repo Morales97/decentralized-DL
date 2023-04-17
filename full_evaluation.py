@@ -57,7 +57,6 @@ def _load_saved_results(args, expt_name, averaging, seed=0):
     ''' Load previously computed results. Results are usually for seed=[0,1,2], but saved in folder of seed=0 by defualt '''
     expt_name = _get_expt_name(args, expt_name)
     path = get_folder_name(args, expt_name=expt_name, seed=seed)
-    pdb.set_trace()
     file_path = os.path.join(path, f'full_eval_results_{averaging}.pkl')
     if not os.path.exists(file_path):
         return {}
@@ -276,7 +275,6 @@ def full_evaluation(args, expt_name='val', seeds=[0,1,2]):
     print(tabulate([[key, *value] for key, value in results_dict.items()], headers=['', 'SGD (No averaging)', 'EMA Accuracy', 'EMA Validation', 'EMA Accuracy (BN)', 'EMA Validation (BN)'], tablefmt="pretty"))
     print(tabulate([[key, *value] for key, value in results_dict.items()], headers=['', 'SGD', 'EMA Acc.', 'EMA Val.', 'EMA Acc. (BN)', 'EMA Val. (BN)'], tablefmt="latex_booktabs"))
     # print(tabulate([[key, *value] for key, value in results_dict.items()], headers=['', 'EMA Val no pt', 'EMA Val T-IN pt'], tablefmt="pretty"))
-    pdb.set_trace()
 
 # for mixed configs
 def full_evaluation_best_per_seed(args, expt_name='val', folder_names=['val_1.2_s0', 'val_0.8_s1', 'val_1.2_s2'], lrs=[1.2, 0.8, 1.2]):
