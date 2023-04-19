@@ -167,6 +167,8 @@ def get_parser(parser=None):
                         help='evaluate best models on test set')
     parser.add_argument('--ema_bn_eval', action='store_true',
                         help='Evaluate on EMA with BN update')  
+    parser.add_argument('--eval_noisy_labels', action='store_true',
+                        help='Evaluate on clean/noisy labels from the train set')  
     return parser 
 
 def check_assertions(args):

@@ -1,6 +1,7 @@
 from copy import deepcopy
 import numpy as np
 import pdb
+from loaders.cifar import eval_cifar100_noisy
 from loaders.data import get_data
 import time
 import torch
@@ -18,6 +19,8 @@ from avg_index.avg_index import TriangleAvgIndex, UniformAvgIndex, ModelAvgIndex
 from helpers.lr_scheduler import get_lr_scheduler
 import wandb
 import os
+
+ROOT_CLUSTER = '/mloraw1/danmoral/data'
 
 
 def compute_model_tracking_metrics(args, logger, model, ema_models, opt, step, epoch, device, model_init=None):
@@ -278,7 +281,6 @@ def train(args, wandb):
                     loss, acc = update_bn_and_eval(ema_bn_model, train_loader, val_loader, device, logger, step, epoch, log_name='EMA BN ' + str(alpha))
                     max_acc.update(acc, loss, str(alpha) + '_BN')
 
-
             # SWA
             if epoch > args.epoch_swa:
                 update_bn_and_eval(swa_model, train_loader, val_loader, device, logger, step, epoch, log_name='SWA')
@@ -290,6 +292,17 @@ def train(args, wandb):
                 (epoch, step, float(acc), float(ema_acc), val_loss, train_loss, time.time() - ts_total, time.time() - ts_steps_eval, time.time() - ts_eval))
             max_acc.update(acc, val_loss, 'Student')
             ts_steps_eval = time.time()
+
+            # Noisy labels - eval on train set
+            if args.eval_noisy_labels:
+                clean_acc, noisy_acc = eval_cifar100_noisy(args, ROOT_CLUSTER, model)
+                print('Epoch %.3f (Step %d) -- Clean Train Accuracy: %.2f -- Noisy Train Accuracy: %.2f' % (epoch, step, clean_acc, noisy_acc))
+                logger.log_single(clean_acc, log_as='Clean Train Acc')
+                logger.log_single(noisy_acc, log_as='Noisy Train Acc')
+                clean_acc, noisy_acc = eval_cifar100_noisy(args, ROOT_CLUSTER, ema_models[0.992])
+                print('Epoch %.3f (Step %d) -- EMA Clean Train Accuracy: %.2f -- EMA Noisy Train Accuracy: %.2f' % (epoch, step, clean_acc, noisy_acc))
+                logger.log_single(clean_acc, log_as='EMA Clean Train Acc')
+                logger.log_single(noisy_acc, log_as='EMA Noisy Train Acc')
 
             # Bootstrap model with EMA
             if args.bootstrap_with_ema:

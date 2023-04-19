@@ -208,7 +208,58 @@ def get_cifar(args, root, batch_size, val_fraction, iid=False, fraction=-1, nois
 
     return train_loader, val_loader, test_loader
 
+def eval_cifar100_noisy(args, root, model):
 
+    dataset = datasets.CIFAR100
+    normalize = transforms.Normalize(
+        (0.5071, 0.4867, 0.4408), (0.2675, 0.2565, 0.2761)
+    )
+
+    # Train transforms
+    transform = transforms.Compose(
+        [
+            transforms.RandomHorizontalFlip(),
+            transforms.RandomCrop((32, 32), 4),
+            transforms.ToTensor(),
+            normalize,
+        ]
+    )
+
+    traindata = dataset(
+        root=root,
+        train=True,
+        transform=transform,
+        download=True,
+    )
+    device = 'cuda' if torch.cuda.is_available() else 'cpu'
+
+    noise_label = torch.load(os.path.join(root, 'cifar-100-python/CIFAR-100_human.pt'))
+    clean_label = noise_label['clean_label'] 
+    noisy_label = noise_label['noisy_label'] 
+    clean_labels = (clean_label == noisy_label)
+    train_loader_no_shuffle = data.DataLoader(traindata, batch_size=100, shuffle=False)
+
+    correct = []
+    correct_wrt_noisy_labels = []
+    for i, (input, target) in enumerate(train_loader_no_shuffle):
+        input = input.to(device)
+        target = target.to(device)
+
+        output = model(input)
+        pred = output.argmax(dim=1, keepdim=True)
+        correct += pred.eq(target.view_as(pred)).view(-1).tolist()
+        noisy_target = torch.from_numpy(noisy_label[i*100:(i+1)*100]).to(device)
+        correct_wrt_noisy_labels += pred.eq(noisy_target.view_as(pred)).view(-1).tolist()
+
+    # compute accuracy on clean/noisy labels
+    n_clean = clean_labels.sum()
+    n_noisy = 50000 - n_clean
+    clean_correct = np.array(correct)[clean_labels].sum()
+    noisy_correct = np.array(correct_wrt_noisy_labels)[clean_labels==False].sum()   # "Correct" meaning noisy label fitted
+    clean_acc = clean_correct / n_clean
+    noisy_acc = noisy_correct / n_noisy
+
+    return np.round(clean_acc * 100, 2), np.round(noisy_acc * 100, 2)
 
 def get_cifar_filtered_samples(args, root, teacher_model, samples_selected=None):
     '''

@@ -34,6 +34,7 @@ def evaluate_model(model, data_loader, device):
 
     return loss, acc
 
+
 def evaluate_model_per_class(model, data_loader, device):
     model.eval()
     loss = 0
