@@ -297,12 +297,9 @@ def train(args, wandb):
             if args.eval_noisy_labels:
                 clean_acc, noisy_acc = eval_cifar100_noisy(args, ROOT_CLUSTER, model)
                 print('Epoch %.3f (Step %d) -- Clean Train Accuracy: %.2f -- Noisy Train Accuracy: %.2f' % (epoch, step, clean_acc, noisy_acc))
-                logger.log_single(clean_acc, log_as='Clean Train Acc')
-                logger.log_single(noisy_acc, log_as='Noisy Train Acc')
-                clean_acc, noisy_acc = eval_cifar100_noisy(args, ROOT_CLUSTER, ema_models[0.992])
-                print('Epoch %.3f (Step %d) -- EMA Clean Train Accuracy: %.2f -- EMA Noisy Train Accuracy: %.2f' % (epoch, step, clean_acc, noisy_acc))
-                logger.log_single(clean_acc, log_as='EMA Clean Train Acc')
-                logger.log_single(noisy_acc, log_as='EMA Noisy Train Acc')
+                ema_clean_acc, ema_noisy_acc = eval_cifar100_noisy(args, ROOT_CLUSTER, ema_models[0.992])
+                print('Epoch %.3f (Step %d) -- EMA Clean Train Accuracy: %.2f -- EMA Noisy Train Accuracy: %.2f' % (epoch, step, ema_clean_acc, ema_noisy_acc))
+                logger.log_train_accs(step, epoch, clean_acc, noisy_acc, ema_clean_acc, ema_noisy_acc)
 
             # Bootstrap model with EMA
             if args.bootstrap_with_ema:

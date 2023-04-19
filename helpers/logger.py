@@ -172,6 +172,18 @@ class Logger:
         }
         if self.wandb: self.wandb.log(log)
 
+    def log_train_accs(self, step, epoch, clean_acc, noisy_acc, ema_clean_acc, ema_noisy_acc):
+        log = {
+            'Iteration': step,
+            'Epoch': epoch,
+            'Clean Train Acc': clean_acc,
+            'Noisy Train Acc': noisy_acc,
+            'EMA Clean Train Acc': ema_clean_acc,
+            'EMA Noisy Train Acc': ema_noisy_acc,
+        }
+        if self.wandb: self.wandb.log(log)
+
+
     def log_max_ema_acc(self, max_acc):
         if max_acc < 1:
             max_acc *= 100
