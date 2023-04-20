@@ -26,6 +26,8 @@ def _get_expt_name(args, opt):
     expt_name = opt + '_' + str(args.lr[0])
     if args.label_noise == '40':
         expt_name += '_noise40'
+    elif args.label_noise == 'worse_label':
+        expt_name += '_noiseW'
     return expt_name
     
 def _load_model(args, device, seed, expt_name, averaging=None, ckpt_name='checkpoint_last.pth.tar', alpha=None, compute_bn=False, train_loader=None, folder_name=None):
@@ -425,6 +427,7 @@ if __name__ == '__main__':
 # python full_evaluation.py --net=rn18 --dataset=cifar100 --lr=0.8
 # python full_evaluation.py --net=rn18 --dataset=cifar10 --lr=0.4
 # python full_evaluation.py --net=rn18 --dataset=cifar100 --lr=0.8 --label_noise=40
+# python full_evaluation.py --net=rn34 --dataset=cifar10 --lr=0.8 --label_noise=worse_label
 # python full_evaluation.py --net=widern28 --dataset=cifar100 --lr=0.1
 # python full_evaluation.py --net=rn18 --dataset=tiny-in --lr=0.8
 
