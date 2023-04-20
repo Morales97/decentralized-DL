@@ -10,6 +10,8 @@ data/cifar-100-python/*
 .DS_Store
 *.jpg
 *.gif
+*.xlsx
+*.csv
 *.ipynb
 *.pt
 *.npy
