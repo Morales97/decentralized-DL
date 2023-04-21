@@ -72,6 +72,7 @@ def _average_non_zero(arr, round_dec=2):
     non_zeros = arr[np.nonzero(arr)]
     return np.round(non_zeros.mean(), round_dec)
 
+
 def evaluate_all(args, models, val_loader, test_loader, device, expt_name, averaging, best_per_seed=False):
     
     if not best_per_seed:
@@ -166,6 +167,8 @@ def full_evaluation(args, expt_name='val', seeds=[0,1,2]):
             model, epoch, _ = _load_model(args, device, seed, expt_name=expt_name, averaging='SGD', ckpt_name='checkpoint_last.pth.tar')
         models.append(model)
         epochs.append(int(epoch))
+    ece, ece_temp = eval_calibration(args, models, val_loader, test_loader)
+    pdb.set_trace()
     results_SGD = evaluate_all(args, models, val_loader, test_loader, device, expt_name=expt_name, averaging='SGD')
     results_SGD['epochs'] = epochs
     results_SGD['EMA decay'] = 0

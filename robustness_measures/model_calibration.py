@@ -266,7 +266,8 @@ if __name__ == '__main__':
                 probs = torch.cat((probs, batch_probs), dim=0)
             
         import calibration as cal
-        ece = cal.get_ece(probs.detach().cpu(), test_loader.dataset.targets)
+        # ece = cal.get_ece(probs.detach().cpu(), test_loader.dataset.targets)
+        ece = cal.get_ece_em(probs.detach().cpu(), test_loader.dataset.targets)
         print(f'ECE: \t{ece}')
 
 
@@ -287,7 +288,8 @@ if __name__ == '__main__':
             else:
                 probs_scaled = torch.cat((probs_scaled, batch_probs_scaled), dim=0)
         
-        ece_temperature = cal.get_ece(probs_scaled.detach().cpu(), test_loader.dataset.targets)
+        # ece_temperature = cal.get_ece(probs_scaled.detach().cpu(), test_loader.dataset.targets)
+        ece_temperature = cal.get_ece_em(probs_scaled.detach().cpu(), test_loader.dataset.targets)
         print(f'ECE after temperature scaling: \t{ece_temperature}')
 
     
@@ -297,3 +299,5 @@ if __name__ == '__main__':
 # python robustness_measures/model_calibration.py --net=vgg16 --dataset=cifar100 --resume=/mloraw1/danmoral/checkpoints/cifar100/vgg16/search_0.06_s0/checkpoint_last.pth.tar
 
 # python robustness_measures/model_calibration.py --net=rn18 --dataset=cifar100 --resume=/mloraw1/danmoral/checkpoints/cifar100/rn18/val_0.8_s0/checkpoint_last.pth.tar
+# python robustness_measures/model_calibration.py --net=widern28 --dataset=cifar100 --resume=/mloraw1/danmoral/checkpoints/cifar100/widern28/val_0.1_s0/checkpoint_last.pth.tar
+# python robustness_measures/model_calibration.py --net=widern28 --dataset=cifar100 --resume=/mloraw1/danmoral/checkpoints/cifar100/widern28/val_0.1_s0/best_ema_loss.pth.tar
