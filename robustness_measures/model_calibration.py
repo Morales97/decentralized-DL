@@ -7,9 +7,9 @@ import numpy as np
 import torch.nn.functional as F
 
 import os
-from robustness_measures.temperature_scaling import ModelWithTemperature
 import sys
 sys.path.insert(0, os.path.join(sys.path[0], '..'))
+from robustness_measures.temperature_scaling import ModelWithTemperature
 from helpers.parser import parse_args
 from avg_index.search_avg import get_avg_model
 from model.model import get_model
