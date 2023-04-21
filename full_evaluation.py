@@ -109,7 +109,7 @@ def evaluate_all(args, models, val_loader, test_loader, device, expt_name, avera
     if True: #not 'ECE std' in results.keys():
         ece, ece_std, ece_temp, ece_temp_std = eval_calibration(args, models, val_loader, test_loader)
         # results['ECE'] = ece
-        results['ECE'] = '$' + str(ece) + r' \pm ' + str(ece_std) + '$' 
+        results['ECE'] = '$' + str(ece) + ' pm ' + str(ece_std) + '$' 
         results['ECE (Temp. scaling)'] = ece_temp
     
     # # OOD Detection - Anomalous data
@@ -260,7 +260,12 @@ def full_evaluation(args, expt_name='val', seeds=[0,1,2]):
     # print(tabulate([[key, *value] for key, value in results_dict.items()], headers=['', 'SGD (No averaging)', 'EMA Accuracy', 'EMA Validation', 'Uniform (SGD)', 'Uniform (EMA acc)', 'Uniform (EMA val)'], tablefmt="pretty"))
     # print(tabulate([[key, *value] for key, value in results_dict.items()], headers=['', 'SGD (No averaging)', 'EMA Accuracy', 'EMA Validation'], tablefmt="pretty"))
     print(tabulate([[key, *value] for key, value in results_dict.items()], headers=['', 'SGD (No averaging)', 'EMA Accuracy', 'EMA Validation', 'EMA Accuracy (BN)', 'EMA Validation (BN)'], tablefmt="pretty"))
-    print(tabulate([[key, *value] for key, value in results_dict.items()], headers=['', 'SGD', 'EMA Acc.', 'EMA Val.', 'EMA Acc. (BN)', 'EMA Val. (BN)'], tablefmt="latex_booktabs"))
+    latex_table = tabulate([[key, *value] for key, value in results_dict.items()], headers=['', 'SGD', 'EMA Acc.', 'EMA Val.', 'EMA Acc. (BN)', 'EMA Val. (BN)'], tablefmt="latex_booktabs")
+    latex_table = latex_table.replace('\$', '$')
+    latex_table = latex_table.replace('pm', '\pm')
+    print(latex_table)
+    pdb.set_trace()
+
     # print(tabulate([[key, *value] for key, value in results_dict.items()], headers=['', 'EMA Val no pt', 'EMA Val T-IN pt'], tablefmt="pretty"))
 
 # for mixed configs
