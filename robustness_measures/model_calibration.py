@@ -251,44 +251,44 @@ if __name__ == '__main__':
     else:
         model = get_avg_model(args, start=0.5, end=1)
 
-    
-    # Compute ECE
-    probs = None
-    for data, labels in test_loader:
-        data = data.to(device)
-        labels = labels.to(device)
+    with torch.no_grad():
+        # Compute ECE
+        probs = None
+        for data, labels in test_loader:
+            data = data.to(device)
+            labels = labels.to(device)
+            
+            out = model(data)
+            batch_probs = F.softmax(out, dim=1)
+            if probs is None:
+                probs = batch_probs
+            else:
+                probs = torch.cat((probs, batch_probs), dim=0)
+            
+        import calibration as cal
+        ece = cal.get_ece(probs.detach().cpu(), test_loader.dataset.targets)
+        print(f'ECE: \t{ece}')
+
+
+        # Apply temperature scaling
+        scaled_model = ModelWithTemperature(model)
+        scaled_model.set_temperature(val_loader)
+
+        # Compute ECE with temperature scaling
+        probs_scaled = None
+        for data, labels in test_loader:
+            data = data.to(device)
+            labels = labels.to(device)
+            
+            out = scaled_model(data)
+            batch_probs_scaled = F.softmax(out, dim=1)
+            if probs_scaled is None:
+                probs_scaled = batch_probs_scaled
+            else:
+                probs_scaled = torch.cat((probs_scaled, batch_probs_scaled), dim=0)
         
-        out = model(data)
-        batch_probs = F.softmax(out, dim=1)
-        if probs is None:
-            probs = batch_probs
-        else:
-            probs = torch.cat((probs, batch_probs), dim=0)
-        pdb.set_trace()
-    import calibration as cal
-    ece = cal.get_ece(probs.detach().cpu(), test_loader.dataset.targets)
-    print(f'ECE: \t{ece}')
-
-
-    # Apply temperature scaling
-    scaled_model = ModelWithTemperature(model)
-    scaled_model.set_temperature(val_loader)
-
-    # Compute ECE with temperature scaling
-    probs_scaled = None
-    for data, labels in test_loader:
-        data = data.to(device)
-        labels = labels.to(device)
-        
-        out = scaled_model(data)
-        batch_probs_scaled = F.softmax(out, dim=1)
-        if probs_scaled is None:
-            probs_scaled = batch_probs_scaled
-        else:
-            probs_scaled = torch.cat((probs_scaled, batch_probs_scaled), dim=0)
-    
-    ece_temperature = cal.get_ece(probs_scaled.detach().cpu(), test_loader.dataset.targets)
-    print(f'ECE after temperature scaling: \t{ece_temperature}')
+        ece_temperature = cal.get_ece(probs_scaled.detach().cpu(), test_loader.dataset.targets)
+        print(f'ECE after temperature scaling: \t{ece_temperature}')
 
     
 
