@@ -59,7 +59,7 @@ def eval_repeatability(args, models, test_loader):
             j = j+i+1
             
             results = get_agreement_metrics(model_i, model_j, test_loader, device)
-            pred_distance[i,j] = results['L2']
+            # pred_distance[i,j] = results['L2']
             pred_js_div[i,j] = results['JS_div']
             pred_disagreement[i,j] = results['disagreement']
             # corr_corr[i,j] = results['correct-correct']
@@ -73,9 +73,9 @@ def eval_repeatability(args, models, test_loader):
     print('Fraction of test samples prediction with a different class')
     print(pred_disagreement)
 
-    print('\n ~~~ Prediction distance ~~~')
-    print('Average L2 norm of (prob1 - prob2) in test samples')
-    print(pred_distance)
+    # print('\n ~~~ Prediction distance ~~~')
+    # print('Average L2 norm of (prob1 - prob2) in test samples')
+    # print(pred_distance)
 
     print('\n ~~~ Prediction JS divergence ~~~')
     print('Average JS divergence of (prob1 - prob2) in test samples')
@@ -90,7 +90,7 @@ def eval_repeatability(args, models, test_loader):
     # print('Incorrect-Incorrect, different prediction')
     # print(incorr_incorr_diff)
 
-    return pred_disagreement, pred_distance, pred_js_div
+    return pred_disagreement, None, pred_js_div
 
 def get_model_pred(model, test_loader, device):
     pred = None

@@ -82,7 +82,7 @@ def evaluate_all(args, models, val_loader, test_loader, device, expt_name, avera
     # results = {}
 
     # TEST ACCURACY AND LOSS
-    if not 'Test Accuracy (%)' in results.keys():
+    if True: #not 'Test Accuracy (%)' in results.keys():
         # evaluate_model_per_class(models[0], test_loader, device)
         loss, acc, soft_acc, losses, accs, soft_accs = eval_ensemble(models, test_loader, device)
         # _, avg_model_acc, _, _ = eval_ensemble(models, test_loader, device, avg_model=True)
@@ -91,8 +91,8 @@ def evaluate_all(args, models, val_loader, test_loader, device, expt_name, avera
             print(f'Model {i}:\tAccuracy: {accs[i]:.2f} \tLoss: {losses[i]:.4f} \tSoft accuracy: {soft_accs[i]:.2f}')
         print(f'(Prediction) Ensemble Accuracy: {acc:.2f} \tSoft accuracy: {soft_acc:.2f}')
 
-        results['Test Accuracy (%)'] = np.round(np.array(accs).mean(), 2)
-        results['Test Loss'] = np.round(np.array(losses).mean(), 2)
+        results['Test Accuracy (%)'] = '$' + str(np.round(np.array(accs).mean(), 2)) + ' pm ' + str(np.round(np.array(accs).std(), 2)) + '$'
+        results['Test Loss'] = '$' + str(np.round(np.array(losses).mean(), 2)) + ' pm ' + str(np.round(np.array(losses).std(), 2)) + '$'
 
     # # REPEATABILITY
     # if not 'Pred Disagr. all-to-all (%)' in results.keys():
@@ -100,17 +100,17 @@ def evaluate_all(args, models, val_loader, test_loader, device, expt_name, avera
     #     results['Pred Disagr. all-to-all (%)'] = disagreement
 
     if not 'Pred Disagr. (%)' in results.keys():
-        disagreement, L2_dist, JS_div = eval_repeatability(args, models, test_loader)
+        disagreement, _, JS_div = eval_repeatability(args, models, test_loader)
         results['Pred Disagr. (%)'] = _average_non_zero(disagreement)
-        results['Pred L2 dist'] = _average_non_zero(L2_dist)
+        # results['Pred L2 dist'] = _average_non_zero(L2_dist)
         results['Pred JS div'] = _average_non_zero(JS_div, round_dec=3)
 
     # # CALIBRATION
-    if True: #not 'ECE std' in results.keys():
+    if not 'ECE std' in results.keys():
         ece, ece_std, ece_temp, ece_temp_std = eval_calibration(args, models, val_loader, test_loader)
         # results['ECE'] = ece
         results['ECE'] = '$' + str(ece) + ' pm ' + str(ece_std) + '$' 
-        results['ECE (Temp. scaling)'] = ece_temp
+        results['ECE (Temp. scaling)'] = '$' + str(ece_temp) + ' pm ' + str(ece_temp_std) + '$' 
     
     # # OOD Detection - Anomalous data
     # auroc, aupr, fpr = eval_ood(args, models, test_loader)
@@ -259,7 +259,10 @@ def full_evaluation(args, expt_name='val', seeds=[0,1,2]):
 
     # print(tabulate([[key, *value] for key, value in results_dict.items()], headers=['', 'SGD (No averaging)', 'EMA Accuracy', 'EMA Validation', 'Uniform (SGD)', 'Uniform (EMA acc)', 'Uniform (EMA val)'], tablefmt="pretty"))
     # print(tabulate([[key, *value] for key, value in results_dict.items()], headers=['', 'SGD (No averaging)', 'EMA Accuracy', 'EMA Validation'], tablefmt="pretty"))
-    print(tabulate([[key, *value] for key, value in results_dict.items()], headers=['', 'SGD (No averaging)', 'EMA Accuracy', 'EMA Validation', 'EMA Accuracy (BN)', 'EMA Validation (BN)'], tablefmt="pretty"))
+    plain_table = tabulate([[key, *value] for key, value in results_dict.items()], headers=['', 'SGD (No averaging)', 'EMA Accuracy', 'EMA Validation', 'EMA Accuracy (BN)', 'EMA Validation (BN)'], tablefmt="pretty")
+    plain_table = plain_table.replace('$', ' ')
+    print(plain_table)
+    
     latex_table = tabulate([[key, *value] for key, value in results_dict.items()], headers=['', 'SGD', 'EMA Acc.', 'EMA Val.', 'EMA Acc. (BN)', 'EMA Val. (BN)'], tablefmt="latex_booktabs")
     latex_table = latex_table.replace('\$', '$')
     latex_table = latex_table.replace('pm', '\pm')
