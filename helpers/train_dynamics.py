@@ -64,15 +64,15 @@ def JS_div(logits1, logits2, eps=1e-8):
     return loss
 
 @torch.no_grad()
-def get_agreement_metrics(model1, model2, loader, device, l2=True, jensen_shannon=True, disagreement=True, disagreement_fine=False):
+def get_agreement_metrics(model1, model2, loader, device, l2=False, jensen_shannon=True, disagreement=True, disagreement_fine=False):
     '''
     also check if predictions agreed/disagreed where correct
     '''
     model1.eval()
     model2.eval()
-    agree_count = 0
+    agree_count = []
     distance = 0
-    js_div = 0
+    js_div = []
     correct_correct = 0
     correct_incorrect = 0
     incorrect_incorrect_same = 0

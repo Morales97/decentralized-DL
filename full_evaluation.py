@@ -70,7 +70,7 @@ def _load_saved_results(args, expt_name, averaging, seed=0):
 
 def _average_non_zero(arr, round_dec=2):
     non_zeros = arr[np.nonzero(arr)]
-    return np.round(non_zeros.mean(), round_dec)
+    return np.round(non_zeros.mean(), round_dec), np.round(non_zeros.std(), round_dec)
 
 
 def evaluate_all(args, models, val_loader, test_loader, device, expt_name, averaging, best_per_seed=False):
@@ -82,7 +82,7 @@ def evaluate_all(args, models, val_loader, test_loader, device, expt_name, avera
     # results = {}
 
     # TEST ACCURACY AND LOSS
-    if True: #not 'Test Accuracy (%)' in results.keys():
+    if not 'Test Accuracy (%)' in results.keys():
         # evaluate_model_per_class(models[0], test_loader, device)
         loss, acc, soft_acc, losses, accs, soft_accs = eval_ensemble(models, test_loader, device)
         # _, avg_model_acc, _, _ = eval_ensemble(models, test_loader, device, avg_model=True)
@@ -99,11 +99,14 @@ def evaluate_all(args, models, val_loader, test_loader, device, expt_name, avera
     #     disagreement = eval_repeatability_many(args, models, test_loader)
     #     results['Pred Disagr. all-to-all (%)'] = disagreement
 
-    if not 'Pred Disagr. (%)' in results.keys():
+    if True: #not 'Pred Disagr. (%)' in results.keys():
         disagreement, _, JS_div = eval_repeatability(args, models, test_loader)
-        results['Pred Disagr. (%)'] = _average_non_zero(disagreement)
+        dis_mean, dis_std = _average_non_zero(disagreement)
+        js_mean, js_std = _average_non_zero(JS_div, round_dec=3)
+        results['Pred Disagr. (%)'] = '$' + str(dis_mean) + ' pm ' + str(dis_std) + '$'
+        results['Pred JS div'] = '$' + str(js_mean) + ' pm ' + str(js_std) + '$'
+
         # results['Pred L2 dist'] = _average_non_zero(L2_dist)
-        results['Pred JS div'] = _average_non_zero(JS_div, round_dec=3)
 
     # # CALIBRATION
     if not 'ECE std' in results.keys():
