@@ -271,9 +271,8 @@ def full_evaluation(args, expt_name='val', seeds=[0,1,2]):
     latex_table = latex_table.replace('pm', '\pm')
     print(latex_table)
     with open('tables.txt', 'w') as f:
-        f.write('\n')
+        f.write(f'\nNet: {args.net}\tDataset: {args.dataset}\tEval on test: {args.eval_on_test}\n')
         f.write(latex_table)
-    pdb.set_trace()
 
     # print(tabulate([[key, *value] for key, value in results_dict.items()], headers=['', 'EMA Val no pt', 'EMA Val T-IN pt'], tablefmt="pretty"))
 
