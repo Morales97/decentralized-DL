@@ -163,7 +163,8 @@ def eval_calibration(args, models, val_loader, test_loader):
                 probs = torch.cat((probs, batch_probs), dim=0)
         
         targets = test_loader.dataset.targets
-        ece_error = cal.get_ece(probs.detach().cpu(), targets)
+        # ece_error = cal.get_ece(probs.detach().cpu(), targets)
+        ece_error = cal.get_ece_em(probs.detach().cpu(), targets)
         ece_mean += ece_error
 
         # calibrate (Temperature scaling, from https://github.com/gpleiss/temperature_scaling)
@@ -180,7 +181,8 @@ def eval_calibration(args, models, val_loader, test_loader):
                 probs_scaled = batch_probs_scaled
             else:
                 probs_scaled = torch.cat((probs_scaled, batch_probs_scaled), dim=0)
-        ece_temperature = cal.get_ece(probs_scaled.detach().cpu(), targets)
+        # ece_temperature = cal.get_ece(probs_scaled.detach().cpu(), targets)
+        ece_temperature = cal.get_ece_em(probs_scaled.detach().cpu(), targets)
         ece_temp_mean += ece_temperature
 
     return np.round(ece_mean/len(models)*100, 2), np.round(ece_temp_mean/len(models)*100, 2)

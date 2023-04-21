@@ -158,18 +158,18 @@ def full_evaluation(args, expt_name='val', seeds=[0,1,2]):
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
     train_loader, val_loader, test_loader = get_data(args, args.batch_size[0], args.data_fraction, val_fraction=args.val_fraction)
 
-    print('\n *** Evaluating SGD (train/val)... ***')
-    models, epochs = [], []
-    for seed in seeds:
-        if expt_name == 'val':  # use best student accuracy
-            model, epoch, _ = _load_model(args, device, seed, expt_name=expt_name, averaging='SGD', ckpt_name='best_student_acc.pth.tar')
-        if expt_name == 'SGD':  # use last checkpoint. Reason: cannot use best bc we don't want to eval on Test set, and we discard the "best validation epoch" because we reason that SGD, without implicit regularization, will tend to be always best at last epoch
-            model, epoch, _ = _load_model(args, device, seed, expt_name=expt_name, averaging='SGD', ckpt_name='checkpoint_last.pth.tar')
-        models.append(model)
-        epochs.append(int(epoch))
-    results_SGD = evaluate_all(args, models, val_loader, test_loader, device, expt_name=expt_name, averaging='SGD')
-    results_SGD['epochs'] = epochs
-    results_SGD['EMA decay'] = 0
+    # print('\n *** Evaluating SGD (train/val)... ***')
+    # models, epochs = [], []
+    # for seed in seeds:
+    #     if expt_name == 'val':  # use best student accuracy
+    #         model, epoch, _ = _load_model(args, device, seed, expt_name=expt_name, averaging='SGD', ckpt_name='best_student_acc.pth.tar')
+    #     if expt_name == 'SGD':  # use last checkpoint. Reason: cannot use best bc we don't want to eval on Test set, and we discard the "best validation epoch" because we reason that SGD, without implicit regularization, will tend to be always best at last epoch
+    #         model, epoch, _ = _load_model(args, device, seed, expt_name=expt_name, averaging='SGD', ckpt_name='checkpoint_last.pth.tar')
+    #     models.append(model)
+    #     epochs.append(int(epoch))
+    # results_SGD = evaluate_all(args, models, val_loader, test_loader, device, expt_name=expt_name, averaging='SGD')
+    # results_SGD['epochs'] = epochs
+    # results_SGD['EMA decay'] = 0
 
     print('\n *** Evaluating EMA Accuracy (train/val)... ***')
     models, epochs, alphas = [], [], []
@@ -181,6 +181,9 @@ def full_evaluation(args, expt_name='val', seeds=[0,1,2]):
         models.append(model)
         epochs.append(int(epoch))
         alphas.append(alpha)
+    ece, ece_temp = eval_calibration(args, models, val_loader, test_loader)
+    pdb.set_trace()
+
     results_EMA_acc = evaluate_all(args, models, val_loader, test_loader, device, expt_name=expt_name, averaging='EMA_acc')
     results_EMA_acc['epochs'] = epochs
     results_EMA_acc['EMA decay'] = alphas
