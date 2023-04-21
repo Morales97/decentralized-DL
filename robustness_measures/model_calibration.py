@@ -251,7 +251,7 @@ if __name__ == '__main__':
     else:
         model = get_avg_model(args, start=0.5, end=1)
 
-    pdb.set_trace()
+    
     # Compute ECE
     probs = None
     for data, labels in test_loader:
@@ -264,7 +264,7 @@ if __name__ == '__main__':
             probs = batch_probs
         else:
             probs = torch.cat((probs, batch_probs), dim=0)
-
+        pdb.set_trace()
     import calibration as cal
     ece = cal.get_ece(probs.detach().cpu(), test_loader.dataset.targets)
     print(f'ECE: \t{ece}')
