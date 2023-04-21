@@ -14,7 +14,6 @@ from helpers.parser import parse_args
 from avg_index.search_avg import get_avg_model
 from model.model import get_model
 from loaders.data import get_data, ROOT_CLUSTER
-from helpers.evaluate import evaluate_model
 import pdb
 
 def calib_err(confidence, correct, p='2', beta=100):
@@ -252,6 +251,7 @@ if __name__ == '__main__':
     else:
         model = get_avg_model(args, start=0.5, end=1)
 
+    pdb.set_trace()
     # Compute ECE
     probs = None
     for data, labels in test_loader:
