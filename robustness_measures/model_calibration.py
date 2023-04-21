@@ -143,29 +143,13 @@ def get_model_calibration_results(model, data_loader, in_dist=True, t=1, ood_num
         return logits.copy(), confidence.copy(), correct.copy(), labels.copy(), loss
 
 
-def eval_calibration(args, models, test_loader):
-    print('Ignoring temperature for calibration')
-    t_star = 1
-
-    rms_mean, mad_mean, sf1_mean = 0, 0, 0
-    for model in models:
-        test_logits, test_confidence, test_correct, _, test_loss = get_model_calibration_results(model, test_loader, in_dist=True, t=t_star)
-        rms, mad, sf1 = get_measures(np.array(test_confidence), np.array(test_correct))
-        rms_mean += rms
-        mad_mean += mad
-        sf1_mean += sf1
-
-    return np.round(rms_mean/len(models)*100, 2), np.round(mad_mean/len(models)*100, 2), np.round(sf1_mean/len(models)*100, 2)
-
 @torch.no_grad()
-def eval_calibration_new(args, models, val_loader, test_loader):
+def eval_calibration(args, models, val_loader, test_loader):
     '''get_calibration_error from https://github.com/p-lambda/verified_calibration/blob/master/calibration/utils.py'''
     import calibration as cal
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
-    cal_mean, cal_mean_top, ece_mean = 0, 0, 0
-    mce_temp_mean, ece_temp_mean = 0, 0
-    mce_binner_mean, ece_binner_mean = 0, 0
+    ece_mean, ece_temp_mean = 0, 0
     for model in models:
         probs = None
         for data, labels in test_loader:
@@ -178,15 +162,9 @@ def eval_calibration_new(args, models, val_loader, test_loader):
                 probs = batch_probs
             else:
                 probs = torch.cat((probs, batch_probs), dim=0)
-
-        probs = probs.detach().cpu()
+        
         targets = test_loader.dataset.targets
-        calibration_error_L2 = cal.get_calibration_error(probs, targets)
-        calibration_error_top = cal.get_calibration_error(probs, targets, mode='top-label')
-        ece_error = cal.get_ece(probs.detach().cpu(), test_loader.dataset.targets)
-
-        cal_mean += calibration_error_L2
-        cal_mean_top += calibration_error_top
+        ece_error = cal.get_ece(probs.detach().cpu(), targets)
         ece_mean += ece_error
 
         # calibrate (Temperature scaling, from https://github.com/gpleiss/temperature_scaling)
@@ -205,45 +183,8 @@ def eval_calibration_new(args, models, val_loader, test_loader):
                 probs_scaled = torch.cat((probs_scaled, batch_probs_scaled), dim=0)
         ece_temperature = cal.get_ece(probs_scaled.detach().cpu(), targets)
         ece_temp_mean += ece_temperature
-        
-        # calibrate (from https://github.com/p-lambda/verified_calibration/tree/ee81c346895e3377653bd347c429a95bd631058d)
-        # val_probs = None
-        # for data, labels in val_loader:
-        #     data = data.to(device)
-        #     labels = labels.to(device)
-            
-        #     out = model(data)
-        #     batch_probs = F.softmax(out, dim=1)
-        #     if val_probs is None:
-        #         val_probs = batch_probs
-        #     else:
-        #         val_probs = torch.cat((val_probs, batch_probs), dim=0)
 
-        # np_labels = np.array(val_loader.dataset.dataset.targets)
-        # val_labels = np_labels[val_loader.dataset.indices]
-
-        # # Platt-scale calibration (temperature, Guo et al)
-        # calibrator = cal.PlattCalibrator(len(val_labels), num_bins=10)
-        # val_max_prob = val_probs.gather(1, torch.Tensor(val_labels).cuda().long().unsqueeze(1)).squeeze()
-        # calibrator.train_calibration(val_max_prob.detach().cpu().numpy(), val_labels)   # temperature should be set based on max probabilities
-        # calibrated_probs = calibrator.calibrate(probs.detach().cpu().numpy())
-
-        # mce_temperature = cal.get_calibration_error(calibrated_probs, targets)
-        # ece_temperature = cal.get_ece(calibrated_probs, targets)
-        # mce_temp_mean += mce_temperature
-        # ece_temp_mean += ece_temperature
-
-        # # binning marginal calibration (Verified Uncertainty Calibration, Kumar et al)
-        # calibrator = cal.PlattBinnerMarginalCalibrator(len(val_labels), num_bins=10)
-        # calibrator.train_calibration(val_probs.detach().cpu().numpy(), val_labels)      # this other calibrator should take probabilities for ALL classes
-        # calibrated_probs = calibrator.calibrate(probs.detach().cpu().numpy())
-
-        # mce_binner = cal.get_calibration_error(calibrated_probs, targets)
-        # ece_binner = cal.get_ece(calibrated_probs, targets)
-        # mce_binner_mean += mce_binner
-        # ece_binner_mean += ece_binner
-
-    return np.round(cal_mean/len(models), 5), np.round(ece_mean/len(models)*100, 2), np.round(mce_temp_mean/len(models), 5), np.round(ece_temp_mean/len(models)*100, 2), np.round(mce_binner_mean/len(models), 5), np.round(ece_binner_mean/len(models), 2)
+    return np.round(ece_mean/len(models)*100, 2), np.round(ece_temp_mean/len(models)*100, 2)
 
 @torch.no_grad()
 def calibration_error(model, data_loader, val_loader):
@@ -280,6 +221,7 @@ def calibration_error(model, data_loader, val_loader):
         else:
             val_probs = torch.cat((val_probs, batch_probs), dim=0)
     
+    
     calibrator = cal.PlattBinnerMarginalCalibrator(10000, num_bins=10)
     # calibrator = cal.PlattCalibrator(10000, num_bins=10)
     np_labels = np.array(val_loader.dataset.dataset.targets)
@@ -304,36 +246,54 @@ if __name__ == '__main__':
     if args.resume:
         model = get_model(args, device)
         ckpt = torch.load(args.resume)
-        # model.load_state_dict(ckpt['state_dict'])
-        alpha = ckpt['best_alpha']
-        model.load_state_dict(ckpt[f'ema_state_dict_{alpha}'])
+        model.load_state_dict(ckpt['state_dict'])
+        # alpha = ckpt['best_alpha']
+        # model.load_state_dict(ckpt[f'ema_state_dict_{alpha}'])
     else:
         model = get_avg_model(args, start=0.5, end=1)
 
-    
+    # Compute ECE
+    probs = None
+    for data, labels in test_loader:
+        data = data.to(device)
+        labels = labels.to(device)
+        
+        out = model(data)
+        batch_probs = F.softmax(out, dim=1)
+        if probs is None:
+            probs = batch_probs
+        else:
+            probs = torch.cat((probs, batch_probs), dim=0)
+
+    import calibration as cal
+    ece = cal.get_ece(probs.detach().cpu(), test_loader.dataset.targets)
+    print(f'ECE: \t{ece}')
+
+
+    # Apply temperature scaling
     scaled_model = ModelWithTemperature(model)
     scaled_model.set_temperature(val_loader)
 
-
-    calibration_error(model, test_loader, val_loader)
-    # loss, acc = evaluate_model(model, test_loader, device)
-    # print(f'Loss: {loss}, Acc: {acc}')
+    # Compute ECE with temperature scaling
+    probs_scaled = None
+    for data, labels in test_loader:
+        data = data.to(device)
+        labels = labels.to(device)
+        
+        out = scaled_model(data)
+        batch_probs_scaled = F.softmax(out, dim=1)
+        if probs_scaled is None:
+            probs_scaled = batch_probs_scaled
+        else:
+            probs_scaled = torch.cat((probs_scaled, batch_probs_scaled), dim=0)
     
-    # val_logits, val_confidence, val_correct, val_labels, _ = get_model_calibration_results(model, val_loader, in_dist=True)   # NOTE need to split train in train-val
-    # print('\nTuning Softmax Temperature')
-    # t_star = tune_temp(val_logits, val_labels)
-    # print('Softmax Temperature Tuned. Temperature is {:.3f}'.format(t_star))
-    print('Ignoring temperature')
-    t_star = 1
+    ece_temperature = cal.get_ece(probs_scaled.detach().cpu(), test_loader.dataset.targets)
+    print(f'ECE after temperature scaling: \t{ece_temperature}')
 
-    test_logits, test_confidence, test_correct, _, test_loss = get_model_calibration_results(model, test_loader, in_dist=True, t=t_star)
-    rms, mad, sf1 = get_measures(np.array(test_confidence), np.array(test_correct))
-    print(f'Test Accuracy: {np.sum(test_correct)/10000*100} \t\t Test Loss: {test_loss}')
-    print('RMS Calib Error (%): \t\t{:.2f}'.format(100 * rms))
-    print('MAD Calib Error (%): \t\t{:.2f}'.format(100 * mad))
-    print('Soft F1 Score (%):   \t\t{:.2f}'.format(100 * sf1))
     
 
 # python robustness_measures/model_calibration.py --net=vgg16 --dataset=cifar100 --resume=/mloraw1/danmoral/checkpoints/cifar100/vgg16/val_0.06_s0/checkpoint_last.pth.tar
 # python robustness_measures/model_calibration.py --net=vgg16 --dataset=cifar100 --resume=/mloraw1/danmoral/checkpoints/cifar100/vgg16/val_0.06_s0/best_ema_loss.pth.tar
 # python robustness_measures/model_calibration.py --net=vgg16 --dataset=cifar100 --resume=/mloraw1/danmoral/checkpoints/cifar100/vgg16/search_0.06_s0/checkpoint_last.pth.tar
+
+# python robustness_measures/model_calibration.py --net=rn18 --dataset=cifar100 --resume=/mloraw1/danmoral/checkpoints/cifar100/rn18/val_0.8_s0/checkpoint_last.pth.tar

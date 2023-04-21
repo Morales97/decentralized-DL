@@ -13,7 +13,7 @@ from helpers.utils import get_folder_name
 from helpers.parser import parse_args
 from loaders.data import get_data, ROOT_CLUSTER
 from model.model import get_model
-from robustness_measures.model_calibration import eval_calibration, eval_calibration_new
+from robustness_measures.model_calibration import eval_calibration, eval_calibration
 from robustness_measures.diff_privacy import eval_DP_ranking
 from robustness_measures.img_transforms import eval_common_corruptions
 from robustness_measures.ood_detection import eval_ood, eval_ood_random_images
@@ -106,19 +106,9 @@ def evaluate_all(args, models, val_loader, test_loader, device, expt_name, avera
 
     # # CALIBRATION
     if not 'ECE (Temp. scaling)' in results.keys():
-        mce, ece, mce_temp, ece_temp, mce_binner, ece_binner = eval_calibration_new(args, models, val_loader, test_loader)
+        ece, ece_temp = eval_calibration(args, models, val_loader, test_loader)
         results['ECE'] = ece
         results['ECE (Temp. scaling)'] = ece_temp
-        
-        # results['MCE'] = mce
-        # results['MCE (Temp. scaling)'] = mce_temp
-        # results['MCE (Binner scaling)'] = mce_binner
-        # results['ECE (Binner scaling)'] = ece_binner
-
-        # rms, mad, sf1 = eval_calibration(args, models, test_loader)
-        # results['RMS Calib Error (%)'] = rms
-        # results['MAD Calib Error (%)'] = mad
-        # # results['Soft F1 Score (%)'] = sf1
     
     # # OOD Detection - Anomalous data
     # auroc, aupr, fpr = eval_ood(args, models, test_loader)
