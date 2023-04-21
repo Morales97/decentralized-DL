@@ -238,10 +238,10 @@ def full_evaluation(args, expt_name='val', seeds=[0,1,2]):
 
     results = np.vstack((
         np.array([*results_SGD.values()]), 
-        # np.array([*results_EMA_acc.values()]),
-        # np.array([*results_EMA_val.values()]),
-        # np.array([*results_EMA_acc_BN.values()]),
-        # np.array([*results_EMA_val_BN.values()]),
+        np.array([*results_EMA_acc.values()]),
+        np.array([*results_EMA_val.values()]),
+        np.array([*results_EMA_acc_BN.values()]),
+        np.array([*results_EMA_val_BN.values()]),
         # np.array([*results_uniform_sgd.values()])
         ))
     results_dict = {}
