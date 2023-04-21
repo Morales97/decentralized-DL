@@ -148,7 +148,7 @@ def eval_calibration(args, models, val_loader, test_loader):
     import calibration as cal
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
-    ece_mean, ece_temp_mean = 0, 0
+    ece_mean, ece_temp_mean = [], []
     for model in models:
         probs = None
         for data, labels in test_loader:
@@ -166,7 +166,7 @@ def eval_calibration(args, models, val_loader, test_loader):
         # ece_error = cal.get_ece(probs.detach().cpu(), targets)
         ece_error = cal.get_ece_em(probs.detach().cpu(), targets, num_bins=100) # equal-mass binning
         # ece_error = cal.lower_bound_scaling_ce(probs.detach().cpu(), targets, p=2, debias=False, num_bins=15, binning_scheme=cal.get_equal_bins, mode='top-label') # equal-mass binning and L2 cal error
-        ece_mean += ece_error
+        ece_mean.append(ece_error)
 
         # calibrate (Temperature scaling, from https://github.com/gpleiss/temperature_scaling)
         scaled_model = ModelWithTemperature(model)
@@ -186,9 +186,11 @@ def eval_calibration(args, models, val_loader, test_loader):
         ece_temperature = cal.get_ece_em(probs_scaled.detach().cpu(), targets, num_bins=100)  # equal-mass binning
         # ece_error = cal.lower_bound_scaling_ce(probs_scaled.detach().cpu(), targets, p=2, debias=False, num_bins=15, binning_scheme=cal.get_equal_bins, mode='top-label') # equal-mass binning and L2 cal error
 
-        ece_temp_mean += ece_temperature
+        ece_temp_mean.append(ece_temperature)
 
-    return np.round(ece_mean/len(models)*100, 2), np.round(ece_temp_mean/len(models)*100, 2)
+    ece_mean = np.array(ece_mean)
+    ece_temp_mean = np.array(ece_temp_mean)
+    return np.round(ece_mean.mean()*100, 2), np.round(ece_mean.std()*100, 2), np.round(ece_temp_mean.mean()*100, 2), np.round(ece_temp_mean.std()*100, 2)
 
 @torch.no_grad()
 def calibration_error(model, data_loader, val_loader):
@@ -272,7 +274,7 @@ if __name__ == '__main__':
             
         import calibration as cal
         # ece = cal.get_ece(probs.detach().cpu(), test_loader.dataset.targets)
-        ece = cal.get_ece_em(probs.detach().cpu(), test_loader.dataset.targets)
+        ece = cal.get_ece_em(probs.detach().cpu(), test_loader.dataset.targets, num_bins=100)
         print(f'ECE: \t{ece}')
 
 
@@ -294,7 +296,7 @@ if __name__ == '__main__':
                 probs_scaled = torch.cat((probs_scaled, batch_probs_scaled), dim=0)
         
         # ece_temperature = cal.get_ece(probs_scaled.detach().cpu(), test_loader.dataset.targets)
-        ece_temperature = cal.get_ece_em(probs_scaled.detach().cpu(), test_loader.dataset.targets)
+        ece_temperature = cal.get_ece_em(probs_scaled.detach().cpu(), test_loader.dataset.targets, num_bins=100)
         print(f'ECE after temperature scaling: \t{ece_temperature}')
 
     
