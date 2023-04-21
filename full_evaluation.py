@@ -270,7 +270,7 @@ def full_evaluation(args, expt_name='val', seeds=[0,1,2]):
     latex_table = latex_table.replace('\$', '$')
     latex_table = latex_table.replace('pm', '\pm')
     print(latex_table)
-    with open('tables.txt', 'w') as f:
+    with open('tables.txt', 'a') as f:
         f.write(f'\nNet: {args.net}\tDataset: {args.dataset}\tEval on test: {args.eval_on_test}\n')
         f.write(latex_table)
 
