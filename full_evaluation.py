@@ -79,7 +79,7 @@ def evaluate_all(args, models, val_loader, test_loader, device, expt_name, avera
         results = _load_saved_results(args, expt_name, averaging)
     else:
         results = _load_saved_results(args, expt_name, averaging + '_best_per_seed')   # potentially mixed between different configs
-    # results = {}
+    results = {}
 
     # TEST ACCURACY AND LOSS
     if not 'Test Accuracy (%)' in results.keys():
@@ -109,7 +109,7 @@ def evaluate_all(args, models, val_loader, test_loader, device, expt_name, avera
         # results['Pred L2 dist'] = _average_non_zero(L2_dist)
 
     # # CALIBRATION
-    if not 'ECE std' in results.keys():
+    if not 'ECE' in results.keys():
         ece, ece_std, ece_temp, ece_temp_std = eval_calibration(args, models, val_loader, test_loader)
         # results['ECE'] = ece
         results['ECE'] = '$' + str(ece) + ' pm ' + str(ece_std) + '$' 
@@ -271,7 +271,8 @@ def full_evaluation(args, expt_name='val', seeds=[0,1,2]):
     latex_table = latex_table.replace('pm', '\pm')
     print(latex_table)
     with open('tables.txt', 'a') as f:
-        f.write(f'\nNet: {args.net}\tDataset: {args.dataset}\tEval on test: {args.eval_on_test}\n')
+        f.write('----****----')
+        f.write(f'Net: {args.net}\tDataset: {args.dataset}\tEval on test: {args.eval_on_test}\n')
         f.write(latex_table)
 
     # print(tabulate([[key, *value] for key, value in results_dict.items()], headers=['', 'EMA Val no pt', 'EMA Val T-IN pt'], tablefmt="pretty"))
