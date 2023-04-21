@@ -99,7 +99,7 @@ def evaluate_all(args, models, val_loader, test_loader, device, expt_name, avera
     #     disagreement = eval_repeatability_many(args, models, test_loader)
     #     results['Pred Disagr. all-to-all (%)'] = disagreement
 
-    if True: #not 'Pred Disagr. (%)' in results.keys():
+    if not 'Pred Disagr. (%)' in results.keys():
         disagreement, _, JS_div = eval_repeatability(args, models, test_loader)
         dis_mean, dis_std = _average_non_zero(disagreement)
         js_mean, js_std = _average_non_zero(JS_div, round_dec=3)
@@ -269,8 +269,10 @@ def full_evaluation(args, expt_name='val', seeds=[0,1,2]):
     latex_table = tabulate([[key, *value] for key, value in results_dict.items()], headers=['', 'SGD', 'EMA Acc.', 'EMA Val.', 'EMA Acc. (BN)', 'EMA Val. (BN)'], tablefmt="latex_booktabs")
     latex_table = latex_table.replace('\$', '$')
     latex_table = latex_table.replace('pm', '\pm')
-    latex_table = latex_table.replace('ECE (Temp. scaling)', 'ECE with TS')
     print(latex_table)
+    with open('tables.txt', 'w') as f:
+        f.write('\n')
+        f.write(latex_table)
     pdb.set_trace()
 
     # print(tabulate([[key, *value] for key, value in results_dict.items()], headers=['', 'EMA Val no pt', 'EMA Val T-IN pt'], tablefmt="pretty"))
@@ -405,8 +407,11 @@ def full_evaluation_best_per_seed(args, expt_name='val', folder_names=['val_1.2_
 if __name__ == '__main__':
     ''' For debugging purposes '''
     args = parse_args()
-    expt_name = 'val'   # NOTE first part of experiment name. this will eval models from folders 'val_[lr]_s*'
-    # expt_name = 'SGD'   
+    
+    if args.eval_on_test:
+        expt_name = 'SGD'   
+    else:
+        expt_name = 'val'   # NOTE first part of experiment name. this will eval models from folders 'val_[lr]_s*'
 
     # DEFAULT
     full_evaluation(args, expt_name)
@@ -420,12 +425,11 @@ if __name__ == '__main__':
     # full_evaluation_best_per_seed(args, expt_name, folder_names=['SGD_0.4_s0', 'SGD_0.8_s1', 'SGD_0.4_s2'], lrs=[0.4, 0.8, 0.4])  # NOTE for mixed configs. need to set expt_name=SGD as well
 
 
-# python full_evaluation.py --net=vgg16 --dataset=cifar100 --lr=0.06
-# python full_evaluation.py --net=rn18 --dataset=cifar100 --lr=0.8
-# python full_evaluation.py --net=rn18 --dataset=cifar10 --lr=0.4
-# python full_evaluation.py --net=rn18 --dataset=cifar100 --lr=0.8 --label_noise=40
-# python full_evaluation.py --net=rn34 --dataset=cifar10 --lr=0.8 --label_noise=worse_label
-# python full_evaluation.py --net=widern28 --dataset=cifar100 --lr=0.1
-# python full_evaluation.py --net=rn18 --dataset=tiny-in --lr=0.8
+# python full_evaluation.py --net=vgg16 --dataset=cifar100 --lr=0.06 --eval_on_test=True    # NOTE set to False to see 'val' results
+# python full_evaluation.py --net=rn18 --dataset=cifar100 --lr=0.8 --eval_on_test=True
+# python full_evaluation.py --net=rn18 --dataset=cifar10 --lr=0.4 --eval_on_test=True
+# python full_evaluation.py --net=rn18 --dataset=cifar100 --lr=0.8 --label_noise=40 --eval_on_test=True
+# python full_evaluation.py --net=rn34 --dataset=cifar10 --lr=0.8 --label_noise=worse_label --eval_on_test=True
+# python full_evaluation.py --net=widern28 --dataset=cifar100 --lr=0.1 --eval_on_test=True
+# python full_evaluation.py --net=rn18 --dataset=tiny-in --lr=0.8 --eval_on_test=True
 
-# python full_evaluation.py --net=rn18 --dataset=cifar100 --lr=0.8
