@@ -70,9 +70,9 @@ def get_agreement_metrics(model1, model2, loader, device, l2=False, jensen_shann
     '''
     model1.eval()
     model2.eval()
-    agree_count = []
+    agree_count = 0
     distance = 0
-    js_div = []
+    js_div = 0
     correct_correct = 0
     correct_incorrect = 0
     incorrect_incorrect_same = 0

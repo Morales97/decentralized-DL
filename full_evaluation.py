@@ -269,6 +269,7 @@ def full_evaluation(args, expt_name='val', seeds=[0,1,2]):
     latex_table = tabulate([[key, *value] for key, value in results_dict.items()], headers=['', 'SGD', 'EMA Acc.', 'EMA Val.', 'EMA Acc. (BN)', 'EMA Val. (BN)'], tablefmt="latex_booktabs")
     latex_table = latex_table.replace('\$', '$')
     latex_table = latex_table.replace('pm', '\pm')
+    latex_table = latex_table.replace('ECE (Temp. scaling)', 'ECE with TS')
     print(latex_table)
     pdb.set_trace()
 
