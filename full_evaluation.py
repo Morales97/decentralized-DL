@@ -414,10 +414,10 @@ if __name__ == '__main__':
         expt_name = 'val'   # NOTE first part of experiment name. this will eval models from folders 'val_[lr]_s*'
 
     # DEFAULT
-    full_evaluation(args, expt_name)
+    # full_evaluation(args, expt_name)
 
     # RN-18, C-100, best configs
-    # full_evaluation_best_per_seed(args, expt_name, folder_names=['val_1.2_s0', 'val_0.8_s1', 'val_1.2_s2'], lrs=[1.2, 0.8, 1.2])  # NOTE for mixed configs
+    full_evaluation_best_per_seed(args, expt_name, folder_names=['val_1.2_s0', 'val_0.8_s1', 'val_1.2_s2'], lrs=[1.2, 0.8, 1.2])  # NOTE for mixed configs
     # full_evaluation_best_per_seed(args, expt_name, folder_names=['SGD_1.2_s0', 'SGD_0.8_s1', 'SGD_1.2_s2'], lrs=[1.2, 0.8, 1.2])  # NOTE for mixed configs. need to set expt_name=SGD as well
 
     # RN-18, C-10, best configs
@@ -426,9 +426,9 @@ if __name__ == '__main__':
 
 
 # python full_evaluation.py --net=vgg16 --dataset=cifar100 --lr=0.06 --eval_on_test=True    # NOTE set to False to see 'val' results
-# python full_evaluation.py --net=rn18 --dataset=cifar100 --lr=0.8 --eval_on_test=True
+# python full_evaluation.py --net=rn18 --dataset=cifar100 --lr=0.8 --eval_on_test=False
 # python full_evaluation.py --net=rn18 --dataset=cifar10 --lr=0.4 --eval_on_test=True
-# python full_evaluation.py --net=rn18 --dataset=cifar100 --lr=0.8 --label_noise=40 --eval_on_test=True
+# python full_evaluation.py --net=rn34 --dataset=cifar100 --lr=0.8 --label_noise=40 --eval_on_test=False
 # python full_evaluation.py --net=rn34 --dataset=cifar10 --lr=0.8 --label_noise=worse_label --eval_on_test=True
 # python full_evaluation.py --net=widern28 --dataset=cifar100 --lr=0.1 --eval_on_test=True
 # python full_evaluation.py --net=rn18 --dataset=tiny-in --lr=0.8 --eval_on_test=True
