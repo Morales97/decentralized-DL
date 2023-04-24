@@ -190,7 +190,6 @@ def eval_calibration(args, models, val_loader, test_loader):
 
     ece_mean = np.array(ece_mean)
     ece_temp_mean = np.array(ece_temp_mean)
-    pdb.set_trace()
     return np.round(ece_mean.mean()*100, 2), np.round(ece_mean.std()*100, 2), np.round(ece_temp_mean.mean()*100, 2), np.round(ece_temp_mean.std()*100, 2)
 
 @torch.no_grad()
