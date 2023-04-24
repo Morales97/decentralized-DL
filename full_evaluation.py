@@ -109,7 +109,7 @@ def evaluate_all(args, models, val_loader, test_loader, device, expt_name, avera
         # results['Pred L2 dist'] = _average_non_zero(L2_dist)
 
     # # CALIBRATION
-    if True: #not 'ECE' in results.keys():
+    if not 'ECE' in results.keys():
         ece, ece_std, ece_temp, ece_temp_std = eval_calibration(args, models, val_loader, test_loader)
         # results['ECE'] = ece
         results['ECE'] = '$' + str(ece) + ' pm ' + str(ece_std) + '$' 
@@ -431,5 +431,5 @@ if __name__ == '__main__':
 # python full_evaluation.py --net=rn34 --dataset=cifar100 --lr=0.8 --label_noise=40 --eval_on_test=False
 # python full_evaluation.py --net=rn34 --dataset=cifar10 --lr=0.8 --label_noise=worse_label --eval_on_test=True
 # python full_evaluation.py --net=widern28 --dataset=cifar100 --lr=0.1 --eval_on_test=False
-# python full_evaluation.py --net=rn18 --dataset=tiny-in --lr=0.8 --eval_on_test=True
+# python full_evaluation.py --net=rn18 --dataset=tiny-in --lr=0.8 --eval_on_test=False
 
