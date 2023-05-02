@@ -36,6 +36,9 @@ def eval_common_corruptions(args, models, severities=[1,2,3,4,5]):
         for model in models:
             acc = eval_on_cifar_corrputed_test(model, 'cifar100-C', device, root=ROOT_CLUSTER, severities=severities)
             acc_mean.append(acc)
+    else:
+        return 0
+        
     return np.round(np.mean(acc_mean))
 
 if __name__ == '__main__':

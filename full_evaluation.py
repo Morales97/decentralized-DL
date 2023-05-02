@@ -128,14 +128,14 @@ def evaluate_all(args, models, val_loader, test_loader, device, expt_name, avera
     # results['AUPR rand (higher better)'] = aupr
 
     # # Common corruptions
-    # if not 'Common corruptions (severity=1)' in results.keys():
-    #     results['Common corruptions (severity=1)'] = eval_common_corruptions(args, models, severities=[1])
+    if not 'Common corruptions (severity=1)' in results.keys():
+        results['Common corruptions (severity=1)'] = eval_common_corruptions(args, models, severities=[1])
     #     # results['Common corruptions (severities=1-5)'] = eval_common_corruptions(args, models, severities=[1,2,3,4,5])
 
     # # # Adversarial attacks
-    # if not 'Adversarial Accuracy (eps=2/255)' in results.keys():
-    #     results['Adversarial Accuracy (eps=8/255)'] = evaluate_adversarial(args, models, epsilon=8/225)
-    #     results['Adversarial Accuracy (eps=2/255)'] = evaluate_adversarial(args, models, epsilon=2/225)
+    if not 'Adversarial Accuracy (eps=2/255)' in results.keys():
+        results['Adversarial Accuracy (eps=8/255)'] = evaluate_adversarial(args, models, epsilon=8/225)
+        results['Adversarial Accuracy (eps=2/255)'] = evaluate_adversarial(args, models, epsilon=2/225)
 
     # # # DP ranking membership attack
     # if not 'DP Ranking' in results.keys():
